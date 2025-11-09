@@ -1,0 +1,196 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 1
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "The Science of Accessible Design"
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Introduction"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Design is not just about visual appeal. It\u2019s about inclusivity. Accessible design ensures that people with different abilities can interact with content effectively, whether through screen readers, Braille displays, or tactile graphics. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"(x+a)^{n}=\\sum_{k=0}^{n}\\binom{n}{k}x^{k}a^{n-k}\" display=\"inline\"><mrow><msup><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mi>a</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mi>n</mi></msup><mo rspace=\"0.111em\">=</mo><mrow><msubsup><mo rspace=\"0em\">\u2211</mo><mrow><mi>k</mi><mo>=</mo><mn>0</mn></mrow><mi>n</mi></msubsup><mrow><mrow><mo>(</mo><mfrac linethickness=\"0pt\"><mi>n</mi><mi>k</mi></mfrac><mo>)</mo></mrow><mo>\u2062</mo><msup><mi>x</mi><mi>k</mi></msup><mo>\u2062</mo><msup><mi>a</mi><mrow><mi>n</mi><mo>\u2212</mo><mi>k</mi></mrow></msup></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(x + a)^n = \\sum_{k=0}^{n} \\binom{n}{k}x^ka^{n-k}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "The Role of Accessibility in Education"
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Why It Matters"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Inclusive education bridges the gap between information and understanding. For blind and low-vision students, access to diagrams, charts, and equations can determine whether they fully grasp a subject or not."
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Common Challenges"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "\u2022 Text embedded inside images (non-selectable)"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "\u2022 Charts without alternative descriptions"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "\u2022 Equations lacking MathML or LaTeX representations"
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solutions for Inclusive Learning"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Accessible conversion systems transform traditional materials into usable formats:"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1. PDFs \u2192 Screen-reader-friendly HTML"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2. Images \u2192 Descriptive text and tactile SVGs"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3. Equations \u2192 MathML and Nemeth Braille"
+                }
+            ]
+        }
+    ],
+    "pageNumber": 1,
+    "isEdited": false
+}

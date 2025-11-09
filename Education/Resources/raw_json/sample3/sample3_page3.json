@@ -1,0 +1,418 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Functions - To evaluate a function for a given value, substitute the value into the function for x and simplify."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Remember: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"(f\\circ g)(x)=f(g(x))\" display=\"inline\"><mrow><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>f</mi><mo lspace=\"0.222em\" rspace=\"0.222em\">\u2218</mo><mi>g</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>g</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(f \\circ g)(x) = f(g(x))"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " read \u201c f of g of x\u201d Means to plug the inside function (in this case g(x)) in for x in the outside function (in this case f(x))."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Ex: Given "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m2\" class=\"ltx_Math\" alttext=\"f(x)=2x^{2}+1\" display=\"inline\"><mrow><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>+</mo><mn>1</mn></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "f(x) = 2x^2 + 1"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " and "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m3\" class=\"ltx_Math\" alttext=\"g(x)=x-4\" display=\"inline\"><mrow><mrow><mi>g</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mi>x</mi><mo>\u2212</mo><mn>4</mn></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "g(x) = x - 4"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " find "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m4\" class=\"ltx_Math\" alttext=\"(f\\circ g)(x)\" display=\"inline\"><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>f</mi><mo lspace=\"0.222em\" rspace=\"0.222em\">\u2218</mo><mi>g</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(f \\circ g)(x)"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx1\" class=\"ltx_equation ltx_eqn_table\" display=\"block\">\n\n<tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\">\n<td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/>\n<td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"(f\\circ g)(x)=f(g(x))=f(x-4)\" display=\"block\"><mrow><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>f</mi><mo lspace=\"0.222em\" rspace=\"0.222em\">\u2218</mo><mi>g</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>g</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>\u2212</mo><mn>4</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math></td>\n<td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody>\n</table>\n",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "(f \\circ g)(x) = f(g(x)) = f(x - 4)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx2\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx2.m1\" class=\"ltx_Math\" alttext=\"2(x-4)^{2}+1\" display=\"block\"><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>\u2212</mo><mn>4</mn></mrow><mo stretchy=\"false\">)</mo></mrow><mn>2</mn></msup></mrow><mo>+</mo><mn>1</mn></mrow></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "2(x - 4)^2 + 1"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx3\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx3.m1\" class=\"ltx_Math\" alttext=\"2(x^{2}-8x+16)+1\" display=\"block\"><mrow><mrow><mn>2</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2212</mo><mrow><mn>8</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>16</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>+</mo><mn>1</mn></mrow></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "2(x^2 - 8x + 16) + 1"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx4\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx4.m1\" class=\"ltx_Math\" alttext=\"2(x^{2}-8x+16)+1\" display=\"block\"><mrow><mrow><mn>2</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2212</mo><mrow><mn>8</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>16</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>+</mo><mn>1</mn></mrow></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "2(x^2 - 8x + 16) + 1"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx5\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx5.m1\" class=\"ltx_Math\" alttext=\"2x^{2}-16x+32+1\" display=\"block\"><mrow><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>16</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>32</mn><mo>+</mo><mn>1</mn></mrow></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "2x^2 - 16x + 32 + 1"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx6\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx6.m1\" class=\"ltx_Math\" alttext=\"(f\\circ g)(x)=f(g(x))=2x^{2}-16x+33\" display=\"block\"><mrow><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>f</mi><mo lspace=\"0.222em\" rspace=\"0.222em\">\u2218</mo><mi>g</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>g</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>16</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>33</mn></mrow></mrow></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "(f \\circ g)(x) = f(g(x)) = 2x^2 - 16x + 33"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Given "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m5\" class=\"ltx_Math\" alttext=\"f(x)=7-x^{2}\" display=\"inline\"><mrow><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mn>7</mn><mo>\u2212</mo><msup><mi>x</mi><mn>2</mn></msup></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "f(x) = 7 - x^2"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " and "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m6\" class=\"ltx_Math\" alttext=\"g(x)=x-4\" display=\"inline\"><mrow><mrow><mi>g</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mi>x</mi><mo>\u2212</mo><mn>4</mn></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "g(x) = x - 4"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ", find each value."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m7\" class=\"ltx_Math\" alttext=\"f(-4)\" display=\"inline\"><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mo>\u2212</mo><mn>4</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "f(-4)"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " 2. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m8\" class=\"ltx_Math\" alttext=\"g(-4)\" display=\"inline\"><mrow><mi>g</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mo>\u2212</mo><mn>4</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "g(-4)"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " 3. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m9\" class=\"ltx_Math\" alttext=\"f(g(-2))\" display=\"inline\"><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>g</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mo>\u2212</mo><mn>2</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "f(g(-2))"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " 1. ______________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "4. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m10\" class=\"ltx_Math\" alttext=\"f(4a)\" display=\"inline\"><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mn>4</mn><mo>\u2062</mo><mi>a</mi></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "f(4a)"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " 5. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m11\" class=\"ltx_Math\" alttext=\"f(t+1)\" display=\"inline\"><mrow><mi>f</mi><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "f(t+1)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "6. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m12\" class=\"ltx_Math\" alttext=\"(f\\circ g)(x)\" display=\"inline\"><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>f</mi><mo lspace=\"0.222em\" rspace=\"0.222em\">\u2218</mo><mi>g</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(f \\circ g)(x)"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " 7. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m13\" class=\"ltx_Math\" alttext=\"(g\\circ f)(x)\" display=\"inline\"><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>g</mi><mo lspace=\"0.222em\" rspace=\"0.222em\">\u2218</mo><mi>f</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mi>x</mi><mo stretchy=\"false\">)</mo></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(g \\circ f)(x)"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " 2. ______________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3. ______________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "4. ______________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "5. ______________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "6. ______________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "7. ______________"
+                }
+            ]
+        }
+    ],
+    "pageNumber": 3,
+    "isEdited": false
+}

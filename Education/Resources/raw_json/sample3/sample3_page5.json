@@ -1,0 +1,671 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 1
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Factoring - follow these steps in order to factor polynomials."
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Factoring - follow these steps in order to factor polynomials."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "STEP 1: Look for a GCF in ALL of the terms."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "a) if you have one (other than 1) factor it out front. Ex: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"3x^{2}-6=3(x^{2}-2)\" display=\"inline\"><mrow><mrow><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mn>6</mn></mrow><mo>=</mo><mrow><mn>3</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2212</mo><mn>2</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x^2 - 6 = 3(x^2 - 2)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "b) if you don\u2019t have one, move on to STEP 2."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "STEP 2: How many terms does the polynomial have?"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2 Terms"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "a) Is it a difference of two squares? "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m2\" class=\"ltx_Math\" alttext=\"a^{2}-b^{2}=(a+b)(a-b)\" display=\"inline\"><mrow><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>\u2212</mo><msup><mi>b</mi><mn>2</mn></msup></mrow><mo>=</mo><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>a</mi><mo>+</mo><mi>b</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>a</mi><mo>\u2212</mo><mi>b</mi></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a^2 - b^2 = (a + b)(a - b)"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " Ex: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m3\" class=\"ltx_Math\" alttext=\"x^{2}-25=(x+5)(x-5)\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2212</mo><mn>25</mn></mrow><mo>=</mo><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>5</mn></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>\u2212</mo><mn>5</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 - 25 = (x + 5)(x - 5)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "b) Is it a sum or difference of two cubes? "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m4\" class=\"ltx_Math\" alttext=\"a^{3}-b^{3}=(a+b)(a^{2}+ab+b^{2})\" display=\"inline\"><mrow><mrow><msup><mi>a</mi><mn>3</mn></msup><mo>\u2212</mo><msup><mi>b</mi><mn>3</mn></msup></mrow><mo>=</mo><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>a</mi><mo>+</mo><mi>b</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>+</mo><mrow><mi>a</mi><mo>\u2062</mo><mi>b</mi></mrow><mo>+</mo><msup><mi>b</mi><mn>2</mn></msup></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a^3 - b^3 = (a + b)(a^2 + ab + b^2)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx1\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"a^{3}+b^{3}=(a+b)(a^{2}-ab+b^{2})\" display=\"block\"><mrow><mrow><msup><mi>a</mi><mn>3</mn></msup><mo>+</mo><msup><mi>b</mi><mn>3</mn></msup></mrow><mo>=</mo><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>a</mi><mo>+</mo><mi>b</mi></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>\u2212</mo><mrow><mi>a</mi><mo>\u2062</mo><mi>b</mi></mrow></mrow><mo>+</mo><msup><mi>b</mi><mn>2</mn></msup></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "a^3 + b^3 = (a + b)(a^2 - ab + b^2)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3 Terms: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m5\" class=\"ltx_Math\" alttext=\"ax^{2}+bx+c\" display=\"inline\"><mrow><mrow><mi>a</mi><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>+</mo><mrow><mi>b</mi><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mi>c</mi></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "ax^2 + bx + c"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "a) "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m6\" class=\"ltx_Math\" alttext=\"a=1\" display=\"inline\"><mrow><mi>a</mi><mo>=</mo><mn>1</mn></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a = 1"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " --- Find 2 numbers that multiply to c and add to b Ex: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m7\" class=\"ltx_Math\" alttext=\"x^{2}+7x+12=(x+3)(x+4)\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mrow><mn>7</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>12</mn></mrow><mo>=</mo><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>4</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 + 7x + 12 = (x + 3)(x + 4)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "b) "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m8\" class=\"ltx_Math\" alttext=\"a\\neq 1\" display=\"inline\"><mrow><mi>a</mi><mo>\u2260</mo><mn>1</mn></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a \\neq 1"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " --- Follow these Steps:"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1) Multiply "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m9\" class=\"ltx_Math\" alttext=\"a\\cdot c\" display=\"inline\"><mrow><mi>a</mi><mo lspace=\"0.222em\" rspace=\"0.222em\">\u22c5</mo><mi>c</mi></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a \\cdot c"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " Ex: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m10\" class=\"ltx_Math\" alttext=\"8x^{2}+14x+3\" display=\"inline\"><mrow><mrow><mn>8</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>+</mo><mrow><mn>14</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>3</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "8x^2 + 14x + 3"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx2\" class=\"ltx_equation ltx_eqn_table\" display=\"block\">\n\n<tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\">\n<td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/>\n<td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx2.m1\" class=\"ltx_Math\" alttext=\"8\\cdot 3=24\" display=\"block\"><mrow><mrow><mn>8</mn><mo lspace=\"0.222em\" rspace=\"0.222em\">\u22c5</mo><mn>3</mn></mrow><mo>=</mo><mn>24</mn></mrow></math></td>\n<td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody>\n</table>\n",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "8 \\cdot 3 = 24"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2) Find 2 numbers that multiply to this number and add to b"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx3\" class=\"ltx_equation ltx_eqn_table\" display=\"block\">\n\n<tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\">\n<td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/>\n<td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx3.m1\" class=\"ltx_Math\" alttext=\"12\\cdot 2=24\" display=\"block\"><mrow><mrow><mn>12</mn><mo lspace=\"0.222em\" rspace=\"0.222em\">\u22c5</mo><mn>2</mn></mrow><mo>=</mo><mn>24</mn></mrow></math></td>\n<td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody>\n</table>\n",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "12 \\cdot 2 = 24"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx4\" class=\"ltx_equation ltx_eqn_table\" display=\"block\">\n\n<tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\">\n<td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/>\n<td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx4.m1\" class=\"ltx_Math\" alttext=\"12+2=14\" display=\"block\"><mrow><mrow><mn>12</mn><mo>+</mo><mn>2</mn></mrow><mo>=</mo><mn>14</mn></mrow></math></td>\n<td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody>\n</table>\n",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "12 + 2 = 14"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3) Divide each of these numbers by a and simplify"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m11\" class=\"ltx_Math\" alttext=\"\\frac{12}{8}=\\frac{3}{2}\" display=\"inline\"><mrow><mfrac><mn>12</mn><mn>8</mn></mfrac><mo>=</mo><mfrac><mn>3</mn><mn>2</mn></mfrac></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "\\frac{12}{8} = \\frac{3}{2}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " ; "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m12\" class=\"ltx_Math\" alttext=\"\\frac{2}{8}=\\frac{1}{4}\" display=\"inline\"><mrow><mfrac><mn>2</mn><mn>8</mn></mfrac><mo>=</mo><mfrac><mn>1</mn><mn>4</mn></mfrac></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "\\frac{2}{8} = \\frac{1}{4}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "4) Write factors from the bottom up "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m13\" class=\"ltx_Math\" alttext=\"(2x+3)(4x+1)\" display=\"inline\"><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><mn>2</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>3</mn></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><mn>4</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>1</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(2x + 3)(4x + 1)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "4 Terms: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m14\" class=\"ltx_Math\" alttext=\"ax^{3}+bx^{2}+cx+d\" display=\"inline\"><mrow><mrow><mi>a</mi><mo>\u2062</mo><msup><mi>x</mi><mn>3</mn></msup></mrow><mo>+</mo><mrow><mi>b</mi><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>+</mo><mrow><mi>c</mi><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mi>d</mi></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "ax^3 + bx^2 + cx + d"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " Ex: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m15\" class=\"ltx_Math\" alttext=\"x^{3}+3x^{2}+9x+27\" display=\"inline\"><mrow><msup><mi>x</mi><mn>3</mn></msup><mo>+</mo><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>+</mo><mrow><mn>9</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>27</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^3 + 3x^2 + 9x + 27"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "a) Pair up the first two terms and last two terms "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m16\" class=\"ltx_Math\" alttext=\"(x^{3}+3x^{2})+(9x+27)\" display=\"inline\"><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><msup><mi>x</mi><mn>3</mn></msup><mo>+</mo><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow></mrow><mo stretchy=\"false\">)</mo></mrow><mo>+</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><mn>9</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>27</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(x^3 + 3x^2) + (9x + 27)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "b) Factor out front of the parentheses the terms have in common "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m17\" class=\"ltx_Math\" alttext=\"x^{2}(x+3)+9(x+3)\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>+</mo><mrow><mn>9</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2(x + 3) + 9(x + 3)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "c) Put the leftover terms in the parentheses "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m18\" class=\"ltx_Math\" alttext=\"(x+3)(x^{2}+9)\" display=\"inline\"><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mn>9</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(x + 3)(x^2 + 9)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Factor completely. You can check your answer by multiplying."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m19\" class=\"ltx_Math\" alttext=\"3x^{3}-15x\" display=\"inline\"><mrow><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>3</mn></msup></mrow><mo>\u2212</mo><mrow><mn>15</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x^3 - 15x"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " __________________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m20\" class=\"ltx_Math\" alttext=\"x^{2}+5x-14\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mrow><mn>5</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>\u2212</mo><mn>14</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 + 5x - 14"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " ________________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m21\" class=\"ltx_Math\" alttext=\"x^{2}-16\" display=\"inline\"><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2212</mo><mn>16</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 - 16"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " __________________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "4. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m22\" class=\"ltx_Math\" alttext=\"25x^{2}-9y^{2}\" display=\"inline\"><mrow><mrow><mn>25</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>9</mn><mo>\u2062</mo><msup><mi>y</mi><mn>2</mn></msup></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "25x^2 - 9y^2"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " ________________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "5. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m23\" class=\"ltx_Math\" alttext=\"3x^{2}+9x-30\" display=\"inline\"><mrow><mrow><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>+</mo><mrow><mn>9</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>\u2212</mo><mn>30</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x^2 + 9x - 30"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " ________________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "6. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m24\" class=\"ltx_Math\" alttext=\"4x^{2}-21x-18\" display=\"inline\"><mrow><mrow><mn>4</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>21</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>\u2212</mo><mn>18</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "4x^2 - 21x - 18"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " ____________"
+                }
+            ]
+        }
+    ],
+    "pageNumber": 5,
+    "isEdited": false
+}

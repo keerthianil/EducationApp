@@ -1,0 +1,139 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 1
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Special Triangles"
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Special Triangles"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Determine the value of x and/or y in each figure below."
+                }
+            ]
+        },
+        {
+            "type": "svgNode",
+            "attrs": {
+                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 470 360\" style=\"max-width:100%;height:auto;\">\n  <metadata>\n{\n  \"source\": \"UNAR AI v2\",\n  \"title\": \"Right Triangle\",\n  \"summary\": [\n    \"The image shows a right triangle with labeled sides and an angle.\"\n  ],\n  \"short_desc\": [\n    \"A right triangle with one angle labeled as x degrees, hypotenuse labeled as 8, and one side labeled as 7.\"\n  ],\n  \"long_desc\": [\n    \"A right triangle is shown with the hypotenuse labeled as 8, the adjacent side to angle x labeled as 7, and the angle x is labeled as x degrees. The right angle is marked with a square.\"\n  ],\n  \"image_type\": \"geo\",\n  \"items\": {\n    \"shape\": {\n      \"text_annotations\": [\n        \"8\",\n        \"x\\u00b0\",\n        \"7\"\n      ]\n    }\n  }\n}\n</metadata>\n<defs/>\n  <g id=\"lines\">\n    <line id=\"line_1\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"49.0\" x2=\"423.0\" y1=\"275.0\" y2=\"45.0\"/>\n    <line id=\"line_2\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"49.0\" x2=\"422.0\" y1=\"275.0\" y2=\"275.0\"/>\n    <line id=\"line_3\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"422.0\" x2=\"423.0\" y1=\"275.0\" y2=\"45.0\"/>\n  </g>\n  <g id=\"points\">\n    <circle cx=\"423.0\" cy=\"45.0\" fill=\"rgb(0,0,0)\" id=\"point_1\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"49.0\" cy=\"275.0\" fill=\"rgb(0,0,0)\" id=\"point_2\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"422.0\" cy=\"275.0\" fill=\"rgb(0,0,0)\" id=\"point_3\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n  </g>\n  <g id=\"right_angles\">\n    <g id=\"right_angle1\">\n      <line id=\"line_right_angle1_l1\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"398\" x2=\"398\" y1=\"275\" y2=\"252\"/>\n      <line id=\"line_right_angle1_l2\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"422\" x2=\"398\" y1=\"252\" y2=\"252\"/>\n    </g>\n  </g>\n  <g id=\"texts\">\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_1\" x=\"249.6875\" y=\"115.296875\">8</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_2\" x=\"149.4453125\" y=\"247.1171875\">70</text>\n  </g>\n</svg>",
+                "title": "Right Triangle",
+                "summary": [
+                    "The image shows a right triangle with labeled sides and an angle."
+                ],
+                "short_desc": [
+                    "A right triangle with one angle labeled as x degrees, hypotenuse labeled as 8, and one side labeled as 7."
+                ],
+                "long_desc": [
+                    "A right triangle is shown with the hypotenuse labeled as 8, the adjacent side to angle x labeled as 7, and the angle x is labeled as x degrees. The right angle is marked with a square."
+                ]
+            }
+        },
+        {
+            "type": "svgNode",
+            "attrs": {
+                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 416 263\" style=\"max-width:100%;height:auto;\">\n  <metadata>\n{\n  \"source\": \"UNAR AI v2\",\n  \"title\": \"Geometric Diagram\",\n  \"summary\": [\n    \"The image shows a geometric diagram with labeled sides and angles.\"\n  ],\n  \"short_desc\": [\n    \"The image contains a geometric figure composed of triangles and a rectangle, with labeled side lengths and a variable 'y' representing an unknown length.\"\n  ],\n  \"long_desc\": [\n    \"The image depicts a geometric diagram featuring a combination of triangles and a rectangle. The sides of the figure are labeled with numerical values (3, 4, 12) and variables (x, y) representing unknown lengths. There are right angle symbols indicating 90-degree angles within the figure.\"\n  ],\n  \"image_type\": \"geo\",\n  \"items\": {\n    \"shape\": {\n      \"text_annotations\": [\n        \"4\",\n        \"3\",\n        \"12\",\n        \"x\",\n        \"y\",\n        \"4.\"\n      ]\n    }\n  }\n}\n</metadata>\n<defs/>\n  <g id=\"lines\">\n    <line id=\"line_1\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"77.0\" x2=\"347.0\" y1=\"188.0\" y2=\"185.0\"/>\n    <line id=\"line_2\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"201.0\" x2=\"346.0\" y1=\"65.0\" y2=\"187.0\"/>\n    <line id=\"line_3\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"201.0\" x2=\"346.0\" y1=\"65.0\" y2=\"65.0\"/>\n    <line id=\"line_4\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"76.0\" x2=\"205.0\" y1=\"189.0\" y2=\"65.0\"/>\n    <line id=\"line_5\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"346.0\" x2=\"345.0\" y1=\"187.0\" y2=\"65.0\"/>\n  </g>\n  <g id=\"points\">\n    <circle cx=\"345.21688846959694\" cy=\"185.6827753133008\" fill=\"rgb(0,0,0)\" id=\"point_1\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"203.04432844969057\" cy=\"65.5982165806592\" fill=\"rgb(0,0,0)\" id=\"point_2\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"77.0407941256459\" cy=\"187.99954673193727\" fill=\"rgb(0,0,0)\" id=\"point_3\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"345.0\" cy=\"65.0\" fill=\"rgb(0,0,0)\" id=\"point_4\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n  </g>\n  <g id=\"right_angles\">\n    <g id=\"right_angle1\">\n      <line id=\"line_right_angle1_l1\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"216\" x2=\"203\" y1=\"78\" y2=\"91\"/>\n      <line id=\"line_right_angle1_l2\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"190\" x2=\"203\" y1=\"79\" y2=\"91\"/>\n    </g>\n    <g id=\"right_angle2\">\n      <line id=\"line_right_angle2_l1\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"332\" x2=\"332\" y1=\"65\" y2=\"77\"/>\n      <line id=\"line_right_angle2_l2\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"345\" x2=\"332\" y1=\"77\" y2=\"77\"/>\n    </g>\n  </g>\n  <g id=\"texts\">\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_1\" x=\"283.07501220703125\" y=\"46.79999923706055\">4</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_2\" x=\"52.650001525878906\" y=\"81.57500457763672\">4</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_3\" x=\"60.45000076293945\" y=\"87.75\">c</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_4\" x=\"134.22500610351562\" y=\"95.875\">12</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_5\" x=\"369.5250244140625\" y=\"112.7750015258789\">3</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_6\" x=\"207.6750030517578\" y=\"214.8249969482422\">X</text>\n  </g>\n</svg>",
+                "title": "Geometric Diagram",
+                "summary": [
+                    "The image shows a geometric diagram with labeled sides and angles."
+                ],
+                "short_desc": [
+                    "The image contains a geometric figure composed of triangles and a rectangle, with labeled side lengths and a variable 'y' representing an unknown length."
+                ],
+                "long_desc": [
+                    "The image depicts a geometric diagram featuring a combination of triangles and a rectangle. The sides of the figure are labeled with numerical values (3, 4, 12) and variables (x, y) representing unknown lengths. There are right angle symbols indicating 90-degree angles within the figure."
+                ]
+            }
+        },
+        {
+            "type": "svgNode",
+            "attrs": {
+                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 496 371\" style=\"max-width:100%;height:auto;\">\n  <metadata>\n{\n  \"source\": \"UNAR AI v2\",\n  \"title\": \"Special Triangles\",\n  \"summary\": [\n    \"The image shows two special right triangles, 45-45-90 and 30-60-90, with their side length ratios labeled.\"\n  ],\n  \"short_desc\": [\n    \"The image contains two right triangles. The first is a 45-45-90 triangle with sides labeled a, a, and a\\u221a2. The second is a 30-60-90 triangle with sides labeled a, a\\u221a3, and 2a.\"\n  ],\n  \"long_desc\": [\n    \"The image displays two special right triangles: a 45-45-90 triangle and a 30-60-90 triangle. The 45-45-90 triangle has angles of 45 degrees, 45 degrees, and 90 degrees, with sides labeled as 'a', 'a', and 'a\\u221a2' respectively. The 30-60-90 triangle has angles of 30 degrees, 60 degrees, and 90 degrees, with sides labeled as 'a', 'a\\u221a3', and '2a' respectively. The title 'Special Triangles' is at the top of the image.\"\n  ],\n  \"image_type\": \"geo\",\n  \"items\": {\n    \"shape\": {\n      \"text_annotations\": [\n        \"Special Triangles\",\n        \"45\",\n        \"a\\u221a2\",\n        \"45\",\n        \"a\",\n        \"30\\u00b0\",\n        \"2a\",\n        \"a\\u221a3\",\n        \"60\\u00b0\",\n        \"a\"\n      ]\n    }\n  }\n}\n</metadata>\n<defs/>\n  <g id=\"lines\">\n    <line id=\"line_1\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"39.0\" x2=\"455.0\" y1=\"90.0\" y2=\"92.0\"/>\n    <line id=\"line_2\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"40.0\" x2=\"455.0\" y1=\"327.0\" y2=\"327.0\"/>\n    <line id=\"line_3\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"39.0\" x2=\"455.0\" y1=\"40.0\" y2=\"40.0\"/>\n    <line id=\"line_4\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"41.0\" x2=\"41.0\" y1=\"329.0\" y2=\"39.0\"/>\n    <line id=\"line_5\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"454.0\" x2=\"454.0\" y1=\"329.0\" y2=\"39.0\"/>\n    <line id=\"line_6\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"383.0\" x2=\"383.0\" y1=\"290.0\" y2=\"106.0\"/>\n    <line id=\"line_7\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"270.0\" x2=\"384.0\" y1=\"289.0\" y2=\"106.0\"/>\n    <line id=\"line_8\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"270.0\" x2=\"384.0\" y1=\"289.0\" y2=\"288.0\"/>\n    <line id=\"line_9\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"103.0\" x2=\"231.0\" y1=\"115.0\" y2=\"239.0\"/>\n    <line id=\"line_10\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"103.0\" x2=\"231.0\" y1=\"239.0\" y2=\"241.0\"/>\n    <line id=\"line_11\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"104.0\" x2=\"103.0\" y1=\"241.0\" y2=\"115.0\"/>\n  </g>\n  <g id=\"points\">\n    <circle cx=\"454.0\" cy=\"327.0\" fill=\"rgb(0,0,0)\" id=\"point_1\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"41.0\" cy=\"40.0\" fill=\"rgb(0,0,0)\" id=\"point_2\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"454.0\" cy=\"40.0\" fill=\"rgb(0,0,0)\" id=\"point_3\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"41.0\" cy=\"327.0\" fill=\"rgb(0,0,0)\" id=\"point_4\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"454.0\" cy=\"91.99519230769232\" fill=\"rgb(0,0,0)\" id=\"point_5\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"41.0\" cy=\"90.00961538461539\" fill=\"rgb(0,0,0)\" id=\"point_6\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"270.0\" cy=\"289.0\" fill=\"rgb(0,0,0)\" id=\"point_7\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"383.0\" cy=\"107.60526315789474\" fill=\"rgb(0,0,0)\" id=\"point_8\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"383.0\" cy=\"288.00877192982455\" fill=\"rgb(0,0,0)\" id=\"point_9\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"103.9842490388193\" cy=\"239.01537889123153\" fill=\"rgb(0,0,0)\" id=\"point_10\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"233.0983606557377\" cy=\"241.0327868852459\" fill=\"rgb(0,0,0)\" id=\"point_11\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"103.0\" cy=\"115.0\" fill=\"rgb(0,0,0)\" id=\"point_12\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n  </g>\n  <g id=\"angles\">\n    <path d=\"M 112.050111818617,123.76729582428521 A 12.600396819148198,12.600396819148198 0 0 1 103.1,127.6\" fill=\"none\" id=\"angle_1\" stroke=\"rgb(255,0,0)\"/>\n  </g>\n  <g id=\"right_angles\">\n    <g id=\"right_angle1\">\n      <line id=\"line_right_angle1_l1\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"383\" x2=\"371\" y1=\"276\" y2=\"276\"/>\n      <line id=\"line_right_angle1_l2\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"371\" x2=\"371\" y1=\"288\" y2=\"276\"/>\n    </g>\n    <g id=\"right_angle2\">\n      <line id=\"line_right_angle2_l1\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"116\" x2=\"116\" y1=\"239\" y2=\"226\"/>\n      <line id=\"line_right_angle2_l2\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"103\" x2=\"116\" y1=\"226\" y2=\"226\"/>\n    </g>\n  </g>\n  <g id=\"texts\">\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_1\" x=\"247.6125030517578\" y=\"68.58749389648438\">Special Triangles</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_2\" x=\"187.9375\" y=\"148.8000030517578\">a\u221a2</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_3\" x=\"122.8375015258789\" y=\"155.77500915527344\">45\u00b0</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_4\" x=\"366.57501220703125\" y=\"171.27499389648438\">30\u00b0</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_5\" x=\"79.4375\" y=\"183.6750030517578\">a</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_6\" x=\"305.3500061035156\" y=\"186.77499389648438\">2a</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_7\" x=\"418.5\" y=\"211.96249389648438\">A\u221a3</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_8\" x=\"197.2375030517578\" y=\"216.22500610351562\">0</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_9\" x=\"181.35000610351562\" y=\"222.8125\">45</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_10\" x=\"155.3874969482422\" y=\"257.29998779296875\">a</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_11\" x=\"314.6500244140625\" y=\"273.1875\">60\u00b0</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_12\" x=\"326.6624755859375\" y=\"310.7749938964844\">a</text>\n  </g>\n</svg>",
+                "title": "Special Triangles",
+                "summary": [
+                    "The image shows two special right triangles, 45-45-90 and 30-60-90, with their side length ratios labeled."
+                ],
+                "short_desc": [
+                    "The image contains two right triangles. The first is a 45-45-90 triangle with sides labeled a, a, and a\u221a2. The second is a 30-60-90 triangle with sides labeled a, a\u221a3, and 2a."
+                ],
+                "long_desc": [
+                    "The image displays two special right triangles: a 45-45-90 triangle and a 30-60-90 triangle. The 45-45-90 triangle has angles of 45 degrees, 45 degrees, and 90 degrees, with sides labeled as 'a', 'a', and 'a\u221a2' respectively. The 30-60-90 triangle has angles of 30 degrees, 60 degrees, and 90 degrees, with sides labeled as 'a', 'a\u221a3', and '2a' respectively. The title 'Special Triangles' is at the top of the image."
+                ]
+            }
+        },
+        {
+            "type": "svgNode",
+            "attrs": {
+                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 466 253\" style=\"max-width:100%;height:auto;\">\n  <metadata>\n{\n  \"source\": \"UNAR AI v2\",\n  \"title\": \"Right Triangle\",\n  \"summary\": [\n    \"The image shows a right triangle with labeled sides and angles.\"\n  ],\n  \"short_desc\": [\n    \"A right triangle with one angle labeled as 30 degrees and one side labeled as 8\\u221a3. The other two sides are labeled as x and y.\"\n  ],\n  \"long_desc\": [\n    \"The image depicts a right triangle. One angle is labeled as 30 degrees. The side opposite the right angle is labeled as 'y'. The side opposite the 30-degree angle is labeled as 'x'. The side adjacent to the 30-degree angle is labeled as 8\\u221a3.\"\n  ],\n  \"image_type\": \"geo\",\n  \"items\": {\n    \"shape\": {\n      \"text_annotations\": [\n        \"30\\u00b0\",\n        \"y\",\n        \"x\",\n        \"8\\u221a3\",\n        \"5.\"\n      ]\n    }\n  }\n}\n</metadata>\n<defs/>\n  <g id=\"lines\">\n    <line id=\"line_1\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"146.0\" x2=\"399.0\" y1=\"85.0\" y2=\"86.0\"/>\n    <line id=\"line_2\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"146.0\" x2=\"399.0\" y1=\"85.0\" y2=\"208.0\"/>\n    <line id=\"line_3\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"398.0\" x2=\"397.0\" y1=\"210.0\" y2=\"85.0\"/>\n  </g>\n  <g id=\"points\">\n    <circle cx=\"146.0\" cy=\"85.0\" fill=\"rgb(0,0,0)\" id=\"point_1\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"397.9800330137769\" cy=\"207.5041267221129\" fill=\"rgb(0,0,0)\" id=\"point_2\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"397.00793700986594\" cy=\"85.99212623324057\" fill=\"rgb(0,0,0)\" id=\"point_3\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n  </g>\n  <g id=\"right_angles\">\n    <g id=\"right_angle1\">\n      <line id=\"line_right_angle1_l1\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"384\" x2=\"384\" y1=\"85\" y2=\"98\"/>\n      <line id=\"line_right_angle1_l2\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"397\" x2=\"384\" y1=\"98\" y2=\"98\"/>\n    </g>\n  </g>\n  <g id=\"texts\">\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_1\" x=\"302.3631591796875\" y=\"57.900970458984375\">8\u221a3</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_2\" x=\"52.7890625\" y=\"78.63749694824219\">5</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_3\" x=\"61.162498474121094\" y=\"84.4625015258789\">0</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_4\" x=\"251.203125\" y=\"95.02030944824219\">0</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_5\" x=\"232.27188110351562\" y=\"103.02969360351562\">30</text>\n    <text fill=\"#000000\" font-size=\"10px\" id=\"label_6\" x=\"417.5797119140625\" y=\"144.1687469482422\">X</text>\n  </g>\n</svg>",
+                "title": "Right Triangle",
+                "summary": [
+                    "The image shows a right triangle with labeled sides and angles."
+                ],
+                "short_desc": [
+                    "A right triangle with one angle labeled as 30 degrees and one side labeled as 8\u221a3. The other two sides are labeled as x and y."
+                ],
+                "long_desc": [
+                    "The image depicts a right triangle. One angle is labeled as 30 degrees. The side opposite the right angle is labeled as 'y'. The side opposite the 30-degree angle is labeled as 'x'. The side adjacent to the 30-degree angle is labeled as 8\u221a3."
+                ]
+            }
+        },
+        {
+            "type": "svgNode",
+            "attrs": {
+                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 466 360\" style=\"max-width:100%;height:auto;\">\n  <metadata>\n{\n  \"source\": \"UNAR AI v2\",\n  \"title\": \"Right Triangle\",\n  \"summary\": [\n    \"The image shows a right triangle with labeled sides and an angle.\"\n  ],\n  \"short_desc\": [\n    \"A right triangle with one angle labeled as x degrees, and two sides labeled as 14 and 17.\"\n  ],\n  \"long_desc\": [\n    \"A right triangle is shown. The vertical side is labeled 14, the horizontal side is labeled 17, and one of the acute angles is labeled x degrees.\"\n  ],\n  \"image_type\": \"geo\",\n  \"items\": {\n    \"shape\": {\n      \"text_annotations\": [\n        \"14\",\n        \"17\",\n        \"x\"\n      ]\n    }\n  }\n}\n</metadata>\n<defs/>\n  <g id=\"lines\">\n    <line id=\"line_1\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"132.0\" x2=\"416.0\" y1=\"91.0\" y2=\"92.0\"/>\n    <line id=\"line_2\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"134.0\" x2=\"134.0\" y1=\"310.0\" y2=\"90.0\"/>\n    <line id=\"line_3\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"134.0\" x2=\"416.0\" y1=\"310.0\" y2=\"90.0\"/>\n  </g>\n  <g id=\"points\">\n    <circle cx=\"134.0\" cy=\"91.00704225352115\" fill=\"rgb(0,0,0)\" id=\"point_1\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"413.44788247665787\" cy=\"91.99101367069247\" fill=\"rgb(0,0,0)\" id=\"point_2\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"134.0\" cy=\"310.0\" fill=\"rgb(0,0,0)\" id=\"point_3\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n  </g>\n  <g id=\"right_angles\">\n    <g id=\"right_angle1\">\n      <line id=\"line_right_angle1_l1\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"155\" x2=\"155\" y1=\"91\" y2=\"113\"/>\n      <line id=\"line_right_angle1_l2\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"134\" x2=\"155\" y1=\"113\" y2=\"113\"/>\n    </g>\n  </g>\n  <g id=\"texts\">\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_1\" x=\"247.5625\" y=\"59.342185974121094\">17</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_2\" x=\"307.2371826171875\" y=\"123.22920227050781\">1</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_3\" x=\"74.99687194824219\" y=\"191.86093139648438\">14</text>\n  </g>\n</svg>",
+                "title": "Right Triangle",
+                "summary": [
+                    "The image shows a right triangle with labeled sides and an angle."
+                ],
+                "short_desc": [
+                    "A right triangle with one angle labeled as x degrees, and two sides labeled as 14 and 17."
+                ],
+                "long_desc": [
+                    "A right triangle is shown. The vertical side is labeled 14, the horizontal side is labeled 17, and one of the acute angles is labeled x degrees."
+                ]
+            }
+        },
+        {
+            "type": "svgNode",
+            "attrs": {
+                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 360 531\" style=\"max-width:100%;height:auto;\">\n  <metadata>\n{\n  \"source\": \"UNAR AI v2\",\n  \"title\": \"Right Triangle\",\n  \"summary\": [\n    \"The image shows a right triangle with labeled sides and angles.\"\n  ],\n  \"short_desc\": [\n    \"A right triangle with one angle labeled as 52 degrees, the hypotenuse labeled as 40, and the adjacent side labeled as x.\"\n  ],\n  \"long_desc\": [\n    \"The image depicts a right triangle. One of the acute angles is labeled as 52 degrees. The hypotenuse of the triangle is labeled with a length of 40. The side adjacent to the 52-degree angle is labeled as x, representing an unknown length.\"\n  ],\n  \"image_type\": \"geo\",\n  \"items\": {\n    \"shape\": {\n      \"text_annotations\": [\n        \"40\",\n        \"52\\u00b0\",\n        \"x\"\n      ]\n    }\n  }\n}\n</metadata>\n<defs/>\n  <g id=\"lines\">\n    <line id=\"line_1\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"298.0\" x2=\"301.0\" y1=\"401.0\" y2=\"54.0\"/>\n    <line id=\"line_2\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"68.0\" x2=\"299.0\" y1=\"401.0\" y2=\"400.0\"/>\n    <line id=\"line_3\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"74.0\" x2=\"292.0\" y1=\"393.0\" y2=\"65.0\"/>\n  </g>\n  <g id=\"points\">\n    <circle cx=\"298.0086084287746\" cy=\"400.0042917384036\" fill=\"rgb(0,0,0)\" id=\"point_1\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n  </g>\n  <g id=\"right_angles\">\n    <g id=\"right_angle1\">\n      <line id=\"line_right_angle1_l1\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"298\" x2=\"274\" y1=\"376\" y2=\"376\"/>\n      <line id=\"line_right_angle1_l2\" stroke=\"rgb(255,0,0)\" stroke-width=\"1\" x1=\"274\" x2=\"274\" y1=\"400\" y2=\"376\"/>\n    </g>\n  </g>\n  <g id=\"texts\">\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_1\" x=\"124.86796569824219\" y=\"213.64453125\">40</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_2\" x=\"166.0198974609375\" y=\"361.8243408203125\">520</text>\n    <text fill=\"#000000\" font-size=\"14px\" id=\"label_3\" x=\"185.0203094482422\" y=\"456.328125\">X</text>\n  </g>\n</svg>",
+                "title": "Right Triangle",
+                "summary": [
+                    "The image shows a right triangle with labeled sides and angles."
+                ],
+                "short_desc": [
+                    "A right triangle with one angle labeled as 52 degrees, the hypotenuse labeled as 40, and the adjacent side labeled as x."
+                ],
+                "long_desc": [
+                    "The image depicts a right triangle. One of the acute angles is labeled as 52 degrees. The hypotenuse of the triangle is labeled with a length of 40. The side adjacent to the 52-degree angle is labeled as x, representing an unknown length."
+                ]
+            }
+        }
+    ],
+    "pageNumber": 8,
+    "isEdited": false
+}
