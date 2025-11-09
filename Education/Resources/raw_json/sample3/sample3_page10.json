@@ -1,0 +1,783 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Systems of Equations:"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Substitution:"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solve 1 equation for 1 variable."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Rearrange."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Plug into 2nd equation."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solve for the other variable."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Then plug answer back into an original equation to solve for the 2nd variable."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Ex: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"3x+y=6\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>3</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>6</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x + y = 6"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"2x+2y=4\" display=\"block\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>+</mo>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>y</mi>\n      </mrow>\n    </mrow>\n    <mo>=</mo>\n    <mn>4</mn>\n  </mrow>\n</math>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "2x + 2y = 4"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"3x+y=6\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>3</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>6</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x + y = 6"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " solve 1"
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math><mtext style=\"color: red;\">\u26a0\ufe0f Error in converting latex to mathml \u26a0\ufe0f</mtext></math>",
+                        "mathType": "inline",
+                        "error": true,
+                        "latex": "^{st}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " equation for "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"y\" display=\"inline\">\n  <mi>y</mi>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "y"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"2x-2(6-3x)=4\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>\u2212</mo>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mrow>\n          <mo stretchy=\"false\">(</mo>\n          <mrow>\n            <mn>6</mn>\n            <mo>\u2212</mo>\n            <mrow>\n              <mn>3</mn>\n              <mo>\u2062</mo>\n              <mi>x</mi>\n            </mrow>\n          </mrow>\n          <mo stretchy=\"false\">)</mo>\n        </mrow>\n      </mrow>\n    </mrow>\n    <mo>=</mo>\n    <mn>4</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "2x - 2(6 - 3x) = 4"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " plus into 2"
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math><mtext style=\"color: red;\">\u26a0\ufe0f Error in converting latex to mathml \u26a0\ufe0f</mtext></math>",
+                        "mathType": "inline",
+                        "error": true,
+                        "latex": "^{nd}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " equation"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "opposite"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"2x-12+6x=4\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mrow>\n          <mn>2</mn>\n          <mo>\u2062</mo>\n          <mi>x</mi>\n        </mrow>\n        <mo>\u2212</mo>\n        <mn>12</mn>\n      </mrow>\n      <mo>+</mo>\n      <mrow>\n        <mn>6</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n    </mrow>\n    <mo>=</mo>\n    <mn>4</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "2x - 12 + 6x = 4"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " distribute"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"8x=16\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mn>8</mn>\n      <mo>\u2062</mo>\n      <mi>x</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>16</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "8x = 16"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " simplify"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"x=2\" display=\"block\">\n  <mrow>\n    <mi>x</mi>\n    <mo>=</mo>\n    <mn>2</mn>\n  </mrow>\n</math>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "x = 2"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Plug "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"x=2\" display=\"inline\">\n  <mrow>\n    <mi>x</mi>\n    <mo>=</mo>\n    <mn>2</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x = 2"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " back into original "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"3(2)+y=6\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>3</mn>\n        <mo>\u2062</mo>\n        <mrow>\n          <mo stretchy=\"false\">(</mo>\n          <mn>2</mn>\n          <mo stretchy=\"false\">)</mo>\n        </mrow>\n      </mrow>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>6</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3(2) + y = 6"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"6+y=6\" display=\"block\">\n  <mrow>\n    <mrow>\n      <mn>6</mn>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>6</mn>\n  </mrow>\n</math>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "6 + y = 6"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"y=0\" display=\"block\">\n  <mrow>\n    <mi>y</mi>\n    <mo>=</mo>\n    <mn>0</mn>\n  </mrow>\n</math>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "y = 0"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solution: (2, 0)"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Elimination:"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Find opposite coefficients for 1 variable."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Multiply equation(s) by constant(s)."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Add equations together (lose 1 variable)."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solve for variable."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Ex: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"3x+y=6\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>3</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>6</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x + y = 6"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"2x+2y=4\" display=\"block\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>+</mo>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>y</mi>\n      </mrow>\n    </mrow>\n    <mo>=</mo>\n    <mn>4</mn>\n  </mrow>\n</math>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "2x + 2y = 4"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"6x=2y=12\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mn>6</mn>\n      <mo>\u2062</mo>\n      <mi>x</mi>\n    </mrow>\n    <mo>=</mo>\n    <mrow>\n      <mn>2</mn>\n      <mo>\u2062</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>12</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "6x = 2y = 12"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " multiply 1"
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math><mtext style=\"color: red;\">\u26a0\ufe0f Error in converting latex to mathml \u26a0\ufe0f</mtext></math>",
+                        "mathType": "inline",
+                        "error": true,
+                        "latex": "^{st}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " equation by 2"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"2x-2y=4\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>\u2212</mo>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>y</mi>\n      </mrow>\n    </mrow>\n    <mo>=</mo>\n    <mn>4</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "2x - 2y = 4"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " coefficients of "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"y\" display=\"inline\">\n  <mi>y</mi>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "y"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " are opposite"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"8x=16\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mn>8</mn>\n      <mo>\u2062</mo>\n      <mi>x</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>16</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "8x = 16"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " add"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"x=2\" display=\"inline\">\n  <mrow>\n    <mi>x</mi>\n    <mo>=</mo>\n    <mn>2</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x = 2"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " simplify"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Plug "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"x=2\" display=\"inline\">\n  <mrow>\n    <mi>x</mi>\n    <mo>=</mo>\n    <mn>2</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x = 2"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " back into original "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"3(2)+y=6\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>3</mn>\n        <mo>\u2062</mo>\n        <mrow>\n          <mo stretchy=\"false\">(</mo>\n          <mn>2</mn>\n          <mo stretchy=\"false\">)</mo>\n        </mrow>\n      </mrow>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>6</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3(2) + y = 6"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"6+y=6\" display=\"block\">\n  <mrow>\n    <mrow>\n      <mn>6</mn>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>6</mn>\n  </mrow>\n</math>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "6 + y = 6"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"y=0\" display=\"block\">\n  <mrow>\n    <mi>y</mi>\n    <mo>=</mo>\n    <mn>0</mn>\n  </mrow>\n</math>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "y = 0"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solution: (2, 0)"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solve each system of equations. Use any method."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1. { "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"2x+y=4\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>4</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "2x + y = 4"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"3x+2y=1\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>3</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>+</mo>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>y</mi>\n      </mrow>\n    </mrow>\n    <mo>=</mo>\n    <mn>1</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x + 2y = 1"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " }"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2. { "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"2x+y=4\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>+</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>4</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "2x + y = 4"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"3x-y=14\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>3</mn>\n        <mo>\u2062</mo>\n        <mi>x</mi>\n      </mrow>\n      <mo>\u2212</mo>\n      <mi>y</mi>\n    </mrow>\n    <mo>=</mo>\n    <mn>14</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x - y = 14"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " }"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3. { "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"2w-5z=13\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>2</mn>\n        <mo>\u2062</mo>\n        <mi>w</mi>\n      </mrow>\n      <mo>\u2212</mo>\n      <mrow>\n        <mn>5</mn>\n        <mo>\u2062</mo>\n        <mi>z</mi>\n      </mrow>\n    </mrow>\n    <mo>=</mo>\n    <mn>13</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "2w - 5z = 13"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"6w+3z=10\" display=\"inline\">\n  <mrow>\n    <mrow>\n      <mrow>\n        <mn>6</mn>\n        <mo>\u2062</mo>\n        <mi>w</mi>\n      </mrow>\n      <mo>+</mo>\n      <mrow>\n        <mn>3</mn>\n        <mo>\u2062</mo>\n        <mi>z</mi>\n      </mrow>\n    </mrow>\n    <mo>=</mo>\n    <mn>10</mn>\n  </mrow>\n</math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "6w + 3z = 10"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " }"
+                }
+            ]
+        }
+    ],
+    "pageNumber": 10,
+    "isEdited": false
+}

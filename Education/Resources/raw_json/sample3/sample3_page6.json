@@ -1,0 +1,620 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "7. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"a^{2}-14a+49\" display=\"inline\"><mrow><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>\u2212</mo><mrow><mn>14</mn><mo>\u2062</mo><mi>a</mi></mrow></mrow><mo>+</mo><mn>49</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a^2 - 14a + 49"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " ____________________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "8. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m2\" class=\"ltx_Math\" alttext=\"x^{2}+20x+100\" display=\"inline\"><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mrow><mn>20</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>100</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 + 20x + 100"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " _____"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "9. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m3\" class=\"ltx_Math\" alttext=\"25x^{2}-10x+1\" display=\"inline\"><mrow><mrow><mrow><mn>25</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>10</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>1</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "25x^2 - 10x + 1"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " ____________________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "10. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m4\" class=\"ltx_Math\" alttext=\"2x^{2}-11x+5\" display=\"inline\"><mrow><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>11</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>5</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "2x^2 - 11x + 5"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " ____________________"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solving Quadratics - To solve quadratic equations, try to factor first and set each factor equal to zero. Solve for your variable. If the quadratic does NOT factor, use the quadratic formula."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Ex: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m5\" class=\"ltx_Math\" alttext=\"x^{2}-4x=20\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2212</mo><mrow><mn>4</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>=</mo><mn>20</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 - 4x = 20"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " set equal to zero FIRST"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m6\" class=\"ltx_Math\" alttext=\"x^{2}-4x-20=0\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2212</mo><mrow><mn>4</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>\u2212</mo><mn>20</mn></mrow><mo>=</mo><mn>0</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 - 4x - 20 = 0"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " factor (if possible)"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m7\" class=\"ltx_Math\" alttext=\"(x+3)(x-7)=0\" display=\"inline\"><mrow><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>\u2212</mo><mn>7</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mn>0</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(x + 3)(x - 7) = 0"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " set each factor equal to zero"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx1\" class=\"ltx_equation ltx_eqn_table\" display=\"block\">\n\n<tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\">\n<td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/>\n<td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"x+3=0\" display=\"block\"><mrow><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow><mo>=</mo><mn>0</mn></mrow></math></td>\n<td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody>\n</table>\n",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "x + 3 = 0"
+                    }
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m8\" class=\"ltx_Math\" alttext=\"x-7=0\" display=\"inline\"><mrow><mrow><mi>x</mi><mo>\u2212</mo><mn>7</mn></mrow><mo>=</mo><mn>0</mn></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x - 7 = 0"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " solve each for "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m9\" class=\"ltx_Math\" alttext=\"x\" display=\"inline\"><mi>x</mi></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx2\" class=\"ltx_equation ltx_eqn_table\" display=\"block\">\n\n<tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\">\n<td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/>\n<td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx2.m1\" class=\"ltx_Math\" alttext=\"x=-3\" display=\"block\"><mrow><mi>x</mi><mo>=</mo><mrow><mo>\u2212</mo><mn>3</mn></mrow></mrow></math></td>\n<td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody>\n</table>\n",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "x = -3"
+                    }
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx3\" class=\"ltx_equation ltx_eqn_table\" display=\"block\">\n\n<tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\">\n<td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/>\n<td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx3.m1\" class=\"ltx_Math\" alttext=\"x=7\" display=\"block\"><mrow><mi>x</mi><mo>=</mo><mn>7</mn></mrow></math></td>\n<td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody>\n</table>\n",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "x = 7"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Quadratic Formula- allows you to solve any quadratic for all its real and imaginary roots. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m10\" class=\"ltx_Math\" alttext=\"x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}\" display=\"inline\"><mrow><mi>x</mi><mo>=</mo><mfrac><mrow><mrow><mo>\u2212</mo><mi>b</mi></mrow><mo>\u00b1</mo><msqrt><mrow><msup><mi>b</mi><mn>2</mn></msup><mo>\u2212</mo><mrow><mn>4</mn><mo>\u2062</mo><mi>a</mi><mo>\u2062</mo><mi>c</mi></mrow></mrow></msqrt></mrow><mrow><mn>2</mn><mo>\u2062</mo><mi>a</mi></mrow></mfrac></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Ex: Solve "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m11\" class=\"ltx_Math\" alttext=\"x^{2}+2x+3=0\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mrow><mn>2</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>3</mn></mrow><mo>=</mo><mn>0</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 + 2x + 3 = 0"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m12\" class=\"ltx_Math\" alttext=\"x^{2}+2x+3=0\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mrow><mn>2</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>3</mn></mrow><mo>=</mo><mn>0</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 + 2x + 3 = 0"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " cannot be factored"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m13\" class=\"ltx_Math\" alttext=\"a=1\\ b=2\\ c=3\" display=\"inline\"><mrow><mi>a</mi><mo>=</mo><mrow><mn>1</mn><mo lspace=\"0.500em\">\u2062</mo><mi>b</mi></mrow><mo>=</mo><mrow><mn>2</mn><mo lspace=\"0.500em\">\u2062</mo><mi>c</mi></mrow><mo>=</mo><mn>3</mn></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a=1 \\ b=2 \\ c=3"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " determine the values for "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m14\" class=\"ltx_Math\" alttext=\"a\" display=\"inline\"><mi>a</mi></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ", "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m15\" class=\"ltx_Math\" alttext=\"b\" display=\"inline\"><mi>b</mi></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "b"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ", and "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m16\" class=\"ltx_Math\" alttext=\"c\" display=\"inline\"><mi>c</mi></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "c"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m17\" class=\"ltx_Math\" alttext=\"x=\\frac{-2\\pm\\sqrt{(2)^{2}-4(1)(3)}}{2(1)}\" display=\"inline\"><mrow><mi>x</mi><mo>=</mo><mfrac><mrow><mrow><mo>\u2212</mo><mn>2</mn></mrow><mo>\u00b1</mo><msqrt><mrow><msup><mrow><mo stretchy=\"false\">(</mo><mn>2</mn><mo stretchy=\"false\">)</mo></mrow><mn>2</mn></msup><mo>\u2212</mo><mrow><mn>4</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mn>1</mn><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mn>3</mn><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></msqrt></mrow><mrow><mn>2</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mn>1</mn><mo stretchy=\"false\">)</mo></mrow></mrow></mfrac></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x = \\frac{-2 \\pm \\sqrt{(2)^2 - 4(1)(3)}}{2(1)}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " substitute "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m18\" class=\"ltx_Math\" alttext=\"a\" display=\"inline\"><mi>a</mi></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "a"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ", "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m19\" class=\"ltx_Math\" alttext=\"b\" display=\"inline\"><mi>b</mi></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "b"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ", and "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m20\" class=\"ltx_Math\" alttext=\"c\" display=\"inline\"><mi>c</mi></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "c"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " into the quadratic formula"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m21\" class=\"ltx_Math\" alttext=\"x=\\frac{-2\\pm\\sqrt{-8}}{2}\" display=\"inline\"><mrow><mi>x</mi><mo>=</mo><mfrac><mrow><mrow><mo>\u2212</mo><mn>2</mn></mrow><mo>\u00b1</mo><msqrt><mrow><mo>\u2212</mo><mn>8</mn></mrow></msqrt></mrow><mn>2</mn></mfrac></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x = \\frac{-2 \\pm \\sqrt{-8}}{2}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " = "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m22\" class=\"ltx_Math\" alttext=\"\\frac{-2\\pm i\\sqrt{8}}{2}\" display=\"inline\"><mfrac><mrow><mrow><mo>\u2212</mo><mn>2</mn></mrow><mo>\u00b1</mo><mrow><mi>i</mi><mo>\u2062</mo><msqrt><mn>8</mn></msqrt></mrow></mrow><mn>2</mn></mfrac></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "\\frac{-2 \\pm i\\sqrt{8}}{2}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " = "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m23\" class=\"ltx_Math\" alttext=\"\\frac{-2\\pm 2i\\sqrt{2}}{2}\" display=\"inline\"><mfrac><mrow><mrow><mo>\u2212</mo><mn>2</mn></mrow><mo>\u00b1</mo><mrow><mn>2</mn><mo>\u2062</mo><mi>i</mi><mo>\u2062</mo><msqrt><mn>2</mn></msqrt></mrow></mrow><mn>2</mn></mfrac></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "\\frac{-2 \\pm 2i\\sqrt{2}}{2}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " = "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m24\" class=\"ltx_Math\" alttext=\"-1\\pm i\\sqrt{2}\" display=\"inline\"><mrow><mrow><mo>\u2212</mo><mn>1</mn></mrow><mo>\u00b1</mo><mrow><mi>i</mi><mo>\u2062</mo><msqrt><mn>2</mn></msqrt></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "-1 \\pm i\\sqrt{2}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m25\" class=\"ltx_Math\" alttext=\"x=-1+i\\sqrt{2}\" display=\"inline\"><mrow><mi>x</mi><mo>=</mo><mrow><mrow><mo>\u2212</mo><mn>1</mn></mrow><mo>+</mo><mrow><mi>i</mi><mo>\u2062</mo><msqrt><mn>2</mn></msqrt></mrow></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x = -1 + i\\sqrt{2}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " and "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m26\" class=\"ltx_Math\" alttext=\"x=-1-i\\sqrt{2}\" display=\"inline\"><mrow><mi>x</mi><mo>=</mo><mrow><mrow><mo>\u2212</mo><mn>1</mn></mrow><mo>\u2212</mo><mrow><mi>i</mi><mo>\u2062</mo><msqrt><mn>2</mn></msqrt></mrow></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x = -1 - i\\sqrt{2}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solve."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m27\" class=\"ltx_Math\" alttext=\"x^{2}+10=7x\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mn>10</mn></mrow><mo>=</mo><mrow><mn>7</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 + 10 = 7x"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m28\" class=\"ltx_Math\" alttext=\"x^{2}-10=-3x\" display=\"inline\"><mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>\u2212</mo><mn>10</mn></mrow><mo>=</mo><mrow><mo>\u2212</mo><mrow><mn>3</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 - 10 = -3x"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m29\" class=\"ltx_Math\" alttext=\"3x^{2}-7x+8=0\" display=\"inline\"><mrow><mrow><mrow><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>7</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>8</mn></mrow><mo>=</mo><mn>0</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3x^2 - 7x + 8 = 0"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "4. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m30\" class=\"ltx_Math\" alttext=\"4x^{2}-6x+1=0\" display=\"inline\"><mrow><mrow><mrow><mrow><mn>4</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>6</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>1</mn></mrow><mo>=</mo><mn>0</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "4x^2 - 6x + 1 = 0"
+                    }
+                }
+            ]
+        }
+    ],
+    "pageNumber": 6,
+    "isEdited": false
+}

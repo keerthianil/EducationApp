@@ -1,0 +1,325 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 1
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Gaithersburg High School Summer 2019 Math Packet For Rising Pre-Calculus Students"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "This packet contains REVIEW material. These are expected skills for Pre-Calculus and will NOT be the focus of class. Refer to your Geometry and Algebra 2 notebooks for additional support."
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Algebra"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1. Simplify: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m1\" class=\"ltx_Math\" alttext=\"2^{3}+4(7-3)\" display=\"inline\"><mrow><msup><mn>2</mn><mn>3</mn></msup><mo>+</mo><mrow><mn>4</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mn>7</mn><mo>\u2212</mo><mn>3</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "2^3 + 4(7 - 3)"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " \u00f7 "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m2\" class=\"ltx_Math\" alttext=\"8\" display=\"inline\"><mn>8</mn></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "8"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2. Evaluate: "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m3\" class=\"ltx_Math\" alttext=\"3y^{3}+2y^{2}-y+7\" display=\"inline\"><mrow><mrow><mrow><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>y</mi><mn>3</mn></msup></mrow><mo>+</mo><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>y</mi><mn>2</mn></msup></mrow></mrow><mo>\u2212</mo><mi>y</mi></mrow><mo>+</mo><mn>7</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3y^3 + 2y^2 - y + 7"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " if "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m4\" class=\"ltx_Math\" alttext=\"y=-4\" display=\"inline\"><mrow><mi>y</mi><mo>=</mo><mrow><mo>\u2212</mo><mn>4</mn></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "y = -4"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Solve each equation."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m5\" class=\"ltx_Math\" alttext=\"5-(4-2x)=2x+8\" display=\"inline\"><mrow><mrow><mn>5</mn><mo>\u2212</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mn>4</mn><mo>\u2212</mo><mrow><mn>2</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mrow><mn>2</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>8</mn></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "5 - (4 - 2x) = 2x + 8"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "4. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m6\" class=\"ltx_Math\" alttext=\"3(1+x)=2[3(x+2)-(x+1)]\" display=\"inline\"><mrow><mrow><mn>3</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mn>1</mn><mo>+</mo><mi>x</mi></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>=</mo><mrow><mn>2</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">[</mo><mrow><mrow><mn>3</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>2</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>\u2212</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mi>x</mi><mo>+</mo><mn>1</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo stretchy=\"false\">]</mo></mrow></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "3(1 + x) = 2[3(x + 2) - (x + 1)]"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "5. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m7\" class=\"ltx_Math\" alttext=\"\\frac{3}{4}(8x-12)-\\frac{2}{3}(15x+4)=-6x+14\" display=\"inline\"><mrow><mrow><mrow><mfrac><mn>3</mn><mn>4</mn></mfrac><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><mn>8</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>\u2212</mo><mn>12</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow><mo>\u2212</mo><mrow><mfrac><mn>2</mn><mn>3</mn></mfrac><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><mn>15</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>+</mo><mn>4</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></mrow><mo>=</mo><mrow><mrow><mo>\u2212</mo><mrow><mn>6</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>14</mn></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "\\frac{3}{4}(8x - 12) - \\frac{2}{3}(15x + 4) = -6x + 14"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "6. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m8\" class=\"ltx_Math\" alttext=\"5|2x-5|+4=29\" display=\"inline\"><mrow><mrow><mrow><mn>5</mn><mo>\u2062</mo><mrow><mo stretchy=\"false\">|</mo><mrow><mrow><mn>2</mn><mo>\u2062</mo><mi>x</mi></mrow><mo>\u2212</mo><mn>5</mn></mrow><mo stretchy=\"false\">|</mo></mrow></mrow><mo>+</mo><mn>4</mn></mrow><mo>=</mo><mn>29</mn></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "5|2x - 5| + 4 = 29"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "7. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m9\" class=\"ltx_Math\" alttext=\"x^{2}=16\" display=\"inline\"><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>=</mo><mn>16</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "x^2 = 16"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "8. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m10\" class=\"ltx_Math\" alttext=\"25x^{2}=225\" display=\"inline\"><mrow><mrow><mn>25</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>=</mo><mn>225</mn></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "25x^2 = 225"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "9. Solve for "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m11\" class=\"ltx_Math\" alttext=\"h\" display=\"inline\"><mi>h</mi></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "h"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ": "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m12\" class=\"ltx_Math\" alttext=\"T=2\\pi rh+2\\pi r^{2}\" display=\"inline\"><mrow><mi>T</mi><mo>=</mo><mrow><mrow><mn>2</mn><mo>\u2062</mo><mi>\u03c0</mi><mo>\u2062</mo><mi>r</mi><mo>\u2062</mo><mi>h</mi></mrow><mo>+</mo><mrow><mn>2</mn><mo>\u2062</mo><mi>\u03c0</mi><mo>\u2062</mo><msup><mi>r</mi><mn>2</mn></msup></mrow></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "T = 2\\pi r h + 2\\pi r^2"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Multiply: 10. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m13\" class=\"ltx_Math\" alttext=\"(2r-3s)(5r+7s)\" display=\"inline\"><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><mn>2</mn><mo>\u2062</mo><mi>r</mi></mrow><mo>\u2212</mo><mrow><mn>3</mn><mo>\u2062</mo><mi>s</mi></mrow></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><mn>5</mn><mo>\u2062</mo><mi>r</mi></mrow><mo>+</mo><mrow><mn>7</mn><mo>\u2062</mo><mi>s</mi></mrow></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math> ",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(2r - 3s)(5r + 7s)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "11. "
+                },
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<math id=\"p1.m14\" class=\"ltx_Math\" alttext=\"(h^{2}+6h-7)(2h^{2}+7h+10)\" display=\"inline\"><mrow><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><msup><mi>h</mi><mn>2</mn></msup><mo>+</mo><mrow><mn>6</mn><mo>\u2062</mo><mi>h</mi></mrow></mrow><mo>\u2212</mo><mn>7</mn></mrow><mo stretchy=\"false\">)</mo></mrow><mo>\u2062</mo><mrow><mo stretchy=\"false\">(</mo><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>h</mi><mn>2</mn></msup></mrow><mo>+</mo><mrow><mn>7</mn><mo>\u2062</mo><mi>h</mi></mrow><mo>+</mo><mn>10</mn></mrow><mo stretchy=\"false\">)</mo></mrow></mrow></math>",
+                        "mathType": "inline",
+                        "error": false,
+                        "latex": "(h^2 + 6h - 7)(2h^2 + 7h + 10)"
+                    }
+                }
+            ]
+        }
+    ],
+    "pageNumber": 1,
+    "isEdited": false
+}

@@ -1,0 +1,267 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 1
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Geometry"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Determine the distance between the following pairs of points."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1. (2, 6) and (5, 9)"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2. (-3, 6) and (2, 1)"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3. (-1, -1) and (-2, -5)"
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Long Division \u2013 can be used when dividing any polynomials."
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Synthetic Division \u2013 can ONLY be used when dividing a polynomial by a linear (degree one) polynomial."
+                }
+            ]
+        },
+        {
+            "type": "heading",
+            "attrs": {
+                "level": 3
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Synthetic Division \u2013 can ONLY be used when dividing a polynomial by a linear (degree one) polynomial."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Ex:"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "equation"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx1\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx1.m1\" class=\"ltx_Math\" alttext=\"\\frac{2x^{3}+3x^{2}-6x+10}{x+3}\" display=\"block\"><mfrac><mrow><mrow><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>x</mi><mn>3</mn></msup></mrow><mo>+</mo><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow></mrow><mo>\u2212</mo><mrow><mn>6</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>10</mn></mrow><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow></mfrac></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "\\frac{2x^3 + 3x^2 - 6x + 10}{x + 3}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Long Division"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "equation"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx2\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx2.m1\" class=\"ltx_Math\" alttext=\"\\frac{2x^{3}+3x^{2}-6x+10}{x+3}\" display=\"block\"><mfrac><mrow><mrow><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>x</mi><mn>3</mn></msup></mrow><mo>+</mo><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow></mrow><mo>\u2212</mo><mrow><mn>6</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>10</mn></mrow><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow></mfrac></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "\\frac{2x^3 + 3x^2 - 6x + 10}{x + 3}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "x + 3 ) 2x^3 + 3x^2 - 6x + 10"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "equation"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx3\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx3.m1\" class=\"ltx_Math\" alttext=\"2x^{2}-3x+3+\\frac{1}{x+3}\" display=\"block\"><mrow><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><mo>\u2212</mo><mrow><mn>3</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>3</mn><mo>+</mo><mfrac><mn>1</mn><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow></mfrac></mrow></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "2x^2 - 3x + 3 + \\frac{1}{x+3}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Synthetic Division"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "equation"
+            },
+            "content": [
+                {
+                    "type": "math",
+                    "attrs": {
+                        "mathml": "<table id=\"equationx4\" class=\"ltx_equation ltx_eqn_table\" display=\"block\"><tbody><tr class=\"ltx_equation ltx_eqn_row ltx_align_baseline\"><td class=\"ltx_eqn_cell ltx_eqn_center_padleft\"/><td class=\"ltx_eqn_cell ltx_align_center\"><math id=\"equationx4.m1\" class=\"ltx_Math\" alttext=\"\\frac{2x^{3}+3x^{2}-6x+10}{x+3}\" display=\"block\"><mfrac><mrow><mrow><mrow><mrow><mn>2</mn><mo>\u2062</mo><msup><mi>x</mi><mn>3</mn></msup></mrow><mo>+</mo><mrow><mn>3</mn><mo>\u2062</mo><msup><mi>x</mi><mn>2</mn></msup></mrow></mrow><mo>\u2212</mo><mrow><mn>6</mn><mo>\u2062</mo><mi>x</mi></mrow></mrow><mo>+</mo><mn>10</mn></mrow><mrow><mi>x</mi><mo>+</mo><mn>3</mn></mrow></mfrac></math></td><td class=\"ltx_eqn_cell ltx_eqn_center_padright\"/></tr></tbody></table>",
+                        "mathType": "block",
+                        "error": false,
+                        "latex": "\\frac{2x^3 + 3x^2 - 6x + 10}{x + 3}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Divide each polynomial using long division OR synthetic division."
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "1. \\frac{c^3 - 3c^2 + 18c - 16}{c^2 + 3c - 2}"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2. \\frac{x^4 - 2x^2 - x + 2}{x + 2}"
+                }
+            ]
+        },
+        {
+            "type": "paragraph",
+            "attrs": {
+                "contentType": "body_text"
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "3. \\frac{(x^3 - 7x^2 + 14x - 8)}{(x - 4)}"
+                }
+            ]
+        }
+    ],
+    "pageNumber": 7,
+    "isEdited": false
+}
