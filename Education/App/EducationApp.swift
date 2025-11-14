@@ -14,6 +14,7 @@ struct EducationApp: App {
                 .environmentObject(haptics)
                 .environmentObject(speech)
                 .environmentObject(mathSpeech)
+                .preferredColorScheme(.light) 
         }
     }
 }

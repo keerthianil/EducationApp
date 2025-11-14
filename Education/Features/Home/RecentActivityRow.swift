@@ -17,15 +17,18 @@ struct RecentActivityRow: View {
             Image(systemName: "doc")
                 .foregroundColor(ColorTokens.primary)
             VStack(alignment: .leading) {
-                Text(filename).font(Typography.body)
-                Text(when).font(Typography.caption1).foregroundColor(ColorTokens.textSecondary)
+                Text(filename).font(Typography.body).foregroundColor(ColorTokens.textPrimaryAdaptive)
+                Text(when).font(Typography.caption1).foregroundColor(ColorTokens.textSecondaryAdaptive)
             }
             Spacer()
-            Image(systemName: "ellipsis")
-                .accessibilityHidden(true)
+            Image(systemName: "ellipsis").accessibilityHidden(true)
         }
         .padding(Spacing.small)
-        .background(ColorTokens.surface1)
+        .background(ColorTokens.surfaceAdaptive)
+        .overlay(
+            RoundedRectangle(cornerRadius: Spacing.cornerRadiusSmall)
+                .stroke(ColorTokens.borderAdaptive, lineWidth: 1)
+        )
         .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusSmall))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(filename). \(when).")
