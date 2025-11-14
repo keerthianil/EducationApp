@@ -17,28 +17,26 @@ struct AuthenticationView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                ColorTokens.authCardBackground
-                    .ignoresSafeArea()
+        ZStack {
+            ColorTokens.authCardBackground
+                .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    headerImageSection
-                    authBottomSheet
-                        .padding(.top, -24)
-                }
-
-                // Hidden navigation link to NameQuestionView
-                NavigationLink(
-                    destination: NameQuestionView(),
-                    isActive: $goToNameScreen
-                ) {
-                    EmptyView()
-                }
-                .hidden()
+            VStack(spacing: 0) {
+                headerImageSection
+                authBottomSheet
+                    .padding(.top, -24)
             }
-            .navigationBarHidden(true)
+
+            // Hidden navigation link to NameQuestionView
+            NavigationLink(
+                destination: NameQuestionView(),
+                isActive: $goToNameScreen
+            ) {
+                EmptyView()
+            }
+            .hidden()
         }
+        .navigationBarBackButtonHidden(true)
     }
 
     // MARK: - Header Image + Close Button

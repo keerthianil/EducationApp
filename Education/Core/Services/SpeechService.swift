@@ -8,7 +8,6 @@ import Foundation
 import Foundation
 import Combine
 import AVFoundation
-import UIKit
 
 final class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private let synth = AVSpeechSynthesizer()
@@ -17,26 +16,9 @@ final class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelega
     override init() {
         super.init()
         synth.delegate = self
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(voChanged),
-            name: UIAccessibility.voiceOverStatusDidChangeNotification,
-            object: nil
-        )
     }
 
-    @objc private func voChanged() {
-        if UIAccessibility.isVoiceOverRunning {
-            stop(immediate: true)
-        }
-    }
-
-    /// Speak text. If VoiceOver is on, let VO handle announcements.
     func speak(_ text: String, rate: Float = 0.5) {
-        if UIAccessibility.isVoiceOverRunning {
-            UIAccessibility.post(notification: .announcement, argument: text)
-            return
-        }
         if synth.isSpeaking { synth.stopSpeaking(at: .immediate) }
         let utt = AVSpeechUtterance(string: text)
         utt.voice = AVSpeechSynthesisVoice(language: AVSpeechSynthesisVoice.currentLanguageCode())
@@ -44,13 +26,13 @@ final class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelega
         synth.speak(utt)
     }
 
-    func stop(immediate: Bool = true) {
-        if UIAccessibility.isVoiceOverRunning { return }
+    func stop(immediate: Bool) {
         synth.stopSpeaking(at: immediate ? .immediate : .word)
+        isSpeaking = false
     }
 
-    // Delegate
-    func speechSynthesizer(_ s: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) { isSpeaking = true }
-    func speechSynthesizer(_ s: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) { isSpeaking = false }
-    func speechSynthesizer(_ s: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) { isSpeaking = false }
+    // delegate
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didStart utt: AVSpeechUtterance) { isSpeaking = true }
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didFinish utt: AVSpeechUtterance) { isSpeaking = false }
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didCancel utt: AVSpeechUtterance) { isSpeaking = false }
 }

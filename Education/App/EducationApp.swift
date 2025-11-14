@@ -9,13 +9,15 @@ struct EducationApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack {  // ← ADD THIS LINE!
+            // 🔹 Root navigation of the whole app
+            NavigationStack {
                 AboutView()
-            }  // ← AND THIS CLOSING BRACE!
+            }
             .environmentObject(lessonStore)
             .environmentObject(haptics)
             .environmentObject(speech)
             .environmentObject(mathSpeech)
+            .preferredColorScheme(.light)
         }
     }
 }
