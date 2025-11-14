@@ -13,13 +13,14 @@ public struct PrimaryButtonStyle: ButtonStyle {
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Typography.bodyBold)
-            .foregroundColor(ColorTokens.textLight)
+            .foregroundColor(ColorTokens.buttonText)               // ⟵ was textLight
             .frame(maxWidth: .infinity)
             .frame(height: Spacing.buttonHeight)
-            .background(ColorTokens.primary)
-            .cornerRadius(Spacing.cornerRadius)
-            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .background(ColorTokens.buttonPrimary)                  // brand teal
+            .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadius))
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
             .accessibilityAddTraits(.isButton)
+            .contentShape(Rectangle())
     }
 }
 
@@ -28,12 +29,13 @@ public struct SecondaryButtonStyle: ButtonStyle {
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Typography.bodyBold)
-            .foregroundColor(ColorTokens.textPrimary)
+            .foregroundColor(ColorTokens.buttonSecondaryText)       // ⟵ dynamic label color
             .frame(maxWidth: .infinity)
             .frame(height: Spacing.buttonHeight)
-            .background(ColorTokens.surface1)
-            .cornerRadius(Spacing.cornerRadius)
-            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .background(ColorTokens.buttonSecondary)                 // dynamic surface
+            .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadius))
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
             .accessibilityAddTraits(.isButton)
+            .contentShape(Rectangle())
     }
 }
