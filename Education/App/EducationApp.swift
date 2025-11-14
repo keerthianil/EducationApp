@@ -9,11 +9,13 @@ struct EducationApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DashboardView()
-                .environmentObject(lessonStore)
-                .environmentObject(haptics)
-                .environmentObject(speech)
-                .environmentObject(mathSpeech)
+            NavigationStack {  // ← ADD THIS LINE!
+                AboutView()
+            }  // ← AND THIS CLOSING BRACE!
+            .environmentObject(lessonStore)
+            .environmentObject(haptics)
+            .environmentObject(speech)
+            .environmentObject(mathSpeech)
         }
     }
 }

@@ -25,7 +25,26 @@ import SwiftUI
 public enum ColorTokens {
     
     // MARK: - Primary Colors (Teal/Cyan)
+        // MARK: - Auth / Login Screen Colors
     
+    /// Auth card background (white card)
+    public static let authCardBackground = Color.white
+    
+    /// Text field / Google button border (#EDEDED)
+    public static let authFieldBorder = Color(hex: "#EDEDED")
+    
+    /// Divider line under "OR" (#E9E9E9)
+    public static let authDivider = Color(hex: "#E9E9E9")
+    
+    /// Checkbox border (#969696)
+    public static let authCheckboxBorder = Color(hex: "#969696")
+    
+    /// Primary auth button green (#167423)
+    public static let authPrimaryGreen = Color(hex: "#167423")
+    
+    /// Secondary gray label text used in the switch / subtle text (#969696)
+    public static let authSecondaryText = Color(hex: "#969696")
+
     /// Primary brand color - Dark Teal
     /// Hex: #1C636F
     /// Use for: Main actions, primary buttons, brand emphasis
