@@ -7,201 +7,294 @@
 
 import SwiftUI
 
+/// Worksheet-style reader used for JSON worksheets (all three samples).
+/// - Each JSON file = one "page".
+/// - Inside a page, every Node (heading / paragraph / image / equation / svg)
+///   becomes its own white card block, so VoiceOver moves block-by-block.
 struct WorksheetView: View {
     let title: String
-    /// pages[pageIndex] = array of items on that page
+    /// Outer index = page index (0-based), inner array = all WorksheetItems on that page.
+    /// Each WorksheetItem just groups the raw `Node` list for that page.
     let pages: [[WorksheetItem]]
 
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var speech: SpeechService
 
-    @State private var searchText: String = ""
-    @State private var currentPage: Int = 0        // swipe left / right between JSON pages
+    /// Current page index (0-based)
+    @State private var currentPage: Int = 0
+    /// Global TTS state for "play entire page"
+    @State private var isPlayingPage = false
 
-    // Filter items **within one page**
-    private func filteredItems(on pageIndex: Int) -> [WorksheetItem] {
-        guard pages.indices.contains(pageIndex) else { return [] }
-        let items = pages[pageIndex]
+    // Convenience: safe current page index even if pages is empty.
+    private var safePageIndex: Int {
+        guard !pages.isEmpty else { return 0 }
+        return min(max(currentPage, 0), pages.count - 1)
+    }
 
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return items }
-
-        return items.filter { $0.matches(search: trimmed) }
+    /// All items on the currently selected page.
+    private var currentItems: [WorksheetItem] {
+        guard pages.indices.contains(safePageIndex) else { return [] }
+        return pages[safePageIndex]
     }
 
     var body: some View {
         ZStack {
-            ColorTokens.backgroundAdaptive.ignoresSafeArea()
+            ColorTokens.backgroundAdaptive
+                .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: Spacing.large) {
-                // Title at top – big header in Figma
-                Text(title)
-                    .font(Typography.heading1)
-                    .foregroundColor(ColorTokens.textPrimaryAdaptive)
-                    .padding(.top, Spacing.large)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.large) {
 
-                // Search + Filter row (top bar in Figma)
-                HStack(spacing: Spacing.small) {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
+                    // Big worksheet title at the top
+                    Text(title)
+                        .font(Typography.heading1)
+                        .foregroundColor(ColorTokens.textPrimaryAdaptive)
+                        .padding(.top, Spacing.large)
+                        .accessibilityAddTraits(.isHeader)
+
+                    // Page indicator ("Page 1 of 2")
+                    if !pages.isEmpty {
+                        Text("Page \(safePageIndex + 1) of \(pages.count)")
+                            .font(Typography.caption1)
                             .foregroundColor(ColorTokens.textSecondaryAdaptive)
-                        TextField("Search…", text: $searchText)
-                            .textInputAutocapitalization(.sentences)
+                            .padding(.bottom, Spacing.small)
                     }
-                    .padding(.horizontal, Spacing.medium)
-                    .frame(height: 44)
-                    .background(ColorTokens.surfaceAdaptive)
-                    .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusLarge))
 
-                    Button {
-                        haptics.tapSelection()
-                        // TODO: hook real filters if needed
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "line.3.horizontal.decrease.circle")
-                            Text("Filter")
-                                .font(Typography.subheadline)
-                        }
-                        .padding(.horizontal, Spacing.medium)
-                        .frame(height: 44)
-                        .background(ColorTokens.surfaceAdaptive)
-                        .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusLarge))
-                    }
-                    .accessibilityLabel("Filter questions")
-                }
-
-                // Page indicator – JSON page based
-                if !pages.isEmpty {
-                    Text("Page \(currentPage + 1) of \(pages.count)")
-                        .font(Typography.caption1)
-                        .foregroundColor(ColorTokens.textSecondaryAdaptive)
-                        .padding(.bottom, Spacing.small)
-                }
-
-                // MAIN CONTENT: swipe left / right to change **page**
-                TabView(selection: $currentPage) {
-                    ForEach(pages.indices, id: \.self) { pageIndex in
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: Spacing.medium) {
-                                ForEach(filteredItems(on: pageIndex)) { item in
-                                    WorksheetQuestionCard(item: item)
+                    // MAIN CONTENT: every node on this page as a separate block
+                    VStack(alignment: .leading, spacing: Spacing.medium) {
+                        ForEach(currentItems) { item in
+                            ForEach(Array(item.nodes.enumerated()), id: \.offset) { _, node in
+                                if !shouldSkipQuestionHeading(node) {    // don't show "Question 1" heading
+                                    NodeBlockView(node: node)
                                 }
                             }
-                            .padding(.horizontal, Spacing.screenPadding)
-                            .padding(.vertical, Spacing.medium)
                         }
-                        .tag(pageIndex)
+                    }
+
+                    // Page navigation buttons – no horizontal swipe.
+                    if pages.count > 1 {
+                        HStack {
+                            Button {
+                                moveToPreviousPage()
+                            } label: {
+                                Text("Previous page")
+                                    .font(Typography.body)
+                            }
+                            .disabled(safePageIndex == 0)
+                            .opacity(safePageIndex == 0 ? 0.4 : 1.0)
+                            .accessibilityHint("Moves to the previous worksheet page.")
+
+                            Spacer()
+
+                            Button {
+                                moveToNextPage()
+                            } label: {
+                                Text(safePageIndex == pages.count - 1 ? "Last page" : "Next page")
+                                    .font(Typography.bodyBold)
+                            }
+                            .disabled(safePageIndex == pages.count - 1)
+                            .opacity(safePageIndex == pages.count - 1 ? 0.4 : 1.0)
+                            .accessibilityHint("Moves to the next worksheet page.")
+                        }
+                        .padding(.top, Spacing.large)
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .automatic))
+                .padding(.horizontal, Spacing.screenPadding)
+                .padding(.bottom, Spacing.xLarge)
             }
-            .padding(.horizontal, Spacing.screenPadding)
-            .padding(.bottom, Spacing.large)
         }
+        .onAppear {
+            announcePageChange()
+        }
+        .onChange(of: currentPage) { _ in
+            stopPageReading(immediate: true)
+            announcePageChange()
+        }
+        // Global toolbar: play / pause / stop for the current page
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 16) {
+                    Button {
+                        togglePageReading()
+                    } label: {
+                        Image(systemName: isPlayingPage ? "pause.fill" : "play.fill")
+                    }
+                    .accessibilityLabel(isPlayingPage ? "Pause reading" : "Play page")
+                    .accessibilityHint("Double tap to start or pause reading this worksheet page.")
+
+                    Button {
+                        stopPageReading(immediate: true)
+                    } label: {
+                        Image(systemName: "stop.fill")
+                    }
+                    .accessibilityLabel("Stop reading")
+                    .accessibilityHint("Stops reading and resets to the start of the page.")
+                }
+            }
+        }
+        .toolbarBackground(ColorTokens.backgroundAdaptive, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .navigationTitle("Worksheet")
         .navigationBarTitleDisplayMode(.inline)
     }
-}
 
-// MARK: - Question card (one logical block on the page)
+    // MARK: - Page navigation helpers
 
-struct WorksheetQuestionCard: View {
-    let item: WorksheetItem
+    private func moveToNextPage() {
+        guard safePageIndex + 1 < pages.count else { return }
+        haptics.tapSelection()
+        currentPage = safePageIndex + 1
+    }
 
-    /// Skip headings like "Question 1" – the card should start with page content.
-    private var contentNodes: [Node] {
-        item.nodes.filter { node in
-            if case .heading(_, let text) = node {
-                let lower = text.lowercased()
-                if lower.hasPrefix("question ") ||
-                    lower.hasPrefix("q.") ||
-                    lower.hasPrefix("q ") {
-                    return false
-                }
-            }
-            return true
+    private func moveToPreviousPage() {
+        guard safePageIndex > 0 else { return }
+        haptics.tapSelection()
+        currentPage = safePageIndex - 1
+    }
+
+    /// Page-change cue for blind users: gentle success haptic.
+    private func announcePageChange() {
+        guard !pages.isEmpty else { return }
+        haptics.success()
+    }
+
+    // MARK: - Page-level TTS
+
+    /// Toggle between play and pause for the current page.
+    private func togglePageReading() {
+        if isPlayingPage {
+            // Pause / stop current speech
+            stopPageReading(immediate: false)
+        } else {
+            // Start reading the whole page from the beginning
+            let text = collectSpeakableForCurrentPage()
+            guard !text.isEmpty else { return }
+            isPlayingPage = true
+            haptics.tapSelection()
+            speech.speak(text)
         }
     }
 
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            VStack(alignment: .leading, spacing: Spacing.medium) {
-                // All sections on the page (the red boxes you drew)
-                ForEach(Array(contentNodes.enumerated()), id: \.offset) { _, node in
-                    QuestionNodeView(node: node)
+    /// Hard-stop reading and reset the state.
+    private func stopPageReading(immediate: Bool) {
+        speech.stop(immediate: immediate)
+        isPlayingPage = false
+    }
+
+    /// Combine all nodes on the current page into one speakable string.
+    private func collectSpeakableForCurrentPage() -> String {
+        var parts: [String] = []
+        if !pages.isEmpty {
+            parts.append("\(title). Page \(safePageIndex + 1) of \(pages.count).")
+        }
+
+        for item in currentItems {
+            for node in item.nodes {
+                switch node {
+                case .heading(_, let t):
+                    // Skip "Question 1" etc. but keep real headings.
+                    if !isQuestionHeading(t) {
+                        parts.append(t)
+                    }
+
+                case .paragraph(let inlines):
+                    let text = inlines.compactMap { inline -> String? in
+                        switch inline {
+                        case .text(let t): return t
+                        case .math:       return "[equation]"
+                        default:          return nil
+                        }
+                    }.joined()
+                    if !text.isEmpty { parts.append(text) }
+
+                case .image(_, let alt):
+                    parts.append(alt ?? "image")
+
+                case .svgNode(_, let title, let summaries):
+                    if let t = title { parts.append(t) }
+                    if let first = summaries?.first { parts.append(first) }
+
+                case .unknown:
+                    break
                 }
             }
-            .padding(Spacing.large)
-            .background(ColorTokens.surfaceAdaptive)
-            .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusLarge))
-            .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-            .accessibilityElement(children: .contain)
-
-            // Bookmark icon only – NO "Question 1" text
-            Button {
-                // Bookmark stub
-            } label: {
-                Image(systemName: "bookmark")
-                    .foregroundColor(ColorTokens.primary)
-                    .padding(Spacing.small)
-            }
-            .accessibilityLabel("Bookmark")
         }
+
+        return parts.joined(separator: ". ")
+    }
+
+    // MARK: - Heading helpers (skip "Question 1" inside page)
+
+    private func shouldSkipQuestionHeading(_ node: Node) -> Bool {
+        if case .heading(_, let text) = node {
+            return isQuestionHeading(text)
+        }
+        return false
+    }
+
+    private func isQuestionHeading(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        return lower.hasPrefix("question ") ||
+               lower.hasPrefix("q.") ||
+               lower.hasPrefix("q ")
     }
 }
 
-// MARK: - Node rendering inside a question card
-/// Each Node in JSON is an **object** – heading, paragraph, image, svg, etc.
+// MARK: - One visual block per JSON node
 
-private struct QuestionNodeView: View {
+private struct NodeBlockView: View {
     let node: Node
 
     var body: some View {
-        switch node {
-        case .heading(let level, let text):
-            Text(text)
-                .font(
-                    level == 1 ? Typography.heading2 :
-                    level == 2 ? Typography.heading3 :
-                    Typography.bodyBold
-                )
-                .foregroundColor(ColorTokens.textPrimaryAdaptive)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        Group {
+            switch node {
+            case .heading(let level, let text):
+                Text(text)
+                    .font(
+                        level == 1 ? Typography.heading2 :
+                        level == 2 ? Typography.heading3 :
+                        Typography.bodyBold
+                    )
+                    .foregroundColor(ColorTokens.textPrimaryAdaptive)
 
-        case .paragraph(let items):
-            // Each paragraph / line is its own block – like your red boxes
-            HStack(alignment: .top, spacing: 0) {
-                ParagraphRichText(items: items)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(12)
-            .background(ColorTokens.surfaceAdaptive2)
-            .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusSmall))
-
-        case .image(let src, let alt):
-            AccessibleImage(dataURI: src, alt: alt)
-                .padding(.top, Spacing.small)
-
-        case .svgNode(let svg, let t, let d):
-            VStack(alignment: .leading, spacing: Spacing.xSmall) {
-                if let tt = t {
-                    Text(tt)
-                        .font(Typography.bodyBold)
-                        .foregroundColor(ColorTokens.textPrimaryAdaptive)
+            case .paragraph(let items):
+                HStack(alignment: .top, spacing: 0) {
+                    ParagraphRichText(items: items)
+                    Spacer(minLength: 0)
                 }
 
-                SVGView(svg: svg)
-                    .frame(maxWidth: .infinity)
+            case .image(let src, let alt):
+                AccessibleImage(dataURI: src, alt: alt)
 
-                if let desc = d?.first {
-                    Text(desc)
-                        .font(Typography.footnote)
-                        .foregroundColor(ColorTokens.textSecondaryAdaptive)
+            case .svgNode(let svg, let title, let summaries):
+                VStack(alignment: .leading, spacing: Spacing.xSmall) {
+                    if let t = title {
+                        Text(t)
+                            .font(Typography.bodyBold)
+                            .foregroundColor(ColorTokens.textPrimaryAdaptive)
+                    }
+
+                    SVGView(svg: svg)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Spacing.small)
+
+                    if let desc = summaries?.first {
+                        Text(desc)
+                            .font(Typography.footnote)
+                            .foregroundColor(ColorTokens.textSecondaryAdaptive)
+                    }
                 }
+                .accessibilityLabel((title ?? "Graphic") + ". " + (summaries?.first ?? ""))
+
+            case .unknown:
+                EmptyView()
             }
-            .accessibilityLabel((t ?? "Graphic") + ". " + (d?.first ?? ""))
-        case .unknown:
-            EmptyView()
         }
+        .padding(Spacing.medium)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(ColorTokens.surfaceAdaptive)
+        .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusLarge))
+        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+        .accessibilityElement(children: .contain)
     }
 }

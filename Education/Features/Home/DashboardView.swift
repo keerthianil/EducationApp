@@ -3,7 +3,7 @@
 //  Education
 //
 //  Created by Keerthi Reddy on 11/7/25.
-
+//
 
 import SwiftUI
 
@@ -40,14 +40,30 @@ struct DashboardView: View {
                 HomeTabBar(selectedTab: $selectedTab)
             }
             .ignoresSafeArea(edges: .bottom)
+
+            // Upload flow (bottom sheet)
             .sheet(isPresented: $showUpload) {
                 UploadSheetView()
                     .environmentObject(lessonStore)
                     .environmentObject(haptics)
             }
-            .navigationDestination(item: $selectedLesson) { item in
-                ReaderContainer(item: item)
+
+            .fullScreenCover(item: $selectedLesson) { lesson in
+                NavigationStack {
+                    ReaderContainer(item: lesson)
+                        .toolbar {
+                            // Explicit close for blind users (no swipe needed)
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Close") {
+                                    selectedLesson = nil
+                                }
+                                .accessibilityLabel("Close worksheet")
+                            }
+                        }
+                }
             }
+
+            // No default nav bar on the dashboard itself
             .toolbar(.hidden, for: .navigationBar)
         }
     }
@@ -90,7 +106,6 @@ struct DashboardView: View {
 
     private func uploadSection() -> some View {
         VStack(spacing: Spacing.medium) {
-            // Cloud icon
             Image(systemName: "icloud.and.arrow.up")
                 .font(.system(size: 40, weight: .regular))
                 .foregroundColor(ColorTokens.primary)
@@ -197,12 +212,7 @@ struct DashboardView: View {
     }
 
     private var teacherLessons: [LessonIndexItem] {
-        var items: [LessonIndexItem] = []
-        if let seed = lessonStore.teacherSeed {
-            items.append(seed)
-        }
-        items.append(contentsOf: lessonStore.recent.filter { $0.teacher != nil && $0.id != lessonStore.teacherSeed?.id })
-        return items
+        lessonStore.recent.filter { $0.teacher != nil }
     }
 
     private func recentsSection() -> some View {
@@ -345,9 +355,11 @@ private struct HomeTabBar: View {
         .background(ColorTokens.surfaceAdaptive.shadow(radius: 4))
     }
 
-    private func tabButton(tab: DashboardView.HomeTab,
-                           icon: String,
-                           label: String) -> some View {
+    private func tabButton(
+        tab: DashboardView.HomeTab,
+        icon: String,
+        label: String
+    ) -> some View {
         let isSelected = (tab == selectedTab)
 
         return Button {
@@ -380,7 +392,6 @@ private struct HomeTabBar: View {
     }
 }
 
-
 // MARK: - Reader container
 
 private struct ReaderContainer: View {
@@ -388,17 +399,14 @@ private struct ReaderContainer: View {
     let item: LessonIndexItem
 
     var body: some View {
-        // Build worksheet pages (1 JSON file = 1 page)
         let pages = WorksheetLoader.loadPages(
             lessonStore: lessonStore,
             filenames: item.localFiles
         )
 
         if !pages.isEmpty {
-            // Worksheet style (swipe Page 1 / Page 2, etc.)
             WorksheetView(title: item.title, pages: pages)
         } else {
-            // Fallback: simple continuous reader
             let nodes = lessonStore.loadNodes(forFilenames: item.localFiles)
             DocumentRendererView(title: item.title, nodes: nodes)
         }
