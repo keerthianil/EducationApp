@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct IntroOnboardingView: View {
     @Environment(\.dismiss) private var dismiss
@@ -12,6 +13,8 @@ struct IntroOnboardingView: View {
     
     @State private var currentIndex = 0
     @State private var goToDashboard = false
+    @State private var didAnnounceOnboarding: Bool = false
+    @AccessibilityFocusState private var slideFocused: Bool
     
     var body: some View {
         ZStack {
@@ -65,6 +68,9 @@ struct IntroOnboardingView: View {
                     title: slides[currentIndex].title,
                     description: slides[currentIndex].desc
                 )
+                .accessibilityFocused($slideFocused)
+                .accessibilityLabel(slides[currentIndex].title)
+                .accessibilityHint("Double tap to hear more or swipe for description")
                 
                 DSPageIndicator(
                     totalPages: slides.count,
@@ -95,6 +101,7 @@ struct IntroOnboardingView: View {
                         ? "Finish onboarding and go to dashboard"
                         : "Next slide"
                     )
+                    .accessibilitySortPriority(1)
                     
                     Button {
                         goToDashboard = true
@@ -116,6 +123,24 @@ struct IntroOnboardingView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            // Announce first slide once and move focus to the slide title
+            guard !didAnnounceOnboarding else { return }
+            didAnnounceOnboarding = true
+
+            UIAccessibility.post(notification: .announcement, argument: slides[currentIndex].title)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                slideFocused = true
+            }
+        }
+        .onChange(of: currentIndex) { newIndex in
+            // Announce the new slide title and focus it
+            UIAccessibility.post(notification: .announcement, argument: slides[newIndex].title)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                slideFocused = true
+            }
+        }
     }
     
     private func handleNext() {

@@ -6,6 +6,8 @@ struct NameQuestionView: View {
     @State private var name: String = ""
     @State private var errorMessage: String? = nil
     @State private var goToAgeScreen: Bool = false
+    @State private var didAnnounceNameScreen: Bool = false
+    @AccessibilityFocusState private var nameFieldFocused: Bool
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -52,6 +54,7 @@ struct NameQuestionView: View {
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .accessibilityLabel("What is your name?")
+
                 
                 VStack(spacing: 6) {
                     TextField("Your name", text: $name)
@@ -60,7 +63,8 @@ struct NameQuestionView: View {
                         .textInputAutocapitalization(.words)
                         .padding(.horizontal, 24)
                         .accessibilityLabel("Name")
-                        .accessibilityHint("Enter your name")
+                        .accessibilityHint("Enter your name. Optional — double tap Next to skip")
+                        .accessibilityFocused($nameFieldFocused)
                     
                     Rectangle()
                         .fill(Color.black)
@@ -99,19 +103,24 @@ struct NameQuestionView: View {
             .padding(.bottom, 32)
             .accessibilityLabel("Next")
             .accessibilityHint("Continue to the age question")
+            .accessibilitySortPriority(1)
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            guard !didAnnounceNameScreen else { return }
+            didAnnounceNameScreen = true
+
+            // Brief announcement and focus name field for quick input; name is optional
+            UIAccessibility.post(notification: .announcement, argument: "What is your name?")
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                nameFieldFocused = true
+            }
+        }
     }
     
     private func validateAndProceed() {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            let msg = "Please enter your name to continue."
-            errorMessage = msg
-            UIAccessibility.post(notification: .announcement, argument: msg)
-            return
-        }
-        
+        // Name is optional for now — proceed regardless.
         errorMessage = nil
         goToAgeScreen = true
     }

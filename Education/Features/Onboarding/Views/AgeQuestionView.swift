@@ -6,6 +6,8 @@ struct AgeQuestionView: View {
     @State private var selectedGroup: AgeGroup? = nil
     @State private var errorMessage: String? = nil
     @State private var showIntroOnboarding = false
+    @State private var didAnnounceAgeScreen: Bool = false
+    @AccessibilityFocusState private var firstOptionFocused: Bool
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -40,6 +42,7 @@ struct AgeQuestionView: View {
                         activeColor: ColorTokens.primary
                     )
                     .accessibilityLabel("Step 2 of 2")
+                    .accessibilitySortPriority(2)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
@@ -53,17 +56,29 @@ struct AgeQuestionView: View {
                     .accessibilityLabel("What is your age?")
                 
                 VStack(spacing: 16) {
-                    ForEach(AgeGroup.allCases) { group in
-                        DSSelectableOptionRow(
-                            title: group.displayText,
-                            isSelected: selectedGroup == group
-                        )
-                        .onTapGesture {
-                            selectedGroup = group
-                            errorMessage = nil
+                    ForEach(AgeGroup.allCases, id: \.self) { group in
+                        if group == AgeGroup.allCases.first {
+                            DSSelectableOptionRow(
+                                title: group.displayText,
+                                isSelected: selectedGroup == group
+                            )
+                            .onTapGesture {
+                                selectedGroup = group
+                                errorMessage = nil
+                            }
+                            // Focus the first option for VoiceOver users when screen appears
+                            .accessibilityFocused($firstOptionFocused)
+                        } else {
+                            DSSelectableOptionRow(
+                                title: group.displayText,
+                                isSelected: selectedGroup == group
+                            )
+                            .onTapGesture {
+                                selectedGroup = group
+                                errorMessage = nil
+                            }
                         }
                     }
-                    
                     if let msg = errorMessage {
                         Text(msg)
                             .font(.caption)
@@ -122,16 +137,22 @@ struct AgeQuestionView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            guard !didAnnounceAgeScreen else { return }
+            didAnnounceAgeScreen = true
+
+            // Announce progress first, then the question so VO users know which step they're on.
+            UIAccessibility.post(notification: .announcement, argument: "Step 2 of 2. What is your age? You can select an age group or skip this step")
+
+            // Slightly longer delay so the announcement is heard before focus changes.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                firstOptionFocused = true
+            }
+        }
     }
     
     private func validateAndContinue() {
-        guard selectedGroup != nil else {
-            let msg = "Please select an age group to continue."
-            errorMessage = msg
-            UIAccessibility.post(notification: .announcement, argument: msg)
-            return
-        }
-        
+        // Age selection is optional for now — proceed regardless.
         errorMessage = nil
         showIntroOnboarding = true
     }

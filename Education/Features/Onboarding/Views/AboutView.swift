@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AboutView: View {
     // MARK: - Environment
@@ -14,14 +15,15 @@ struct AboutView: View {
     }
     
     // MARK: - Body
-    
+    @State private var didAnnounceWelcome: Bool = false
+    @AccessibilityFocusState private var getStartedFocused: Bool
+
     var body: some View {
         ZStack {
             ColorTokens.background
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                customNavigationBar
                 
                 VStack(spacing: 0) {
                     logoSection
@@ -39,29 +41,21 @@ struct AboutView: View {
             }
         }
         .navigationBarHidden(true)
-    }
-    
-    // MARK: - Custom Navigation Bar
-    
-    private var customNavigationBar: some View {
-        HStack {
-            Button(action: {
-                dismiss()
-            }) {
-                Image(systemName: "arrow.left")
-                    .font(.title2)
-                    .foregroundStyle(ColorTokens.textPrimary)
-                    .frame(width: 44, height: 44)
+        .onAppear {
+            // Announce welcome once, then move VoiceOver focus to the primary button
+            guard !didAnnounceWelcome else { return }
+            didAnnounceWelcome = true
+
+            UIAccessibility.post(notification: .announcement, argument: "Welcome to STEMA11Y")
+
+            // Small delay so welcome finishes and VO doesn't overlap, then set focus to the button.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                getStartedFocused = true
             }
-            .accessibilityLabel("Back")
-            .accessibilityHint("Returns to previous screen")
-            
-            Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(ColorTokens.background)
     }
+    
+    
     
     // MARK: - Logo Section
     
@@ -72,6 +66,8 @@ struct AboutView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(ColorTokens.textPrimary)
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityLabel("STEMA11Y")
+                .accessibilityHint("Welcome")
         }
     }
     
@@ -79,20 +75,21 @@ struct AboutView: View {
     
     private var illustrationSection: some View {
         VStack(spacing: 0) {
+            // Decorative artwork — hide from VoiceOver to avoid noisy announcements
             Image("speech-bubble-outline")
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: bubbleMaxWidth)
-                .accessibilityLabel("Information bubble")
-                .accessibilityHint("Visual decoration")
+                .accessibilityHidden(true)
             
+            // Illustration provides meaningful context — give a short, concise label for VO
             Image("onboarding-illustration")
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: illustrationMaxWidth, maxHeight: illustrationMaxHeight)
                 .offset(y: illustrationOffset)
-                .accessibilityLabel("Person using laptop")
-                .accessibilityHint("Illustration showing accessible learning")
+                .accessibilityLabel("Illustration: student using a laptop")
+                .accessibilityHint("Decorative illustration")
         }
     }
     
@@ -116,8 +113,10 @@ struct AboutView: View {
         .padding(.horizontal, buttonHorizontalPadding)
         .padding(.bottom, 32)
         .padding(.top, 16)
+        // Make the button the primary actionable element for VO users
         .accessibilityLabel("Get Started")
-        .accessibilityHint("Navigate to sign in screen")
+        .accessibilityHint("Opens sign in screen")
+        .accessibilitySortPriority(1)
     }
     
     // MARK: - Responsive Sizing

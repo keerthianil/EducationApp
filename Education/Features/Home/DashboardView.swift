@@ -22,9 +22,8 @@ struct DashboardView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .bottom) {
-                ScrollView {
+        ZStack(alignment: .bottom) {
+            ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.sectionSpacing) {
                         headerSection()
                         bannerSection()
@@ -36,20 +35,18 @@ struct DashboardView: View {
                     .padding(.bottom, Spacing.xxLarge) // space for tab bar
                 }
                 .background(ColorTokens.backgroundAdaptive)
-
-                HomeTabBar(selectedTab: $selectedTab)
-            }
-            .ignoresSafeArea(edges: .bottom)
-            .sheet(isPresented: $showUpload) {
-                UploadSheetView()
-                    .environmentObject(lessonStore)
-                    .environmentObject(haptics)
-            }
-            .navigationDestination(item: $selectedLesson) { item in
-                ReaderContainer(item: item)
-            }
-            .toolbar(.hidden, for: .navigationBar)
+            HomeTabBar(selectedTab: $selectedTab)
         }
+        .ignoresSafeArea(edges: .bottom)
+        .sheet(isPresented: $showUpload) {
+            UploadSheetView()
+                .environmentObject(lessonStore)
+                .environmentObject(haptics)
+        }
+        .navigationDestination(item: $selectedLesson) { item in
+            ReaderContainer(item: item)
+        }
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: - Sections

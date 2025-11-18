@@ -4,12 +4,14 @@ import UIKit
 struct AuthenticationView: View {
     // MARK: - State
     @State private var isLoginMode = true
-    @State private var email = ""
-    @State private var password = ""
-    @State private var confirmPassword = ""
+    @State private var email = "test@example.com"
+    @State private var password = "password123"
+    @State private var confirmPassword = "password123"
     @State private var rememberMe = false
     @State private var showPassword = false
     @State private var errorMessage: String?
+    @State private var didAnnounceAuth: Bool = false
+    @AccessibilityFocusState private var emailFieldFocused: Bool
     
     // Navigation to NameQuestionView
     @State private var goToNameScreen = false
@@ -37,6 +39,17 @@ struct AuthenticationView: View {
             .hidden()
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            // VoiceOver: announce the screen once and move focus to the email field
+            guard !didAnnounceAuth else { return }
+            didAnnounceAuth = true
+
+            UIAccessibility.post(notification: .announcement, argument: isLoginMode ? "Sign in" : "Register")
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                emailFieldFocused = true
+            }
+        }
     }
 
     // MARK: - Header Image + Close Button
@@ -48,6 +61,8 @@ struct AuthenticationView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 260)
                 .clipped()
+                // Decorative header — hide from VoiceOver to avoid noisy announcements
+                .accessibilityHidden(true)
 
             Button {
                 dismiss()
@@ -154,6 +169,8 @@ struct AuthenticationView: View {
                         .font(.system(size: 12))
                 }
                 .accessibilityLabel("Login")
+                .accessibilityAddTraits(isLoginMode ? .isSelected : [])
+                .accessibilityHint(isLoginMode ? "Currently selected" : "Double tap to switch to Login")
 
                 Button {
                     withAnimation {
@@ -171,11 +188,14 @@ struct AuthenticationView: View {
                         .font(.system(size: 12))
                 }
                 .accessibilityLabel("Register")
+                .accessibilityAddTraits(!isLoginMode ? .isSelected : [])
+                .accessibilityHint(!isLoginMode ? "Currently selected" : "Double tap to switch to Register")
             }
         }
         .frame(height: 48)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Authentication mode")
+        .accessibilityValue(isLoginMode ? "Login" : "Register")
     }
 
     // MARK: - Fields
@@ -193,6 +213,7 @@ struct AuthenticationView: View {
             )
             .accessibilityLabel("Email")
             .accessibilityHint("Enter your email address")
+            .accessibilityFocused($emailFieldFocused)
     }
 
     private var passwordField: some View {
@@ -259,6 +280,7 @@ struct AuthenticationView: View {
             }
             .accessibilityLabel("Remember me")
             .accessibilityHint("Keep me signed in on this device")
+            .accessibilityValue(rememberMe ? "Checked" : "Unchecked")
 
             Spacer()
 
@@ -291,7 +313,8 @@ struct AuthenticationView: View {
                 .cornerRadius(8)
         }
         .accessibilityLabel(isLoginMode ? "Login" : "Register")
-        .accessibilityHint("Authenticate and continue to the next step")
+        .accessibilityHint("Authenticate and continue")
+        .accessibilitySortPriority(1)
     }
 
     // MARK: - OR Divider
@@ -333,55 +356,7 @@ struct AuthenticationView: View {
 
     // MARK: - Validation + Auth + Navigation
     private func handleAuthentication() {
-        errorMessage = nil
-
-        // LOGIN
-        if isLoginMode {
-            if email.isEmpty {
-                setError("Email is required")
-                return
-            }
-            if !email.contains("@") || !email.contains(".") {
-                setError("Please enter a valid email address")
-                return
-            }
-            if password.isEmpty {
-                setError("Password is required")
-                return
-            }
-            if password.count < 6 {
-                setError("Password must be at least 6 characters")
-                return
-            }
-        } else {
-            // REGISTER
-            if email.isEmpty {
-                setError("Email is required")
-                return
-            }
-            if !email.contains("@") || !email.contains(".") {
-                setError("Please enter a valid email address")
-                return
-            }
-            if password.isEmpty {
-                setError("Password is required")
-                return
-            }
-            if password.count < 6 {
-                setError("Password must be at least 6 characters")
-                return
-            }
-            if confirmPassword.isEmpty {
-                setError("Please confirm your password")
-                return
-            }
-            if password != confirmPassword {
-                setError("Passwords do not match")
-                return
-            }
-        }
-
-        // ✅ All good → go to NameQuestionView
+        // No validation for now — navigate directly.
         errorMessage = nil
         goToNameScreen = true
     }
