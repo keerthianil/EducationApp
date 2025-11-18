@@ -32,15 +32,24 @@ struct DocumentRendererView: View {
                         .padding(.bottom, Spacing.small)
                         .accessibilityAddTraits(.isHeader)
 
-                    VStack(alignment: .leading, spacing: Spacing.medium) {
-                        ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
-                            rendered(node)
+                    if nodes.isEmpty {
+                        // If something goes wrong with JSON we never crash – we show a
+                        // simple explanation instead of a blank screen.
+                        Text("This document does not contain any readable content yet.")
+                            .font(Typography.body)
+                            .foregroundColor(ColorTokens.textSecondaryAdaptive)
+                            .padding(.top, Spacing.medium)
+                    } else {
+                        VStack(alignment: .leading, spacing: Spacing.medium) {
+                            ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
+                                rendered(node)
+                            }
                         }
+                        .padding(Spacing.large)
+                        .background(ColorTokens.surfaceAdaptive)
+                        .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusLarge))
+                        .shadow(color: .black.opacity(0.05), radius: 12, y: 4)
                     }
-                    .padding(Spacing.large)
-                    .background(ColorTokens.surfaceAdaptive)
-                    .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusLarge))
-                    .shadow(color: .black.opacity(0.05), radius: 12, y: 4)
                 }
                 .padding(.horizontal, Spacing.screenPadding)
                 .padding(.top, Spacing.large)
@@ -113,13 +122,13 @@ struct DocumentRendererView: View {
                 }
 
                 SVGView(svg: svg)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, Spacing.small)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Spacing.small)
 
-                        if let desc = d?.first {
-                            Text(desc)
-                                .font(Typography.footnote)
-                                .foregroundColor(ColorTokens.textSecondaryAdaptive)
+                if let desc = d?.first {
+                    Text(desc)
+                        .font(Typography.footnote)
+                        .foregroundColor(ColorTokens.textSecondaryAdaptive)
                 }
             }
             .accessibilityLabel((t ?? "Graphic") + ". " + (d?.first ?? ""))
@@ -137,6 +146,7 @@ struct DocumentRendererView: View {
             switch n {
             case .heading(_, let t):
                 out.append(t)
+
             case .paragraph(let items):
                 let s = items.compactMap { inline -> String? in
                     switch inline {
@@ -146,11 +156,14 @@ struct DocumentRendererView: View {
                     }
                 }.joined()
                 out.append(s)
+
             case .image(_, let alt):
                 out.append(alt ?? "image")
+
             case .svgNode(_, let t, let d):
                 out.append(t ?? "graphic")
                 if let d = d?.first { out.append(d) }
+
             default:
                 break
             }
@@ -161,6 +174,7 @@ struct DocumentRendererView: View {
 
 // MARK: - Shared helpers (used by WorksheetView too)
 
+/// Renders inline text + math inside a paragraph.
 struct ParagraphRichText: View {
     let items: [Inline]
 
@@ -183,6 +197,9 @@ struct ParagraphRichText: View {
         }
     }
 }
+
+/// Image view that respects the *actual* aspect ratio of the decoded image,
+/// so nothing gets cut off inside the card.
 struct AccessibleImage: View {
     let dataURI: String
     let alt: String?
@@ -192,8 +209,9 @@ struct AccessibleImage: View {
             // Use the *real* aspect ratio of the image
             Image(uiImage: img)
                 .resizable()
-                .aspectRatio(img.size, contentMode: .fit)   // <- key line
+                .aspectRatio(img.size, contentMode: .fit)   // key: use real aspect ratio
                 .frame(maxWidth: .infinity, alignment: .center)
+                .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusSmall))
                 .accessibilityLabel(alt ?? "image")
         } else {
             // Placeholder if decode fails
@@ -205,6 +223,7 @@ struct AccessibleImage: View {
                         .font(Typography.caption1)
                         .foregroundColor(ColorTokens.textPrimaryAdaptive)
                 )
+                .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusSmall))
                 .accessibilityLabel(alt ?? "image")
         }
     }

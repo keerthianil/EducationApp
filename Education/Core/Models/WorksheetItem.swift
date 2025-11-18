@@ -7,6 +7,9 @@
 
 import Foundation
 
+/// One logical “block” in the worksheet UI.
+/// - `index` is the 1-based position within its page.
+/// - `nodes` is the set of Node objects that belong to this block
 struct WorksheetItem: Identifiable, Hashable {
     let id: UUID
     let index: Int                  // Page / question number (1-based)
@@ -38,6 +41,8 @@ extension WorksheetItem {
 
     /// Build items from ONE flat node list.
     /// Heuristic: headings whose text contains "question" start a new item.
+    /// NOTE: This is used as a fallback when a document doesn’t have
+    /// pre-split pages; we keep it as-is.
     static func makeItems(from nodes: [Node]) -> [WorksheetItem] {
         var items: [WorksheetItem] = []
         var buffer: [Node] = []
@@ -118,5 +123,66 @@ private extension WorksheetItem {
         }
 
         return pieces.joined(separator: " ")
+    }
+}
+
+
+struct WorksheetLoader {
+
+    /// Build worksheet pages from the lesson’s JSON files.
+    ///
+    /// - Each filename (JSON) is treated as **one page**.
+    /// - Inside that page, we keep every Node (heading, paragraph, image, equation)
+    ///   as its own object – exactly how your JSON is currently rendered.
+    ///
+    /// Returned shape: `pages[pageIndex][itemIndex]`.
+    /// For now there is **one item per page**, but the extra layer keeps
+    /// the design flexible if you ever want multiple cards per page.
+    static func loadPages(
+        lessonStore: LessonStore,
+        filenames: [String]
+    ) -> [[WorksheetItem]] {
+
+        var pages: [[WorksheetItem]] = []
+
+        for (pageIndex, filename) in filenames.enumerated() {
+            let nodesForPage = lessonStore.loadNodes(forFilenames: [filename])
+            guard !nodesForPage.isEmpty else { continue }
+
+            // Try to use the first NON “Question …” heading as the page title.
+            var pageTitle: String? = nil
+            for node in nodesForPage {
+                if case let .heading(_, text) = node {
+                    let lower = text.lowercased()
+                    let isQuestion =
+                        lower.hasPrefix("question ") ||
+                        lower.hasPrefix("q.") ||
+                        lower.hasPrefix("q ")
+                    if !isQuestion {
+                        pageTitle = text
+                        break
+                    }
+                }
+            }
+
+            let item = WorksheetItem(
+                index: pageIndex + 1,
+                title: pageTitle,
+                nodes: nodesForPage
+            )
+
+            pages.append([item])   // one card per page
+        }
+
+        // Fallback: if nothing loaded, merge everything into a single page
+        if pages.isEmpty {
+            let mergedNodes = lessonStore.loadNodes(forFilenames: filenames)
+            if !mergedNodes.isEmpty {
+                let fallbackItem = WorksheetItem(index: 1, title: nil, nodes: mergedNodes)
+                pages = [[fallbackItem]]
+            }
+        }
+
+        return pages
     }
 }
