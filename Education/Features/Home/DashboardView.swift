@@ -22,7 +22,7 @@ struct DashboardView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        
             ZStack(alignment: .bottom) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.sectionSpacing) {
@@ -65,7 +65,7 @@ struct DashboardView: View {
 
             // No default nav bar on the dashboard itself
             .toolbar(.hidden, for: .navigationBar)
-        }
+        
     }
 
     // MARK: - Sections
