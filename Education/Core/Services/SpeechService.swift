@@ -8,23 +8,42 @@
 import Foundation
 import Combine
 import AVFoundation
+import UIKit
 
-/// Wrapper around AVSpeechSynthesizer so any view can trigger TTS.
-/// This is used both for continuous reading and for short math descriptions.
+/// Shared speech engine used for continuous read-aloud.
+/// We also listen for app background events so audio always stops
+/// when the user closes the app or switches away.
 final class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private let synth = AVSpeechSynthesizer()
+
     @Published var isSpeaking = false
 
     override init() {
         super.init()
         synth.delegate = self
+
+        // Stop any reading when the app goes to background
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppBackground),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
     }
 
-    /// Speak the given text using the current system voice.
-    /// If something is already speaking, it is stopped immediately
-    /// to avoid overlapping audio or crashes.
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    /// Speak a block of text using the system voice.
     func speak(_ text: String, rate: Float = 0.5) {
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard !text.isEmpty else { return }
 
         if synth.isSpeaking {
             synth.stopSpeaking(at: .immediate)
@@ -33,13 +52,21 @@ final class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelega
         let utt = AVSpeechUtterance(string: text)
         utt.voice = AVSpeechSynthesisVoice(language: AVSpeechSynthesisVoice.currentLanguageCode())
         utt.rate = min(max(rate, 0.4), 0.6)
+
         synth.speak(utt)
     }
 
-    /// Stop speaking, either immediately or at the end of the current word.
+    /// Stop speaking. Used when the user closes the document or app.
     func stop(immediate: Bool) {
         synth.stopSpeaking(at: immediate ? .immediate : .word)
         isSpeaking = false
+    }
+
+    // MARK: - App lifecycle
+
+    /// Called when the app goes to background or loses focus.
+    @objc private func handleAppBackground(_ notification: Notification) {
+        stop(immediate: true)
     }
 
     // MARK: - AVSpeechSynthesizerDelegate
