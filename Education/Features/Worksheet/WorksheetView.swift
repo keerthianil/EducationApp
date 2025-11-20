@@ -136,6 +136,9 @@ struct WorksheetView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .navigationTitle("Worksheet")
         .navigationBarTitleDisplayMode(.inline)
+        .onDisappear {
+                    stopPageReading(immediate: true)
+                }
     }
 
     // MARK: - Page navigation helpers

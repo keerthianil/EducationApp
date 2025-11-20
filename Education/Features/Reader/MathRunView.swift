@@ -18,8 +18,19 @@ struct MathRunView: View {
     var body: some View {
         Button {
             haptics.mathStart()
-            let spoken = mathSpeech.speakable(from: latex ?? (mathml ?? "equation"), verbosity: .brief)
-            speech.speak(spoken)
+
+            let spoken = mathSpeech.speakable(
+                from: latex ?? (mathml ?? "equation"),
+                verbosity: .brief
+            )
+
+            // Ask VoiceOver itself to read the math, so it’s queued,
+            // not overlapping with the control’s label.
+            UIAccessibility.post(
+                notification: .announcement,
+                argument: spoken
+            )
+
             haptics.mathEnd()
         } label: {
             HStack(spacing: 6) {
@@ -31,6 +42,6 @@ struct MathRunView: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .accessibilityLabel("Equation")
-        .accessibilityHint("Double tap to hear math read aloud.")
+        .accessibilityHint("Double tap to hear the equation.")
     }
 }
