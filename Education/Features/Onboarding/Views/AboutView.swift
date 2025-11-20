@@ -1,126 +1,187 @@
-//
-//  AboutView.swift
-//  Education
-//
-//  First screen in onboarding flow
-//
-
 import SwiftUI
+import UIKit
 
 struct AboutView: View {
-    @State private var navigateToNext = false
+    // MARK: - Environment
     
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    
+    // MARK: - Computed Properties
+    
+    private var isCompact: Bool {
+        horizontalSizeClass == .compact
+    }
+    
+    // MARK: - Body
+    @State private var didAnnounceWelcome: Bool = false
+    @AccessibilityFocusState private var getStartedFocused: Bool
+
     var body: some View {
         ZStack {
-            // Background
             ColorTokens.background
                 .ignoresSafeArea()
             
-            // Content
-            VStack(spacing: Spacing.xLarge) {
-                Spacer()
+            VStack(spacing: 0) {
                 
-                // Icon
-                Image(systemName: "book.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(ColorTokens.primary)
-                
-                // Title
-                VStack(spacing: Spacing.small) {
-                    Text("Welcome to StemA11y")
-                        .font(Typography.largeTitle)
-                        .foregroundColor(ColorTokens.textPrimary)
-                        .multilineTextAlignment(.center)
+                VStack(spacing: 0) {
+                    logoSection
+                        .padding(.top, 20)
                     
-                    Text("Making STEM education accessible for everyone")
-                        .font(Typography.body)
-                        .foregroundColor(ColorTokens.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-                
-                Spacer()
-                
-                // Features
-                VStack(alignment: .leading, spacing: Spacing.medium) {
-                    FeatureRow(
-                        icon: "waveform",
-                        title: "Audio Feedback",
-                        description: "Text-to-speech for all content"
-                    )
+                    Spacer()
                     
-                    FeatureRow(
-                        icon: "hand.tap.fill",
-                        title: "Haptic Cues",
-                        description: "Touch feedback for navigation"
-                    )
+                    illustrationSection
                     
-                    FeatureRow(
-                        icon: "accessibility",
-                        title: "VoiceOver Support",
-                        description: "Full accessibility features"
-                    )
+                    Spacer()
+                    
+                    getStartedButton
                 }
-                .padding(Spacing.large)
-                .background(ColorTokens.surface1)
-                .cornerRadius(Spacing.cornerRadius)
-                
-                Spacer()
-                
-                // Continue Button
-                Button("Get Started") {
-                    navigateToNext = true
-                }
-                .font(Typography.bodyBold)
-                .foregroundColor(ColorTokens.textLight)
-                .frame(maxWidth: .infinity)
-                .frame(height: Spacing.buttonHeight)
-                .background(ColorTokens.primary)
-                .cornerRadius(Spacing.cornerRadius)
-                .accessibilityLabel("Get Started")
-                .accessibilityHint("Continue to next screen")
+                .padding(.horizontal, 20)
             }
-            .padding(Spacing.screenPadding)
         }
         .navigationBarHidden(true)
-        .navigationDestination(isPresented: $navigateToNext) {
-            Text("Next screen coming soon!")
-                .font(Typography.largeTitle)
-        }
-    }
-}
+        .onAppear {
+            // Announce welcome once, then move VoiceOver focus to the primary button
+            guard !didAnnounceWelcome else { return }
+            didAnnounceWelcome = true
 
-// Feature Row Component
-struct FeatureRow: View {
-    let icon: String
-    let title: String
-    let description: String
-    
-    var body: some View {
-        HStack(spacing: Spacing.medium) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(ColorTokens.primary)
-                .frame(width: 40, height: 40)
-                .background(ColorTokens.primaryLight3)
-                .cornerRadius(Spacing.cornerRadiusSmall)
-            
-            VStack(alignment: .leading, spacing: Spacing.xxSmall) {
-                Text(title)
-                    .font(Typography.bodyBold)
-                    .foregroundColor(ColorTokens.textPrimary)
-                
-                Text(description)
-                    .font(Typography.footnote)
-                    .foregroundColor(ColorTokens.textSecondary)
+            UIAccessibility.post(notification: .announcement, argument: "Welcome to STEMA11Y")
+
+            // Small delay so welcome finishes and VO doesn't overlap, then set focus to the button.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                getStartedFocused = true
             }
+        }
+    }
+    
+    
+    
+    // MARK: - Logo Section
+    
+    private var logoSection: some View {
+        VStack(spacing: 8) {
+            Text("STEMA11Y")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundStyle(ColorTokens.textPrimary)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityLabel("STEMA11Y")
+                .accessibilityHint("Welcome")
+        }
+    }
+    
+    // MARK: - Illustration Section
+    
+    private var illustrationSection: some View {
+        VStack(spacing: 0) {
+            // Decorative artwork — hide from VoiceOver to avoid noisy announcements
+            Image("speech-bubble-outline")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: bubbleMaxWidth)
+                .accessibilityHidden(true)
             
-            Spacer()
+            // Illustration provides meaningful context — give a short, concise label for VO
+            Image("onboarding-illustration")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: illustrationMaxWidth, maxHeight: illustrationMaxHeight)
+                .offset(y: illustrationOffset)
+                .accessibilityLabel("Illustration: student using a laptop")
+                .accessibilityHint("Decorative illustration")
+        }
+    }
+    
+    // MARK: - Get Started Button
+    
+    private var getStartedButton: some View {
+        NavigationLink {
+            AuthenticationView()
+        } label: {
+            Text("Get Started")
+                .font(.headline)
+                .foregroundStyle(ColorTokens.textLight)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 56)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(ColorTokens.primary)
+                )
+        }
+        .padding(.horizontal, buttonHorizontalPadding)
+        .padding(.bottom, 32)
+        .padding(.top, 16)
+        // Make the button the primary actionable element for VO users
+        .accessibilityLabel("Get Started")
+        .accessibilityHint("Opens sign in screen")
+        .accessibilitySortPriority(1)
+    }
+    
+    // MARK: - Responsive Sizing
+    
+    private var bubbleMaxWidth: CGFloat {
+        if horizontalSizeClass == .regular {
+            return 500
+        } else {
+            return UIScreen.main.bounds.width * 0.85
+        }
+    }
+    
+    private var illustrationMaxWidth: CGFloat {
+        if horizontalSizeClass == .regular {
+            return 350
+        } else {
+            return UIScreen.main.bounds.width * 0.6
+        }
+    }
+    
+    private var illustrationMaxHeight: CGFloat {
+        if horizontalSizeClass == .regular {
+            return 350
+        } else {
+            return 250
+        }
+    }
+    
+    private var illustrationOffset: CGFloat {
+        if horizontalSizeClass == .regular {
+            return -40
+        } else if UIScreen.main.bounds.height < 700 {
+            return -20
+        } else {
+            return -30
+        }
+    }
+    
+    private var buttonHorizontalPadding: CGFloat {
+        if horizontalSizeClass == .regular {
+            return 64
+        } else {
+            return 32
         }
     }
 }
 
-#Preview {
+// MARK: - Previews
+
+#Preview("iPhone 15 Pro") {
     NavigationStack {
         AboutView()
     }
+}
+
+#Preview("iPhone SE") {
+    NavigationStack {
+        AboutView()
+    }
+    .previewDevice(PreviewDevice(rawValue: "iPhone SE (3rd generation)"))
+}
+
+#Preview("iPad Pro") {
+    NavigationStack {
+        AboutView()
+    }
+    .previewDevice(PreviewDevice(rawValue: "iPad Pro (12.9-inch) (6th generation)"))
 }

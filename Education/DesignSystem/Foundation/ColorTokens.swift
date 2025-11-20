@@ -25,7 +25,26 @@ import SwiftUI
 public enum ColorTokens {
     
     // MARK: - Primary Colors (Teal/Cyan)
+        // MARK: - Auth / Login Screen Colors
     
+    /// Auth card background (white card)
+    public static let authCardBackground = Color.white
+    
+    /// Text field / Google button border (#EDEDED)
+    public static let authFieldBorder = Color(hex: "#EDEDED")
+    
+    /// Divider line under "OR" (#E9E9E9)
+    public static let authDivider = Color(hex: "#E9E9E9")
+    
+    /// Checkbox border (#969696)
+    public static let authCheckboxBorder = Color(hex: "#969696")
+    
+    /// Primary auth button green (#167423)
+    public static let authPrimaryGreen = Color(hex: "#167423")
+    
+    /// Secondary gray label text used in the switch / subtle text (#969696)
+    public static let authSecondaryText = Color(hex: "#969696")
+
     /// Primary brand color - Dark Teal
     /// Hex: #1C636F
     /// Use for: Main actions, primary buttons, brand emphasis
@@ -130,61 +149,23 @@ public enum ColorTokens {
     /// Background color (light mode)
     /// Hex: #F5F5F5
     /// Use for: Main screen background
-    public static let background = Color(hex: "#F5F5F5")
-    
-    /// Surface color 1 - cards and elevated content
-    /// Hex: #ECECEC
-    /// Use for: Cards, buttons, first level of elevation
-    public static let surface1 = Color(hex: "#ECECEC")
-    
-    /// Surface color 2 - nested content
-    /// Hex: #E3E3E3
-    /// Use for: Nested cards, second level of elevation
-    public static let surface2 = Color(hex: "#E3E3E3")
-    
-    /// Text color dark - main text
-    /// Hex: #212121
-    /// Use for: Primary text on light backgrounds
-    public static let textDark = Color(hex: "#212121")
-    
-    /// Text color light - text on dark backgrounds
-    /// Use for: Text on dark backgrounds, buttons with colored backgrounds
-    public static let textLight = Color.white
+    public static let background = Color(UIColor.systemBackground)
+    public static let surface1   = Color(UIColor.secondarySystemBackground)
+    public static let surface2   = Color(UIColor.tertiarySystemBackground)
+ 
+    public static let textDark   = Color(UIColor.label)          // keeps same name, now dynamic
+    public static let textLight  = Color.white
     
     // MARK: - Semantic Text Colors
-    
-    /// Primary text color - main content
-    /// Full opacity of textDark
-    /// Use for: Headings, body text, important content
-    public static let textPrimary = textDark
-    
-    /// Secondary text color - less important content
-    /// 70% opacity of textDark
-    /// Use for: Descriptions, supporting text, secondary information
-    public static let textSecondary = textDark.opacity(0.7)
-    
-    /// Tertiary text color - hints and disabled states
-    /// 50% opacity of textDark
-    /// Use for: Placeholder text, disabled text, hints
-    public static let textTertiary = textDark.opacity(0.5)
+    public static let textPrimary   = Color(UIColor.label)
+    public static let textSecondary = Color(UIColor.secondaryLabel)
+    public static let textTertiary  = Color(UIColor.tertiaryLabel)
     
     // MARK: - UI Element Colors
     
-    /// Border color for outlined elements
-    /// Hex: #E3E3E3
-    /// Use for: Input borders, card outlines, dividers
-    public static let border = Color(hex: "#E3E3E3")
-    
-    /// Separator lines between content
-    /// Hex: #ECECEC
-    /// Use for: List separators, section dividers
-    public static let separator = Color(hex: "#ECECEC")
-    
-    /// Disabled state background
-    /// Hex: #ECECEC
-    /// Use for: Disabled buttons, inactive elements
-    public static let disabled = Color(hex: "#ECECEC")
-    
+    public static let border    = Color(UIColor.separator)
+    public static let separator = Color(UIColor.separator)
+    public static let disabled  = Color(UIColor.quaternarySystemFill)
     // MARK: - Convenience Accessors
     
     /// Default button background color
@@ -199,7 +180,16 @@ public enum ColorTokens {
     /// Secondary button text
     public static let buttonSecondaryText = textPrimary
 }
-
+// MARK: - Dynamic (Light/Dark) System-aware colors
+public extension ColorTokens {
+    static var backgroundAdaptive: Color { Color(UIColor.systemBackground) }
+    static var surfaceAdaptive: Color { Color(UIColor.secondarySystemBackground) }
+    static var surfaceAdaptive2: Color { Color(UIColor.tertiarySystemBackground) }
+    static var textPrimaryAdaptive: Color { Color(UIColor.label) }
+    static var textSecondaryAdaptive: Color { Color(UIColor.secondaryLabel) }
+    static var textTertiaryAdaptive: Color { Color(UIColor.tertiaryLabel) }
+    static var borderAdaptive: Color { Color(UIColor.separator) }
+}
 // MARK: - Color Extension for Hex Support
 
 extension Color {
