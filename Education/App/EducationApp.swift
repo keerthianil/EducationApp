@@ -1,7 +1,13 @@
+//
+//  EducationApp.swift
+//  Education
+//
+
 import SwiftUI
 
 @main
 struct EducationApp: App {
+    @StateObject var appState = AppState()
     @StateObject var lessonStore = LessonStore()
     @StateObject var haptics = HapticService()
     @StateObject var speech = SpeechService()
@@ -11,19 +17,24 @@ struct EducationApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                AboutView()
+                // Check if onboarding is completed
+                if appState.hasCompletedOnboarding {
+                    DashboardView()
+                } else {
+                    AboutView()
+                }
             }
-            .environmentObject(speech)
-                    .onChange(of: scenePhase) { phase in
-                        if phase == .background {
-                            speech.stop(immediate: true)
-                        }
-                    }
+            .environmentObject(appState)
             .environmentObject(lessonStore)
             .environmentObject(haptics)
             .environmentObject(speech)
             .environmentObject(mathSpeech)
             .preferredColorScheme(.light)
+            .onChange(of: scenePhase) { phase in
+                if phase == .background {
+                    speech.stop(immediate: true)
+                }
+            }
         }
     }
 }

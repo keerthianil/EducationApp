@@ -10,15 +10,55 @@ import Combine
 import CoreHaptics
 import UIKit
 
+/// Haptic feedback service for accessibility cues
 final class HapticService: ObservableObject {
-    // Use UIFeedbackGenerator so Simulator also gives some response.
-    func tapSelection() { UISelectionFeedbackGenerator().selectionChanged() }
-    func success()      { UINotificationFeedbackGenerator().notificationOccurred(.success) }
-    func error()        { UINotificationFeedbackGenerator().notificationOccurred(.error) }
+    
+    // Basic selection feedback
+    func tapSelection() {
+        UISelectionFeedbackGenerator().selectionChanged()
+    }
+    
+    // Success - block finished loading, playback complete
+    func success() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+    
+    // Error feedback
+    func error() {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+    }
 
-    // Simple math/chem cues
-    func mathStart() { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
-    func mathTerm()  { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
-    func mathEnd()   { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
-    func chemBond()  { UIImpactFeedbackGenerator(style: .heavy).impactOccurred() }
+    // Math content - start (pulse to signal math)
+    func mathStart() {
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+    }
+    
+    // Math term/variable haptic (brief pulse)
+    func mathTerm() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+    
+    // Math content - end
+    func mathEnd() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+    
+    // Section change cue
+    func sectionChange() {
+        let generator = UIImpactFeedbackGenerator(style: .soft)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+    
+    // Page change cue
+    func pageChange() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        generator.notificationOccurred(.warning)
+    }
+    
+    // Chemistry bond haptic (for future use)
+    func chemBond() {
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+    }
 }
