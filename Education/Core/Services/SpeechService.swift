@@ -10,13 +10,13 @@ import Combine
 import AVFoundation
 import UIKit
 
-/// Shared speech engine used for continuous read-aloud.
-/// We also listen for app background events so audio always stops
-/// when the user closes the app or switches away.
+/// Shared speech engine used for block-level read-aloud.
+/// Tracks speaking state so UI can show play/pause correctly.
 final class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private let synth = AVSpeechSynthesizer()
 
     @Published var isSpeaking = false
+    @Published var isPaused = false
 
     override init() {
         super.init()
@@ -55,16 +55,32 @@ final class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelega
 
         synth.speak(utt)
     }
+    
+    /// Pause current speech
+    func pause() {
+        if synth.isSpeaking && !synth.isPaused {
+            synth.pauseSpeaking(at: .word)
+            isPaused = true
+        }
+    }
+    
+    /// Resume paused speech
+    func resume() {
+        if synth.isPaused {
+            synth.continueSpeaking()
+            isPaused = false
+        }
+    }
 
     /// Stop speaking. Used when the user closes the document or app.
     func stop(immediate: Bool) {
         synth.stopSpeaking(at: immediate ? .immediate : .word)
         isSpeaking = false
+        isPaused = false
     }
 
     // MARK: - App lifecycle
 
-    /// Called when the app goes to background or loses focus.
     @objc private func handleAppBackground(_ notification: Notification) {
         stop(immediate: true)
     }
@@ -72,14 +88,35 @@ final class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelega
     // MARK: - AVSpeechSynthesizerDelegate
 
     func speechSynthesizer(_ s: AVSpeechSynthesizer, didStart utt: AVSpeechUtterance) {
-        isSpeaking = true
+        DispatchQueue.main.async {
+            self.isSpeaking = true
+            self.isPaused = false
+        }
     }
 
     func speechSynthesizer(_ s: AVSpeechSynthesizer, didFinish utt: AVSpeechUtterance) {
-        isSpeaking = false
+        DispatchQueue.main.async {
+            self.isSpeaking = false
+            self.isPaused = false
+        }
     }
 
     func speechSynthesizer(_ s: AVSpeechSynthesizer, didCancel utt: AVSpeechUtterance) {
-        isSpeaking = false
+        DispatchQueue.main.async {
+            self.isSpeaking = false
+            self.isPaused = false
+        }
+    }
+    
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didPause utt: AVSpeechUtterance) {
+        DispatchQueue.main.async {
+            self.isPaused = true
+        }
+    }
+    
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didContinue utt: AVSpeechUtterance) {
+        DispatchQueue.main.async {
+            self.isPaused = false
+        }
     }
 }

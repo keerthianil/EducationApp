@@ -21,13 +21,14 @@ struct UploadSheetView: View {
             VStack(spacing: 20) {
                 switch uploader.state {
                 case .idle:
-                    VStack(spacing: 12) {
+                    VStack(spacing: 18) {
                         Image(systemName: "icloud.and.arrow.up.fill")
-                            .font(.largeTitle)
+                            .font(.system(size: 48))
                             .foregroundColor(ColorTokens.primary)
 
                         Text("Browse a PDF to make it accessible")
-                            .font(Typography.body)
+                            .font(.custom("Arial", size: 17))
+                            .foregroundColor(Color(hex: "#4E5055"))
 
                         Button("Browse files") {
                             haptics.tapSelection()
@@ -39,12 +40,14 @@ struct UploadSheetView: View {
                 case .confirming(let url):
                     VStack(spacing: 12) {
                         Text(url.lastPathComponent)
-                            .font(Typography.bodyBold)
+                            .font(.custom("Arial", size: 17).weight(.bold))
+                            .foregroundColor(Color(hex: "#121417"))
 
                         Text("Upload to convert?")
-                            .font(Typography.body)
+                            .font(.custom("Arial", size: 17))
+                            .foregroundColor(Color(hex: "#4E5055"))
 
-                        HStack {
+                        HStack(spacing: 12) {
                             Button("No") {
                                 haptics.tapSelection()
                                 uploader.reset()
@@ -67,13 +70,12 @@ struct UploadSheetView: View {
 
                 case .done(let item):
                     Text("File uploaded. Processing complete.")
-                        .font(Typography.bodyBold)
+                        .font(.custom("Arial", size: 17).weight(.bold))
+                        .foregroundColor(ColorTokens.success)
                         .onAppear {
-                            // Haptic cue and push into Recent / banner
                             haptics.success()
                             lessonStore.addConverted(item)
 
-                            // Dismiss after a short pause so VoiceOver can speak the message
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                                 uploader.reset()
                                 dismiss()
@@ -83,23 +85,25 @@ struct UploadSheetView: View {
                 case .error(let msg):
                     Text(msg)
                         .foregroundColor(ColorTokens.error)
-                        .font(Typography.body)
+                        .font(.custom("Arial", size: 17))
                 }
 
                 Spacer()
             }
-            .padding(Spacing.screenPadding)
-            .background(ColorTokens.backgroundAdaptive)
+            .padding(24)
+            .background(Color(hex: "#F6F7F8"))
             .navigationTitle("Upload")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Explicit Cancel so blind users don’t rely on swipe-to-dismiss
+                // EXPLICIT Cancel button for blind users
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         haptics.tapSelection()
                         uploader.reset()
                         dismiss()
                     }
+                    .font(.custom("Arial", size: 17))
+                    .foregroundColor(ColorTokens.primary)
                     .accessibilityLabel("Cancel upload")
                     .accessibilityHint("Closes the upload screen and returns to the home screen.")
                 }

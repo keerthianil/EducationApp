@@ -1,10 +1,15 @@
+//
+//  IntroOnboardingView.swift
+//  Education
+//
+
 import SwiftUI
 import UIKit
 
 struct IntroOnboardingView: View {
+    @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) private var dismiss
     
-    // Fake slides for now – you can customize titles/images later
     private let slides: [OnboardingSlide] = [
         .init(image: "appicon", title: "Welcome to STEMA11Y", desc: dummyText),
         .init(image: "appicon", title: "Learn Anything Easily", desc: dummyText),
@@ -12,7 +17,7 @@ struct IntroOnboardingView: View {
     ]
     
     @State private var currentIndex = 0
-    @State private var goToDashboard = false
+    @State private var goToChooseFlow = false
     @State private var didAnnounceOnboarding: Bool = false
     @AccessibilityFocusState private var slideFocused: Bool
     
@@ -20,10 +25,10 @@ struct IntroOnboardingView: View {
         ZStack {
             Color.white.ignoresSafeArea()
             
-            // Nav to Dashboard
+            // Nav to ChooseFlowView instead of Dashboard
             NavigationLink(
-                destination: DashboardView(),
-                isActive: $goToDashboard
+                destination: ChooseFlowView(),
+                isActive: $goToChooseFlow
             ) {
                 EmptyView()
             }
@@ -98,13 +103,13 @@ struct IntroOnboardingView: View {
                     }
                     .accessibilityLabel(
                         currentIndex == slides.count - 1
-                        ? "Finish onboarding and go to dashboard"
+                        ? "Finish onboarding and choose a flow"
                         : "Next slide"
                     )
                     .accessibilitySortPriority(1)
                     
                     Button {
-                        goToDashboard = true
+                        goToChooseFlow = true
                     } label: {
                         Text("Skip")
                             .font(.system(size: 16, weight: .semibold))
@@ -116,7 +121,7 @@ struct IntroOnboardingView: View {
                                     .stroke(ColorTokens.primary, lineWidth: 1)
                             )
                     }
-                    .accessibilityLabel("Skip onboarding and go to dashboard")
+                    .accessibilityLabel("Skip onboarding and choose a flow")
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
@@ -124,7 +129,6 @@ struct IntroOnboardingView: View {
         }
         .navigationBarBackButtonHidden(true)
         .onAppear {
-            // Announce first slide once and move focus to the slide title
             guard !didAnnounceOnboarding else { return }
             didAnnounceOnboarding = true
 
@@ -135,7 +139,6 @@ struct IntroOnboardingView: View {
             }
         }
         .onChange(of: currentIndex) { newIndex in
-            // Announce the new slide title and focus it
             UIAccessibility.post(notification: .announcement, argument: slides[newIndex].title)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 slideFocused = true
@@ -147,7 +150,7 @@ struct IntroOnboardingView: View {
         if currentIndex < slides.count - 1 {
             currentIndex += 1
         } else {
-            goToDashboard = true
+            goToChooseFlow = true
         }
     }
 }
@@ -166,5 +169,6 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 #Preview {
     NavigationStack {
         IntroOnboardingView()
+            .environmentObject(AppState())
     }
 }

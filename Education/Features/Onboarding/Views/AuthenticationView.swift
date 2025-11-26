@@ -1,8 +1,12 @@
+//
+//  AuthenticationView.swift
+//  Education
+//
+
 import SwiftUI
 import UIKit
 
 struct AuthenticationView: View {
-    // MARK: - State
     @State private var isLoginMode = true
     @State private var email = "test@example.com"
     @State private var password = "password123"
@@ -13,7 +17,6 @@ struct AuthenticationView: View {
     @State private var didAnnounceAuth: Bool = false
     @AccessibilityFocusState private var emailFieldFocused: Bool
     
-    // Navigation to NameQuestionView
     @State private var goToNameScreen = false
 
     @Environment(\.dismiss) private var dismiss
@@ -29,7 +32,6 @@ struct AuthenticationView: View {
                     .padding(.top, -24)
             }
 
-            // Hidden navigation link to NameQuestionView
             NavigationLink(
                 destination: NameQuestionView(),
                 isActive: $goToNameScreen
@@ -40,7 +42,6 @@ struct AuthenticationView: View {
         }
         .navigationBarBackButtonHidden(true)
         .onAppear {
-            // VoiceOver: announce the screen once and move focus to the email field
             guard !didAnnounceAuth else { return }
             didAnnounceAuth = true
 
@@ -52,7 +53,6 @@ struct AuthenticationView: View {
         }
     }
 
-    // MARK: - Header Image + Close Button
     private var headerImageSection: some View {
         ZStack(alignment: .topLeading) {
             Image("login-header")
@@ -61,7 +61,6 @@ struct AuthenticationView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 260)
                 .clipped()
-                // Decorative header — hide from VoiceOver to avoid noisy announcements
                 .accessibilityHidden(true)
 
             Button {
@@ -83,7 +82,6 @@ struct AuthenticationView: View {
         }
     }
 
-    // MARK: - Bottom Sheet
     private var authBottomSheet: some View {
         VStack(spacing: 24) {
             modeToggle
@@ -131,7 +129,6 @@ struct AuthenticationView: View {
         .ignoresSafeArea(edges: .bottom)
     }
 
-    // MARK: - Mode Toggle
     private var modeToggle: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 24)
@@ -166,11 +163,10 @@ struct AuthenticationView: View {
                         )
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
-                        .font(.system(size: 12))
+                        .font(.custom("Arial", size: 14))
                 }
                 .accessibilityLabel("Login")
                 .accessibilityAddTraits(isLoginMode ? .isSelected : [])
-                .accessibilityHint(isLoginMode ? "Currently selected" : "Double tap to switch to Login")
 
                 Button {
                     withAnimation {
@@ -185,25 +181,20 @@ struct AuthenticationView: View {
                         )
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
-                        .font(.system(size: 12))
+                        .font(.custom("Arial", size: 14))
                 }
                 .accessibilityLabel("Register")
                 .accessibilityAddTraits(!isLoginMode ? .isSelected : [])
-                .accessibilityHint(!isLoginMode ? "Currently selected" : "Double tap to switch to Register")
             }
         }
         .frame(height: 48)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Authentication mode")
-        .accessibilityValue(isLoginMode ? "Login" : "Register")
     }
 
-    // MARK: - Fields
     private var emailField: some View {
         TextField("Email", text: $email)
             .keyboardType(.emailAddress)
             .autocapitalization(.none)
-            .font(.system(size: 12))
+            .font(.custom("Arial", size: 14))
             .padding(.horizontal, 12)
             .frame(height: 48)
             .background(ColorTokens.authCardBackground)
@@ -225,7 +216,7 @@ struct AuthenticationView: View {
                     SecureField("Password", text: $password)
                 }
             }
-            .font(.system(size: 12))
+            .font(.custom("Arial", size: 14))
 
             Button { showPassword.toggle() } label: {
                 Image(systemName: showPassword ? "eye.slash" : "eye")
@@ -240,13 +231,11 @@ struct AuthenticationView: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(ColorTokens.authFieldBorder, lineWidth: 1)
         )
-        .accessibilityLabel("Password")
-        .accessibilityHint("Enter your password")
     }
 
     private var confirmPasswordField: some View {
         SecureField("Confirm Password", text: $confirmPassword)
-            .font(.system(size: 12))
+            .font(.custom("Arial", size: 14))
             .padding(.horizontal, 12)
             .frame(height: 48)
             .background(ColorTokens.authCardBackground)
@@ -254,11 +243,8 @@ struct AuthenticationView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(ColorTokens.authFieldBorder, lineWidth: 1)
             )
-            .accessibilityLabel("Confirm password")
-            .accessibilityHint("Re-enter your password")
     }
 
-    // MARK: - Remember + Forgot
     private var rememberForgotRow: some View {
         HStack {
             Button { rememberMe.toggle() } label: {
@@ -274,73 +260,67 @@ struct AuthenticationView: View {
                         )
 
                     Text("Remember me")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.custom("Arial", size: 14).weight(.medium))
                         .foregroundStyle(ColorTokens.textPrimary)
                 }
             }
-            .accessibilityLabel("Remember me")
-            .accessibilityHint("Keep me signed in on this device")
             .accessibilityValue(rememberMe ? "Checked" : "Unchecked")
 
             Spacer()
 
             Button {
-                // TODO: Forgot password flow
+                // Forgot password
             } label: {
                 Text("Forgot Password?")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.custom("Arial", size: 14).weight(.medium))
                     .foregroundStyle(ColorTokens.textPrimary)
             }
-            .accessibilityLabel("Forgot password")
         }
     }
 
-    // MARK: - Submit Button
     private var submitButton: some View {
         Button {
             handleAuthentication()
         } label: {
             Text(isLoginMode ? "Login" : "Register")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(ColorTokens.textLight)
+                .font(.custom("Arial", size: 14).weight(.semibold))
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
                 .background(ColorTokens.primary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(ColorTokens.primary, lineWidth: 1)
-                )
                 .cornerRadius(8)
         }
         .accessibilityLabel(isLoginMode ? "Login" : "Register")
-        .accessibilityHint("Authenticate and continue")
         .accessibilitySortPriority(1)
     }
 
-    // MARK: - OR Divider
     private var orDivider: some View {
         HStack {
             Rectangle().fill(ColorTokens.authDivider).frame(height: 1)
             Text("OR")
-                .font(.system(size: 12))
+                .font(.custom("Arial", size: 14))
                 .foregroundStyle(ColorTokens.textPrimary)
             Rectangle().fill(ColorTokens.authDivider).frame(height: 1)
         }
         .accessibilityHidden(true)
     }
 
-    // MARK: - Google Button
+    // MARK: - Google Button (Fixed per design critique)
     private var googleButton: some View {
         Button {
-            // TODO: Google sign-in logic
+            // Google sign-in
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: "g.circle.fill")
-                    .foregroundStyle(.red)
-                    .font(.title3)
+                // Official Google "G" icon - centered
+                Image("google-g-icon") // Add this asset or use SF Symbol
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                
                 Text("Continue with Google")
-                    .font(.system(size: 12))
+                    .font(.custom("Arial", size: 14))
                     .foregroundStyle(ColorTokens.textPrimary)
+                
                 Spacer()
             }
             .padding(.horizontal, 12)
@@ -354,15 +334,8 @@ struct AuthenticationView: View {
         .accessibilityLabel("Continue with Google")
     }
 
-    // MARK: - Validation + Auth + Navigation
     private func handleAuthentication() {
-        // No validation for now — navigate directly.
         errorMessage = nil
         goToNameScreen = true
-    }
-
-    private func setError(_ message: String) {
-        errorMessage = message
-        UIAccessibility.post(notification: .announcement, argument: message)
     }
 }

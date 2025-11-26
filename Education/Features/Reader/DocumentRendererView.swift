@@ -9,346 +9,280 @@ import Foundation
 import SwiftUI
 import UIKit
 
-/// Generic document reader (continuous view).
-/// Used for non-worksheet content and for the current worksheet layout.
+/// Generic document reader - uses native VoiceOver rotor for reading
+/// NO custom play buttons - follows Figma design
 struct DocumentRendererView: View {
     let title: String
     let nodes: [Node]
 
     @EnvironmentObject var speech: SpeechService
     @EnvironmentObject var haptics: HapticService
-
-    @State private var isPlaying = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
-            ColorTokens.backgroundAdaptive
+            Color(hex: "#F5F5F5")
                 .ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.large) {
+                    // Title - centered per Figma
                     Text(title)
-                        .font(Typography.heading1)
-                        .foregroundColor(ColorTokens.textPrimaryAdaptive)
+                        .font(.custom("Arial", size: 28))
+                        .fontWeight(.bold)
+                        .foregroundColor(Color(hex: "#121417"))
+                        .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.bottom, Spacing.small)
                         .accessibilityAddTraits(.isHeader)
+                        .accessibilityHeading(.h1)
 
                     VStack(alignment: .leading, spacing: Spacing.medium) {
                         ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
-                            rendered(node)
+                            DocumentNodeView(node: node)
                         }
                     }
                     .padding(Spacing.large)
-                    .background(ColorTokens.surfaceAdaptive)
-                    .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusLarge))
-                    .shadow(color: .black.opacity(0.05), radius: 12, y: 4)
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .padding(.horizontal, Spacing.screenPadding)
                 .padding(.top, Spacing.large)
                 .padding(.bottom, Spacing.xLarge)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("Close") {
-                    // The parent NavigationStack handles the actual pop.
-                    // We just make sure speech is stopped.
-                    isPlaying = false
-                    speech.stop(immediate: true)
-                }
-                .accessibilityLabel("Close worksheet")
-            }
-
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
-                    Button {
-                        // Toggle continuous read-aloud.
-                        isPlaying.toggle()
-                        if isPlaying {
-                            haptics.tapSelection()
-                            speech.speak(collectSpeakable(nodes: nodes))
-                        } else {
-                            speech.stop(immediate: false)
-                        }
-                    } label: {
-                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                    }
-                    .accessibilityLabel(isPlaying ? "Pause reading" : "Play reading")
-
-                    Button {
-                        isPlaying = false
-                        speech.stop(immediate: true)
-                    } label: {
-                        Image(systemName: "stop.fill")
-                    }
-                    .accessibilityLabel("Stop reading")
-                }
-            }
-        }
-        .toolbarBackground(ColorTokens.backgroundAdaptive, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .navigationTitle("Worksheet")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear {
-            // Very important for blind users:
-            // if we leave this screen (back button, Close, or app close),
-            // the continuous loop must stop.
-            isPlaying = false
             speech.stop(immediate: true)
         }
     }
+}
 
-    // MARK: - Node → View
+// MARK: - Document Node View
 
-    @ViewBuilder
-    private func rendered(_ node: Node) -> some View {
+private struct DocumentNodeView: View {
+    let node: Node
+    
+    var body: some View {
         switch node {
         case .heading(let level, let text):
             Text(text)
-                .font(
-                    level == 1 ? Typography.heading1 :
-                    level == 2 ? Typography.heading2 :
-                    Typography.heading3
-                )
-                .foregroundColor(ColorTokens.textPrimaryAdaptive)
+                .font(.custom("Arial", size: level == 1 ? 22 : level == 2 ? 20 : 18))
+                .fontWeight(level <= 2 ? .bold : .semibold)
+                .foregroundColor(Color(hex: "#121417"))
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityHeading(level == 1 ? .h1 : level == 2 ? .h2 : .h3)
 
         case .paragraph(let items):
-            HStack(alignment: .top, spacing: 0) {
-                ParagraphRichText(items: items)
-                Spacer(minLength: 0)
-            }
-            .accessibilityElement(children: .combine)
+            DocumentParagraphView(items: items)
 
         case .image(let src, let alt):
-            AccessibleImage(dataURI: src, alt: alt)
+            DocumentImageView(dataURI: src, alt: alt)
 
         case .svgNode(let svg, let t, let d):
-            VStack(alignment: .leading, spacing: Spacing.xSmall) {
-                if let tt = t {
-                    Text(tt)
-                        .font(Typography.bodyBold)
-                        .foregroundColor(ColorTokens.textPrimaryAdaptive)
-                }
-
-                SVGView(svg: svg)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.small)
-
-                if let desc = d?.first {
-                    Text(desc)
-                        .font(Typography.footnote)
-                        .foregroundColor(ColorTokens.textSecondaryAdaptive)
-                }
-            }
-            .accessibilityLabel((t ?? "Graphic") + ". " + (d?.first ?? ""))
+            DocumentSVGView(svg: svg, title: t, summaries: d)
 
         case .unknown:
             EmptyView()
         }
     }
-
-    // MARK: - TTS text builder
-
-    private func collectSpeakable(nodes: [Node]) -> String {
-        var out: [String] = [title]
-        for n in nodes {
-            switch n {
-            case .heading(_, let t):
-                out.append(t)
-            case .paragraph(let items):
-                let s = items.compactMap { inline -> String? in
-                    switch inline {
-                    case .text(let t): return t
-                    case .math:        return "[equation]"
-                    default:           return nil
-                    }
-                }.joined()
-                out.append(s)
-            case .image(_, let alt):
-                out.append(alt ?? "image")
-            case .svgNode(_, let t, let d):
-                out.append(t ?? "graphic")
-                if let d = d?.first { out.append(d) }
-            default:
-                break
-            }
-        }
-        return out.joined(separator: ". ")
-    }
 }
 
-// MARK: - Paragraph rich text + grouped math
+// MARK: - Document Paragraph (VoiceOver rotor enabled)
 
-/// Renders a paragraph as a sequence of text chunks and
-/// grouped math objects. Any consecutive math inlines are
-/// combined into ONE visual "math pill" so the equation
-/// feels like a single object (not several little buttons).
-struct ParagraphRichText: View {
+private struct DocumentParagraphView: View {
     let items: [Inline]
-
-    private enum Run {
-        case text([Inline])
-        case math([Inline])
+    
+    private var textParts: [String] {
+        items.compactMap { inline -> String? in
+            if case .text(let t) = inline { return t }
+            return nil
+        }
     }
-
-    /// Group contiguous math inlines together, and group
-    /// contiguous non-math inlines together.
-    private var runs: [Run] {
-        var result: [Run] = []
-        var currentText: [Inline] = []
-        var currentMath: [Inline] = []
-
-        func flushText() {
-            if !currentText.isEmpty {
-                result.append(.text(currentText))
-                currentText.removeAll()
-            }
+    
+    private var mathParts: [(Int, Inline)] {
+        items.enumerated().compactMap { idx, inline in
+            if case .math = inline { return (idx, inline) }
+            return nil
         }
-
-        func flushMath() {
-            if !currentMath.isEmpty {
-                result.append(.math(currentMath))
-                currentMath.removeAll()
-            }
-        }
-
-        for item in items {
-            switch item {
-            case .math:
-                // Start / continue a math run
-                flushText()
-                currentMath.append(item)
-
-            default:
-                // Start / continue a text run
-                flushMath()
-                currentText.append(item)
-            }
-        }
-
-        flushText()
-        flushMath()
-        return result
     }
-
+    
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Array(runs.enumerated()), id: \.offset) { _, run in
-                switch run {
-                case .text(let inlines):
-                    // Merge all text in this run into a single Text view
-                    let text = inlines.compactMap { inline -> String? in
-                        if case .text(let t) = inline { return t }
-                        return nil
-                    }.joined()
-
-                    if !text.isEmpty {
-                        Text(text)
-                            .font(Typography.body)
-                            .foregroundColor(ColorTokens.textPrimaryAdaptive)
-                    }
-
-                case .math(let mathInlines):
-                    GroupedMathRunView(parts: mathInlines)
+        VStack(alignment: .leading, spacing: 12) {
+            let combinedText = textParts.joined()
+            if !combinedText.isEmpty {
+                Text(combinedText)
+                    .font(.custom("Arial", size: 17))
+                    .foregroundColor(Color(hex: "#121417"))
+                    // VoiceOver rotor works on this text
+            }
+            
+            ForEach(mathParts, id: \.0) { _, mathInline in
+                if case .math(let latex, let mathml, let display) = mathInline {
+                    DocumentMathPill(latex: latex, mathml: mathml, display: display)
                 }
             }
         }
     }
 }
 
-/// One *logical* math object, possibly built from several
-/// JSON math inlines. This is what appears as the blue "pill"
-///  - shows the math (using LaTeX / text) visually,
-///  - speaks a combined description when activated,
-///  - avoids *overlapping* with VoiceOver by using
-///    UIAccessibility announcements when VO is running.
-private struct GroupedMathRunView: View {
-    let parts: [Inline]
+// MARK: - Document Math Pill
 
+private struct DocumentMathPill: View {
+    let latex: String?
+    let mathml: String?
+    let display: String?
+    
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
-
-    /// Combine LaTeX + nearby text for *visual* display.
+    
     private var displayText: String {
-        let pieces = parts.compactMap { inline -> String? in
-            switch inline {
-            case .math(let latex, _, _):
-                return latex
-            case .text(let t):
-                // Sometimes "f(x)" is plain text adjacent to math.
-                return t
-            default:
-                return nil
-            }
+        let text = latex ?? mathml ?? "Equation"
+        if text.count > 50 {
+            return String(text.prefix(47)) + "..."
         }
-        let joined = pieces.joined(separator: " ")
-        return joined.isEmpty ? "Equation" : joined
+        return text
     }
-
-    /// Combine LaTeX/MathML for speech.
+    
     private var spokenString: String {
-        let latexPieces = parts.compactMap { inline -> String? in
-            if case .math(let latex, _, _) = inline { return latex }
-            return nil
+        if let l = latex, !l.isEmpty {
+            return mathSpeech.speakable(from: l, verbosity: .verbose)
         }
-
-        let mathmlPieces = parts.compactMap { inline -> String? in
-            if case .math(_, let mathml, _) = inline { return mathml }
-            return nil
-        }
-
-        if let latex = latexPieces.joined(separator: " ").nilIfEmpty {
-            return mathSpeech.speakable(from: latex, verbosity: .brief)
-        }
-        if let mathml = mathmlPieces.joined(separator: " ").nilIfEmpty {
-            return mathSpeech.speakable(from: mathml, verbosity: .brief)
+        if let m = mathml, !m.isEmpty {
+            return mathSpeech.speakable(from: m, verbosity: .verbose)
         }
         return "equation"
     }
-
+    
     var body: some View {
         Button {
             haptics.mathStart()
-
-            let toSpeak = spokenString
-
+            
             if UIAccessibility.isVoiceOverRunning {
-                // Use VoiceOver's own channel – this queues nicely
-                // after VO has spoken "Equation, button", so there’s
-                // no overlapping / dual audio.
-                UIAccessibility.post(notification: .announcement, argument: toSpeak)
+                UIAccessibility.post(notification: .announcement, argument: spokenString)
             } else {
-                // Non-VO case: use our shared speech engine.
-                speech.speak(toSpeak)
+                speech.speak(spokenString)
             }
-
+            
             haptics.mathEnd()
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: "function")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(ColorTokens.primary)
+                
                 Text(displayText)
-                    .font(Typography.body)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .font(.custom("Arial", size: 15))
+                    .foregroundColor(Color(hex: "#121417"))
+                    .lineLimit(2)
             }
-            .padding(8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(ColorTokens.primaryLight3)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        // Keep this short so VO announces "Equation, button".
+        .buttonStyle(.plain)
         .accessibilityLabel("Equation")
-        .accessibilityHint("Double tap to hear math read aloud.")
+        .accessibilityHint("Double tap to hear the equation")
+        .onAppear {
+            if UIAccessibility.isVoiceOverRunning {
+                haptics.mathTerm()
+            }
+        }
     }
 }
 
-// Small helper to treat empty strings as nil.
-private extension String {
-    var nilIfEmpty: String? { isEmpty ? nil : self }
+// MARK: - Document Image View
+
+private struct DocumentImageView: View {
+    let dataURI: String
+    let alt: String?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let img = decodeImage(dataURI: dataURI) {
+                Image(uiImage: img)
+                    .resizable()
+                    .aspectRatio(img.size, contentMode: .fit)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .accessibilityLabel(alt ?? "Image")
+            } else {
+                Rectangle()
+                    .fill(Color(hex: "#DEECF8"))
+                    .frame(height: 160)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .accessibilityLabel(alt ?? "Image")
+            }
+            
+            if let altText = alt, !altText.isEmpty {
+                Button {
+                    if UIAccessibility.isVoiceOverRunning {
+                        UIAccessibility.post(notification: .announcement, argument: altText)
+                    }
+                } label: {
+                    Text("View Description")
+                        .font(.custom("Arial", size: 14))
+                        .foregroundColor(ColorTokens.primary)
+                }
+            }
+        }
+    }
+    
+    private func decodeImage(dataURI: String) -> UIImage? {
+        guard let range = dataURI.range(of: "base64,") else { return nil }
+        let base64 = String(dataURI[range.upperBound...])
+        guard let data = Data(base64Encoded: base64) else { return nil }
+        return UIImage(data: data)
+    }
 }
 
-// MARK: - Image helper
+// MARK: - Document SVG View
+
+private struct DocumentSVGView: View {
+    let svg: String
+    let title: String?
+    let summaries: [String]?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.xSmall) {
+            if let t = title {
+                Text(t)
+                    .font(.custom("Arial", size: 17).weight(.bold))
+                    .foregroundColor(Color(hex: "#121417"))
+            }
+
+            SVGView(svg: svg)
+                .frame(maxWidth: .infinity)
+                .frame(height: 200)
+                .accessibilityHidden(true)
+
+            if let desc = summaries?.first {
+                Text(desc)
+                    .font(.custom("Arial", size: 13))
+                    .foregroundColor(Color(hex: "#61758A"))
+            }
+            
+            Button {
+                if let desc = summaries?.first, UIAccessibility.isVoiceOverRunning {
+                    UIAccessibility.post(notification: .announcement, argument: desc)
+                }
+            } label: {
+                Text("View Description")
+                    .font(.custom("Arial", size: 14))
+                    .foregroundColor(ColorTokens.primary)
+            }
+        }
+    }
+}
+
+// MARK: - Accessible Image (shared)
 
 struct AccessibleImage: View {
     let dataURI: String
@@ -360,18 +294,18 @@ struct AccessibleImage: View {
                 .resizable()
                 .aspectRatio(img.size, contentMode: .fit)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusSmall))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
                 .accessibilityLabel(alt ?? "image")
         } else {
             Rectangle()
-                .fill(ColorTokens.surfaceAdaptive2)
+                .fill(Color(hex: "#DEECF8"))
                 .frame(height: 160)
                 .overlay(
                     Text(alt ?? "image")
-                        .font(Typography.caption1)
-                        .foregroundColor(ColorTokens.textPrimaryAdaptive)
+                        .font(.custom("Arial", size: 13))
+                        .foregroundColor(Color(hex: "#121417"))
                 )
-                .clipShape(RoundedRectangle(cornerRadius: Spacing.cornerRadiusSmall))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
                 .accessibilityLabel(alt ?? "image")
         }
     }
