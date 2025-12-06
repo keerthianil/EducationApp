@@ -65,6 +65,11 @@ public enum ColorTokens {
     /// Use for: Subtle backgrounds, disabled states
     public static let primaryLight3 = Color(hex: "#DCF0F2")
     
+    /// Uploaded file card background - Light Teal
+    /// Hex: #E8F2F2
+    /// Use for: Background of uploaded file cards
+    public static let uploadedFileCardBackground = Color(hex: "#F4F1FE")
+    
     // MARK: - Secondary Colors - Pink/Magenta
     
     /// Secondary color - Dark Magenta

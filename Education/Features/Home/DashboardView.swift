@@ -17,6 +17,8 @@ struct DashboardView: View {
     @State private var showUpload = false
     @State private var selectedLesson: LessonIndexItem?
     @State private var selectedTab: HomeTab = .home
+    @StateObject private var notificationDelegate = NotificationDelegate.shared
+    @StateObject private var uploadManager = UploadManager()
 
     enum HomeTab {
         case accessibility, home, allFiles
@@ -31,20 +33,29 @@ struct DashboardView: View {
                         .padding(.top, 20)
                         .padding(.bottom, 20)
                     
-                    bannerSection()
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
-                    
-                    uploadSection()
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 20)
-                    
-                    uploadedByTeacherSection()
-                        .padding(.bottom, 12)
-                    
-                    recentsSection()
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 20)
+                    if selectedTab == .home {
+                        bannerSection()
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
+                        
+                        uploadSection()
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 20)
+                        
+                        uploadedSection()
+                            .padding(.bottom, 12)
+                        
+                        uploadedByTeacherSection()
+                            .padding(.bottom, 12)
+                        
+                        recentsSection()
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 20)
+                    } else if selectedTab == .allFiles {
+                        allFilesSection()
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 20)
+                    }
                 }
                 .padding(.bottom, 95) // Space for tab bar (95px per Figma)
             }
@@ -54,13 +65,25 @@ struct DashboardView: View {
         }
         .ignoresSafeArea(edges: .bottom)
         .sheet(isPresented: $showUpload) {
-            UploadSheetView()
+            UploadSheetView(uploadManager: uploadManager)
                 .environmentObject(lessonStore)
                 .environmentObject(haptics)
+        }
+        .onAppear {
+            // Connect uploadManager to lessonStore
+            uploadManager.lessonStore = lessonStore
         }
         .fullScreenCover(item: $selectedLesson) { lesson in
             NavigationStack {
                 ReaderContainer(item: lesson)
+            }
+        }
+        .onChange(of: notificationDelegate.selectedLessonId) { oldLessonId, newLessonId in
+            // Handle notification tap - open the lesson
+            if let lessonId = newLessonId,
+               let lesson = lessonStore.recent.first(where: { $0.id == lessonId }) {
+                selectedLesson = lesson
+                notificationDelegate.selectedLessonId = nil // Reset
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -203,6 +226,83 @@ struct DashboardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.1), radius: 8, x: 1, y: 1)
         .accessibilityElement(children: .contain)
+    }
+
+    // MARK: - Uploaded Section (Processing/Recently Completed files)
+    @ViewBuilder
+    private func uploadedSection() -> some View {
+        let processingFiles = lessonStore.processing
+        // Only show files completed in the last 24 hours in "Uploaded" section
+        let recentCompletedFiles = lessonStore.downloaded.filter { item in
+            !processingFiles.contains { $0.item.id == item.id } &&
+            item.createdAt > Date().addingTimeInterval(-24 * 60 * 60) // Last 24 hours
+        }
+        
+        if !processingFiles.isEmpty || !recentCompletedFiles.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Uploaded")
+                    .font(.custom("Arial", size: 22))
+                    .fontWeight(.bold)
+                    .foregroundColor(Color(hex: "#121417"))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, 12)
+                
+                VStack(spacing: 8) {
+                    // Processing files (with progress bar)
+                    ForEach(processingFiles) { processingFile in
+                        ProcessingFileCard(processingFile: processingFile)
+                    }
+                    
+                    // Recently completed files (with checkmark)
+                    ForEach(recentCompletedFiles) { item in
+                        CompletedFileCard(item: item) {
+                            haptics.tapSelection()
+                            selectedLesson = item
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+    
+    // MARK: - All Files Section
+    @ViewBuilder
+    private func allFilesSection() -> some View {
+        let allUploadedFiles = lessonStore.downloaded.sorted { $0.createdAt > $1.createdAt }
+        
+        VStack(alignment: .leading, spacing: 0) {
+            Text("All Files")
+                .font(.custom("Arial", size: 22))
+                .fontWeight(.bold)
+                .foregroundColor(Color(hex: "#121417"))
+                .padding(.top, 20)
+                .padding(.bottom, 12)
+            
+            if allUploadedFiles.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "doc")
+                        .font(.system(size: 48))
+                        .foregroundColor(Color(hex: "#989CA6"))
+                    
+                    Text("No files yet")
+                        .font(.custom("Arial", size: 17))
+                        .foregroundColor(Color(hex: "#61758A"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(allUploadedFiles) { item in
+                        CompletedFileCard(item: item) {
+                            haptics.tapSelection()
+                            selectedLesson = item
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Uploaded by Teacher Section
@@ -508,6 +608,157 @@ private struct ReaderContainer: View {
                 .accessibilityLabel("Back")
                 .accessibilityHint("Close worksheet and return to home")
             }
+        }
+    }
+}
+
+// MARK: - Processing File Card (with progress bar)
+
+private struct ProcessingFileCard: View {
+    let processingFile: ProcessingFile
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // PDF icon
+            Image(systemName: "doc.fill")
+                .font(.system(size: 24))
+                .foregroundColor(Color(hex: "#B31111"))
+                .frame(width: 40, height: 40)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Processing...")
+                    .font(.custom("Arial", size: 13.5))
+                    .foregroundColor(Color(hex: "#91949B"))
+                
+                Text(processingFile.item.title)
+                    .font(.custom("Arial", size: 18.6))
+                    .foregroundColor(.black)
+                    .lineLimit(1)
+                
+                // Progress bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // Background
+                        Rectangle()
+                            .fill(Color(hex: "#E8F2F2"))
+                            .frame(height: 4)
+                            .cornerRadius(2)
+                        
+                        // Progress
+                        Rectangle()
+                            .fill(ColorTokens.primary)
+                            .frame(width: geometry.size.width * processingFile.progress, height: 4)
+                            .cornerRadius(2)
+                    }
+                }
+                .frame(height: 4)
+                
+                // Progress percentage
+                Text("\(Int(processingFile.progress * 100))% Complete")
+                    .font(.custom("Arial", size: 12))
+                    .foregroundColor(Color(hex: "#61758A"))
+            }
+            
+            Spacer()
+            
+            // Loading spinner
+            ProgressView()
+                .scaleEffect(0.8)
+        }
+        .padding(16)
+        .background(Color.white)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Processing \(processingFile.item.title), \(Int(processingFile.progress * 100)) percent complete")
+    }
+}
+
+// MARK: - Completed File Card (with checkmark)
+
+private struct CompletedFileCard: View {
+    let item: LessonIndexItem
+    var onTap: () -> Void
+    
+    var body: some View {
+        Button {
+            onTap()
+        } label: {
+            HStack(spacing: 12) {
+                // PDF icon
+                Image(systemName: "doc.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(Color(hex: "#B31111"))
+                    .frame(width: 40, height: 40)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.title)
+                        .font(.custom("Arial", size: 18.6))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                    
+                    Text(formatFileMetadata(for: item))
+                        .font(.custom("Arial", size: 13.5))
+                        .foregroundColor(Color(hex: "#91949B"))
+                }
+                
+                Spacer()
+                
+                // Checkmark icon
+                Image("tick-mark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+            }
+            .padding(16)
+            .background(ColorTokens.uploadedFileCardBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(ColorTokens.uploadedFileCardBackground, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(item.title), completed")
+        .accessibilityHint("Double tap to open")
+    }
+    
+    private func formatFileMetadata(for item: LessonIndexItem) -> String {
+        let timeAgo = formatTimeAgo(from: item.createdAt)
+        let fileSize = estimateFileSize(pages: item.localFiles.count)
+        return "\(timeAgo), \(fileSize)"
+    }
+    
+    private func formatTimeAgo(from date: Date) -> String {
+        let now = Date()
+        let timeInterval = now.timeIntervalSince(date)
+        
+        if timeInterval < 60 {
+            return "Just now"
+        } else if timeInterval < 3600 {
+            let minutes = Int(timeInterval / 60)
+            return "\(minutes) min ago"
+        } else if timeInterval < 86400 {
+            let hours = Int(timeInterval / 3600)
+            return "\(hours) hour\(hours == 1 ? "" : "s") ago"
+        } else {
+            let days = Int(timeInterval / 86400)
+            return "\(days) day\(days == 1 ? "" : "s") ago"
+        }
+    }
+    
+    private func estimateFileSize(pages: Int) -> String {
+        // Rough estimate: ~150KB per page
+        let sizeInKB = pages * 150
+        if sizeInKB < 1024 {
+            return "\(sizeInKB)KB"
+        } else {
+            let sizeInMB = Double(sizeInKB) / 1024.0
+            return String(format: "%.1fMB", sizeInMB)
         }
     }
 }
