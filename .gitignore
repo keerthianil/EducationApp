@@ -33,3 +33,7 @@ build/
 # We keep your accessible HTML and JSON samples (no ignore needed),
 # but if you ever have temporary exports, ignore this pattern:
 *_tmp.json
+*.xcuserstate
+xcuserdata/
+**/*.xcuserstate
+**/xcuserdata/
