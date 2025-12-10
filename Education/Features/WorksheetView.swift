@@ -12,6 +12,7 @@ import UIKit
 /// - VoiceOver rotor handles char/word/line navigation natively
 /// - Headers marked for rotor heading navigation
 /// - Math pills are tappable buttons
+/// - iPad compatible with adaptive layouts
 struct WorksheetView: View {
     let title: String
     let pages: [[WorksheetItem]]
@@ -19,8 +20,22 @@ struct WorksheetView: View {
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var speech: SpeechService
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var currentPage: Int = 0
+    
+    // iPad-aware sizing
+    private var contentMaxWidth: CGFloat {
+        horizontalSizeClass == .regular ? 800 : .infinity
+    }
+    
+    private var horizontalPadding: CGFloat {
+        horizontalSizeClass == .regular ? 48 : Spacing.screenPadding
+    }
+    
+    private var titleFontSize: CGFloat {
+        horizontalSizeClass == .regular ? 34 : 28
+    }
 
     private var safePageIndex: Int {
         guard !pages.isEmpty else { return 0 }
@@ -40,14 +55,13 @@ struct WorksheetView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.medium) {
 
-                    // Title - centered, Arial bold per Figma
+                    // Title
                     Text(title)
-                        .font(.custom("Arial", size: 28))
+                        .font(.custom("Arial", size: titleFontSize))
                         .fontWeight(.bold)
                         .foregroundColor(Color(hex: "#121417"))
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top, Spacing.large)
-                        // Header trait - rotor can navigate to this
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHeading(.h1)
 
@@ -57,10 +71,10 @@ struct WorksheetView: View {
                             .font(.custom("Arial", size: 13.5))
                             .foregroundColor(Color(hex: "#91949B"))
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, Spacing.screenPadding)
+                            .padding(.horizontal, horizontalPadding)
                     }
 
-                    // MAIN CONTENT - proper semantic structure for VoiceOver rotor
+                    // MAIN CONTENT
                     VStack(alignment: .leading, spacing: Spacing.medium) {
                         ForEach(currentItems) { item in
                             ForEach(Array(item.nodes.enumerated()), id: \.offset) { _, node in
@@ -70,12 +84,11 @@ struct WorksheetView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, Spacing.screenPadding)
+                    .padding(.horizontal, horizontalPadding)
 
-                    // Page navigation buttons per Figma
+                    // Page navigation buttons
                     if pages.count > 1 {
                         HStack {
-                            // Previous - bordered secondary style
                             Button {
                                 moveToPreviousPage()
                             } label: {
@@ -98,7 +111,6 @@ struct WorksheetView: View {
 
                             Spacer()
 
-                            // Next - filled primary style
                             Button {
                                 moveToNextPage()
                             } label: {
@@ -117,10 +129,12 @@ struct WorksheetView: View {
                             .opacity(safePageIndex == pages.count - 1 ? 0.4 : 1.0)
                             .accessibilityLabel("Next question")
                         }
-                        .padding(.horizontal, Spacing.screenPadding)
+                        .padding(.horizontal, horizontalPadding)
                         .padding(.top, Spacing.large)
                     }
                 }
+                .frame(maxWidth: contentMaxWidth)
+                .frame(maxWidth: .infinity)
                 .padding(.bottom, Spacing.xLarge)
             }
         }
@@ -155,7 +169,6 @@ struct WorksheetView: View {
         guard !pages.isEmpty else { return }
         haptics.sectionChange()
         
-        // VoiceOver announcement for page change
         if UIAccessibility.isVoiceOverRunning {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 UIAccessibility.post(
@@ -181,18 +194,23 @@ struct WorksheetView: View {
     }
 }
 
-// MARK: - Node Block View (White cards with stroke per Figma)
+// MARK: - Node Block View
 
 private struct NodeBlockView: View {
     let node: Node
     
     @EnvironmentObject var haptics: HapticService
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
+    private var contentPadding: CGFloat {
+        horizontalSizeClass == .regular ? Spacing.large : Spacing.medium
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.small) {
             nodeContent
         }
-        .padding(Spacing.medium)
+        .padding(contentPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white)
         .overlay(
@@ -206,18 +224,14 @@ private struct NodeBlockView: View {
     private var nodeContent: some View {
         switch node {
         case .heading(let level, let text):
-            // HEADER: VoiceOver rotor can navigate by headings
-            // Rotor skips char/word/line for headers (they're navigation landmarks)
             Text(text)
-                .font(.custom("Arial", size: level == 1 ? 22 : level == 2 ? 20 : 18))
+                .font(.custom("Arial", size: headingSize(for: level)))
                 .fontWeight(level <= 2 ? .bold : .semibold)
                 .foregroundColor(Color(hex: "#121417"))
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityHeading(level == 1 ? .h1 : level == 2 ? .h2 : .h3)
 
         case .paragraph(let items):
-            // PARAGRAPH: VoiceOver rotor CAN do char/word/line navigation
-            // This is where detailed reading happens
             ParagraphBlockView(items: items)
 
         case .image(let src, let alt):
@@ -230,17 +244,22 @@ private struct NodeBlockView: View {
             EmptyView()
         }
     }
+    
+    private func headingSize(for level: Int) -> CGFloat {
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 26 : 22
+        switch level {
+        case 1: return baseSize
+        case 2: return baseSize - 2
+        default: return baseSize - 4
+        }
+    }
 }
 
-// MARK: - Paragraph Block with proper VoiceOver semantics
+// MARK: - Paragraph Block
 
-/// Paragraphs are the main content - VoiceOver rotor works here
-/// User can:
-/// - Two-finger rotate to select "Characters", "Words", or "Lines"
-/// - Swipe up/down to navigate by that unit
-/// - Two-finger swipe down to read all continuously
 private struct ParagraphBlockView: View {
     let items: [Inline]
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     private var textParts: [String] {
         items.compactMap { inline -> String? in
@@ -256,37 +275,33 @@ private struct ParagraphBlockView: View {
         }
     }
     
+    private var bodyFontSize: CGFloat {
+        horizontalSizeClass == .regular ? 19 : 17
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Text content - THIS is where VoiceOver rotor char/word/line works
             let combinedText = textParts.joined()
             if !combinedText.isEmpty {
                 Text(combinedText)
-                    .font(.custom("Arial", size: 17))
+                    .font(.custom("Arial", size: bodyFontSize))
                     .foregroundColor(Color(hex: "#121417"))
-                    // These modifiers enable proper rotor behavior
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(combinedText)
-                    // Allow VoiceOver to treat this as readable text
-                    // Rotor will offer Characters, Words, Lines options
             }
             
-            // Math equations displayed BELOW text, each tappable
             ForEach(mathParts, id: \.0) { _, mathInline in
                 if case .math(let latex, let mathml, let display) = mathInline {
                     MathEquationPill(latex: latex, mathml: mathml, display: display)
                 }
             }
         }
-        // Container for the paragraph - VoiceOver navigates into it
         .accessibilityElement(children: .contain)
     }
 }
 
-// MARK: - Math Equation Pill (Tappable button)
+// MARK: - Math Equation Pill
 
-/// Math pills are buttons - double tap to hear equation
-/// Haptic pulse signals math content
 private struct MathEquationPill: View {
     let latex: String?
     let mathml: String?
@@ -295,11 +310,10 @@ private struct MathEquationPill: View {
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     private var displayText: String {
-        // Show simplified version visually
         let text = latex ?? mathml ?? "Equation"
-        // Truncate for display if too long
         if text.count > 50 {
             return String(text.prefix(47)) + "..."
         }
@@ -316,14 +330,15 @@ private struct MathEquationPill: View {
         return "equation"
     }
     
+    private var pillFontSize: CGFloat {
+        horizontalSizeClass == .regular ? 17 : 15
+    }
+    
     var body: some View {
         Button {
-            // Haptic pulse for math content (per use case)
             haptics.mathStart()
             
-            // Speak the equation
             if UIAccessibility.isVoiceOverRunning {
-                // Post as announcement so it queues after VoiceOver
                 UIAccessibility.post(notification: .announcement, argument: spokenString)
             } else {
                 speech.speak(spokenString)
@@ -337,7 +352,7 @@ private struct MathEquationPill: View {
                     .foregroundColor(ColorTokens.primary)
                 
                 Text(displayText)
-                    .font(.custom("Arial", size: 15))
+                    .font(.custom("Arial", size: pillFontSize))
                     .foregroundColor(Color(hex: "#121417"))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
@@ -354,7 +369,6 @@ private struct MathEquationPill: View {
         .accessibilityHint("Double tap to hear the math equation read aloud")
         .accessibilityAddTraits(.startsMediaSession)
         .onAppear {
-            // Brief haptic when math content comes into view (for VoiceOver users)
             if UIAccessibility.isVoiceOverRunning {
                 haptics.mathTerm()
             }
@@ -367,10 +381,14 @@ private struct MathEquationPill: View {
 private struct ImageBlockView: View {
     let dataURI: String
     let alt: String?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
+    private var imageHeight: CGFloat {
+        horizontalSizeClass == .regular ? 300 : 160
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Image
             if let img = decodeImage(dataURI: dataURI) {
                 Image(uiImage: img)
                     .resizable()
@@ -381,12 +399,11 @@ private struct ImageBlockView: View {
             } else {
                 Rectangle()
                     .fill(Color(hex: "#DEECF8"))
-                    .frame(height: 160)
+                    .frame(height: imageHeight)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .accessibilityLabel(alt ?? "Image")
             }
             
-            // View Description button per Figma
             if let altText = alt, !altText.isEmpty {
                 Button {
                     if UIAccessibility.isVoiceOverRunning {
@@ -417,6 +434,11 @@ private struct SVGBlockView: View {
     let svg: String
     let title: String?
     let summaries: [String]?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
+    private var svgHeight: CGFloat {
+        horizontalSizeClass == .regular ? 300 : 200
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xSmall) {
@@ -429,8 +451,8 @@ private struct SVGBlockView: View {
 
             SVGView(svg: svg)
                 .frame(maxWidth: .infinity)
-                .frame(height: 200)
-                .accessibilityHidden(true) // SVG itself hidden, we provide text description
+                .frame(height: svgHeight)
+                .accessibilityHidden(true)
 
             if let desc = summaries?.first {
                 Text(desc)
@@ -438,7 +460,6 @@ private struct SVGBlockView: View {
                     .foregroundColor(Color(hex: "#61758A"))
             }
             
-            // View Description button
             Button {
                 if let desc = summaries?.first, UIAccessibility.isVoiceOverRunning {
                     UIAccessibility.post(notification: .announcement, argument: desc)
