@@ -75,6 +75,9 @@ final class LessonStore: ObservableObject {
 
     /// Optional banner lesson shown at the top (“New document from …”).
     @Published var banner: LessonIndexItem? = nil
+    
+    /// Files currently being processed (uploading/processing state)
+    @Published var processing: [ProcessingFile] = []
 
     init() {
         // Seed dashboard with all three teacher lessons so they’re visible
@@ -86,8 +89,26 @@ final class LessonStore: ObservableObject {
 
     // MARK: - Mutations
 
+    /// Add a file to processing state (when upload starts)
+    func addProcessing(_ item: LessonIndexItem) {
+        // Remove if already exists
+        processing.removeAll { $0.item.id == item.id }
+        // Add to processing with 0% progress
+        processing.insert(ProcessingFile(item: item, progress: 0.0), at: 0)
+    }
+    
+    /// Update progress for a processing file
+    func updateProcessingProgress(for itemId: String, progress: Double) {
+        if let index = processing.firstIndex(where: { $0.item.id == itemId }) {
+            processing[index].progress = progress
+        }
+    }
+    
     /// Called by UploadManager when a conversion finishes.
     func addConverted(_ item: LessonIndexItem) {
+        // Remove from processing
+        processing.removeAll { $0.item.id == item.id }
+        
         // Track in uploaded list
         downloaded.insert(item, at: 0)
 
@@ -139,5 +160,19 @@ final class LessonStore: ObservableObject {
         }
 
         return all
+    }
+}
+
+// MARK: - Processing File Model
+
+struct ProcessingFile: Identifiable {
+    let id: String
+    let item: LessonIndexItem
+    var progress: Double // 0.0 to 1.0
+    
+    init(item: LessonIndexItem, progress: Double) {
+        self.id = item.id
+        self.item = item
+        self.progress = progress
     }
 }
