@@ -27,12 +27,8 @@ struct EducationApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                // Check if onboarding is completed
-                if appState.hasCompletedOnboarding {
-                    DashboardView()
-                } else {
-                    AboutView()
-                }
+                // Always show flow selection screen; skip login/onboarding
+                ChooseFlowView()
             }
             .environmentObject(appState)
             .environmentObject(lessonStore)
