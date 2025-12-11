@@ -2,8 +2,6 @@
 //  DashboardView.swift
 //  Education
 //
-//  Created by Keerthi Reddy on 11/7/25.
-//
 
 import SwiftUI
 import UIKit
@@ -21,7 +19,6 @@ struct DashboardView: View {
     @StateObject private var notificationDelegate = NotificationDelegate.shared
     @StateObject private var uploadManager = UploadManager()
     
-    // Track previous counts for VoiceOver announcements
     @State private var previousProcessingCount = 0
     @State private var previousCompletedCount = 0
     
@@ -31,7 +28,6 @@ struct DashboardView: View {
         case accessibility, home, allFiles
     }
     
-    // iPad-aware sizing
     private var contentMaxWidth: CGFloat {
         horizontalSizeClass == .regular ? 800 : .infinity
     }
@@ -79,7 +75,7 @@ struct DashboardView: View {
                 }
                 .frame(maxWidth: contentMaxWidth)
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 95) // Space for tab bar
+                .padding(.bottom, 95)
             }
             .background(Color(hex: "#F6F7F8"))
 
@@ -108,31 +104,10 @@ struct DashboardView: View {
                 notificationDelegate.selectedLessonId = nil
             }
         }
-        // VoiceOver: Announce when new files start processing
         .onChange(of: lessonStore.processing.count) { oldCount, newCount in
-            if newCount > previousProcessingCount {
-                let newFiles = newCount - previousProcessingCount
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    UIAccessibility.post(
-                        notification: .announcement,
-                        argument: "\(newFiles) new file\(newFiles == 1 ? "" : "s") processing"
-                    )
-                }
-            }
             previousProcessingCount = newCount
         }
-        // VoiceOver: Announce when files complete processing
         .onChange(of: lessonStore.downloaded.count) { oldCount, newCount in
-            if newCount > previousCompletedCount {
-                if let newestFile = lessonStore.downloaded.first {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        UIAccessibility.post(
-                            notification: .announcement,
-                            argument: "\(newestFile.title) is ready to view"
-                        )
-                    }
-                }
-            }
             previousCompletedCount = newCount
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -145,6 +120,7 @@ struct DashboardView: View {
                 .font(.custom("Arial", size: 22.3))
                 .fontWeight(.bold)
                 .foregroundColor(Color(hex: "#47494F"))
+                .accessibilityLabel("Education App")
 
             Spacer()
 
@@ -205,12 +181,9 @@ struct DashboardView: View {
                 }
                 .buttonStyle(PrimaryButtonStyle())
 
-                Button("Scan files") {
-                    // not implemented
-                }
-                .buttonStyle(TertiaryButtonStyle())
-                .disabled(true)
-                .accessibilityHint("Not available in this demo")
+                Button("Scan files") { }
+                    .buttonStyle(TertiaryButtonStyle())
+                    .disabled(true)
             }
 
             Text("or upload from")
@@ -218,18 +191,12 @@ struct DashboardView: View {
                 .foregroundColor(Color(hex: "#989CA6"))
 
             HStack(spacing: 8) {
-                // Google Drive chip
+                // Google Drive chip - using GoogleDrive asset
                 HStack(spacing: 8) {
-                    if UIImage(named: "GoogleDrive") != nil {
-                        Image("GoogleDrive")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Image(systemName: "externaldrive.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(Color(hex: "#4285F4"))
-                    }
+                    Image("GoogleDrive")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
 
                     Text("Google Drive")
                         .font(.custom("Arial", size: 16.7))
@@ -244,20 +211,13 @@ struct DashboardView: View {
                         .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .accessibilityHidden(true)
 
-                // Dropbox chip
+                // Dropbox chip - using Dropbox asset
                 HStack(spacing: 8) {
-                    if UIImage(named: "Dropbox") != nil {
-                        Image("Dropbox")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Image(systemName: "shippingbox.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(Color(hex: "#0061FF"))
-                    }
+                    Image("Dropbox")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
 
                     Text("Dropbox")
                         .font(.custom("Arial", size: 16.7))
@@ -272,8 +232,8 @@ struct DashboardView: View {
                         .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .accessibilityHidden(true)
             }
+            .accessibilityHidden(true)
         }
         .padding(.vertical, 32)
         .padding(.horizontal, 25)
@@ -281,10 +241,9 @@ struct DashboardView: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.1), radius: 8, x: 1, y: 1)
-        .accessibilityElement(children: .contain)
     }
 
-    // MARK: - Uploaded Section (Processing/Recently Completed)
+    // MARK: - Uploaded Section
     @ViewBuilder
     private func uploadedSection() -> some View {
         let processingFiles = lessonStore.processing
@@ -348,8 +307,6 @@ struct DashboardView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("No files uploaded yet")
             } else {
                 VStack(spacing: 8) {
                     ForEach(allUploadedFiles) { item in
@@ -411,13 +368,10 @@ struct DashboardView: View {
 
             VStack(spacing: 11) {
                 ForEach(lessonStore.recent) { item in
-                    Button {
+                    RecentRow(item: item) {
                         haptics.tapSelection()
                         selectedLesson = item
-                    } label: {
-                        RecentRow(item: item)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -448,12 +402,11 @@ public struct TertiaryButtonStyle: ButtonStyle {
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .opacity(configuration.isPressed ? 0.9 : 1.0)
-            .accessibilityAddTraits(.isButton)
             .contentShape(Rectangle())
     }
 }
 
-// MARK: - Teacher Lesson Card
+// MARK: - Teacher Lesson Card (Using pdf-icon-red)
 private struct TeacherLessonCard: View {
     let item: LessonIndexItem
     let cardWidth: CGFloat
@@ -462,21 +415,17 @@ private struct TeacherLessonCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
-                // Document icon - use custom asset or fallback
-                Group {
-                    if UIImage(named: "pdf-icon-purple") != nil {
-                        Image("pdf-icon-purple")
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        Image(systemName: "doc.richtext.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(ColorTokens.secondaryPurple)
-                    }
+                // Red PDF icon from assets
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(hex: "#FEDFDE"))
+                        .frame(width: 44, height: 44)
+                    
+                    Image("pdf-icon-red")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
                 }
-                .frame(width: 56, height: 56)
-                .background(ColorTokens.secondaryPurpleLight3)
-                .clipShape(RoundedRectangle(cornerRadius: 13))
                 .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -512,68 +461,64 @@ private struct TeacherLessonCard: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: Color(hex: "#332177").opacity(0.15), radius: 4, x: 1, y: 1)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(item.title), from \(item.teacher ?? "teacher")")
-        .accessibilityHint("Double tap to open lesson")
+        .accessibilityHint("Double tap to open")
     }
 }
 
-// MARK: - Recent Row
+// MARK: - Recent Row (Using pdf-icon-blue)
 private struct RecentRow: View {
     let item: LessonIndexItem
+    let onTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Icon - use custom asset or fallback
-            Group {
-                if UIImage(named: "pdf-icon-blue") != nil {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                // Blue PDF icon from assets
+                ZStack {
+                    RoundedRectangle(cornerRadius: 13.75)
+                        .fill(Color(hex: "#DEECF8"))
+                        .frame(width: 56, height: 56)
+                    
                     Image("pdf-icon-blue")
                         .resizable()
                         .scaledToFit()
-                } else {
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(ColorTokens.primary)
+                        .frame(width: 28, height: 28)
                 }
-            }
-            .frame(width: 56, height: 56)
-            .background(Color(hex: "#DEECF8"))
-            .clipShape(RoundedRectangle(cornerRadius: 13.75))
-            .accessibilityHidden(true)
+                .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.createdAt, style: .relative)
-                    .font(.custom("Arial", size: 13.7))
-                    .foregroundColor(Color(hex: "#91949B"))
-                
-                Text(item.title)
-                    .font(.custom("Arial", size: 18.6))
-                    .foregroundColor(.black)
-                    .lineLimit(1)
-            }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.createdAt, style: .relative)
+                        .font(.custom("Arial", size: 13.7))
+                        .foregroundColor(Color(hex: "#91949B"))
+                    
+                    Text(item.title)
+                        .font(.custom("Arial", size: 18.6))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                }
 
-            Spacer()
+                Spacer()
 
-            Button {
-                // Menu action
-            } label: {
                 Image(systemName: "ellipsis")
                     .rotationEffect(.degrees(90))
                     .foregroundColor(ColorTokens.textSecondaryAdaptive)
+                    .accessibilityHidden(true)
             }
-            .accessibilityHidden(true)
+            .padding(16)
+            .frame(height: 95)
+            .background(Color(hex: "#FEFEFE"))
+            .overlay(
+                RoundedRectangle(cornerRadius: 21)
+                    .stroke(Color(hex: "#F3F3F4"), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 21))
         }
-        .padding(16)
-        .frame(height: 95)
-        .background(Color(hex: "#FEFEFE"))
-        .overlay(
-            RoundedRectangle(cornerRadius: 21)
-                .stroke(Color(hex: "#F3F3F4"), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 21))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(item.title), \(item.createdAt, style: .relative)")
-        .accessibilityHint("Double tap to open document")
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.title)")
+        .accessibilityHint("Double tap to open")
     }
 }
 
@@ -593,17 +538,9 @@ private struct HomeTabBar: View {
                 .frame(height: 1)
             
             HStack(spacing: 8) {
-                tabButton(tab: .accessibility,
-                          icon: "accessibility",
-                          label: "Accessibility")
-
-                tabButton(tab: .home,
-                          icon: "house.fill",
-                          label: "Home")
-
-                tabButton(tab: .allFiles,
-                          icon: "doc.on.doc",
-                          label: "All files")
+                tabButton(tab: .accessibility, icon: "accessibility", label: "Accessibility")
+                tabButton(tab: .home, icon: "house.fill", label: "Home")
+                tabButton(tab: .allFiles, icon: "doc.on.doc", label: "All files")
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -617,11 +554,7 @@ private struct HomeTabBar: View {
         .background(Color.white)
     }
 
-    private func tabButton(
-        tab: DashboardView.HomeTab,
-        icon: String,
-        label: String
-    ) -> some View {
+    private func tabButton(tab: DashboardView.HomeTab, icon: String, label: String) -> some View {
         let isSelected = (tab == selectedTab)
 
         return Button {
@@ -630,23 +563,15 @@ private struct HomeTabBar: View {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 24, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(
-                        isSelected ? Color(hex: "#01343C") : Color(hex: "#61758A")
-                    )
+                    .foregroundColor(isSelected ? Color(hex: "#01343C") : Color(hex: "#61758A"))
 
                 Text(label)
                     .font(.custom("Arial", size: 12).weight(isSelected ? .semibold : .medium))
-                    .foregroundColor(
-                        isSelected ? Color(hex: "#01343C") : Color(hex: "#61758A")
-                    )
+                    .foregroundColor(isSelected ? Color(hex: "#01343C") : Color(hex: "#61758A"))
             }
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
-            .background(
-                isSelected
-                ? Color(hex: "#E8F2F2")
-                : Color.clear
-            )
+            .background(isSelected ? Color(hex: "#E8F2F2") : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 27))
         }
         .accessibilityLabel(label)
@@ -686,32 +611,29 @@ private struct ReaderContainer: View {
                         .foregroundColor(.black)
                 }
                 .accessibilityLabel("Back")
-                .accessibilityHint("Close worksheet and return to home")
             }
         }
     }
 }
 
-// MARK: - Processing File Card
+// MARK: - Processing File Card (Using pdf-icon-red)
 private struct ProcessingFileCard: View {
     let processingFile: ProcessingFile
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         HStack(spacing: 12) {
-            // PDF icon - use custom asset or fallback
-            Group {
-                if UIImage(named: "pdf-icon-red") != nil {
-                    Image("pdf-icon-red")
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    Image(systemName: "doc.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(Color(hex: "#B31111"))
-                }
+            // Red PDF icon from assets
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(hex: "#FEDFDE"))
+                    .frame(width: 40, height: 40)
+                
+                Image("pdf-icon-red")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
             }
-            .frame(width: 40, height: 40)
             .accessibilityHidden(true)
             
             VStack(alignment: .leading, spacing: 4) {
@@ -724,7 +646,6 @@ private struct ProcessingFileCard: View {
                     .foregroundColor(.black)
                     .lineLimit(1)
                 
-                // Progress bar
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         Rectangle()
@@ -758,36 +679,31 @@ private struct ProcessingFileCard: View {
                 .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Processing \(processingFile.item.title), \(Int(processingFile.progress * 100)) percent complete")
-        .accessibilityValue("\(Int(processingFile.progress * 100)) percent")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Processing \(processingFile.item.title), \(Int(processingFile.progress * 100)) percent")
     }
 }
 
-// MARK: - Completed File Card
+// MARK: - Completed File Card (Using pdf-icon-red and tick-mark)
 private struct CompletedFileCard: View {
     let item: LessonIndexItem
     var onTap: () -> Void
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
-        Button {
-            onTap()
-        } label: {
+        Button(action: onTap) {
             HStack(spacing: 12) {
-                // PDF icon - use custom asset or fallback
-                Group {
-                    if UIImage(named: "pdf-icon-red") != nil {
-                        Image("pdf-icon-red")
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        Image(systemName: "doc.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Color(hex: "#B31111"))
-                    }
+                // Red PDF icon from assets
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(hex: "#FEDFDE"))
+                        .frame(width: 40, height: 40)
+                    
+                    Image("pdf-icon-red")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
                 }
-                .frame(width: 40, height: 40)
                 .accessibilityHidden(true)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -803,32 +719,20 @@ private struct CompletedFileCard: View {
                 
                 Spacer()
                 
-                // Checkmark icon - use custom asset or fallback
-                Group {
-                    if UIImage(named: "tick-mark") != nil {
-                        Image("tick-mark")
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(ColorTokens.success)
-                    }
-                }
-                .frame(width: 24, height: 24)
-                .accessibilityHidden(true)
+                // Tick mark from assets
+                Image("tick-mark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                    .accessibilityHidden(true)
             }
             .padding(16)
             .background(ColorTokens.uploadedFileCardBackground)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(ColorTokens.uploadedFileCardBackground, lineWidth: 1)
-            )
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(item.title), completed, \(formatFileMetadata(for: item))")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.title), completed")
         .accessibilityHint("Double tap to open")
     }
     
