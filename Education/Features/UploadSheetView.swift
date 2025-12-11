@@ -2,41 +2,9 @@
 //  UploadSheetView.swift
 //  Education
 //
-//  Created by Keerthi Reddy
-//
 
 import SwiftUI
 import UniformTypeIdentifiers
-
-// MARK: - Sample PDF Model for Demo
-
-struct SamplePDF: Identifiable {
-    let id: String
-    let filename: String
-    let displayName: String
-    let iconName: String 
-    
-    static let samples: [SamplePDF] = [
-        SamplePDF(
-            id: "sample1",
-            filename: "The Science of Accessible Design.pdf",
-            displayName: "The Science of Accessible Design",
-            iconName: "pdf-icon-blue"
-        ),
-        SamplePDF(
-            id: "sample2",
-            filename: "Area of Compound Figures.pdf",
-            displayName: "Area of Compound Figures",
-            iconName: "pdf-icon-green"
-        ),
-        SamplePDF(
-            id: "sample3",
-            filename: "Precalculus Math Packet 4.pdf",
-            displayName: "Precalculus Math Packet 4",
-            iconName: "pdf-icon-purple"
-        )
-    ]
-}
 
 struct UploadSheetView: View {
     @EnvironmentObject var lessonStore: LessonStore
@@ -46,9 +14,7 @@ struct UploadSheetView: View {
 
     @ObservedObject var uploadManager: UploadManager
     @State private var showPicker = false
-    @State private var showSampleSelection = false
 
-    // iPad-aware sizing
     private var maxSheetWidth: CGFloat {
         horizontalSizeClass == .regular ? 500 : .infinity
     }
@@ -61,20 +27,17 @@ struct UploadSheetView: View {
         NavigationStack {
             VStack(spacing: 20) {
                 switch uploadManager.state {
-                case .idle:
+                case .idle, .done:
                     idleStateView
                     
                 case .confirming:
-                    idleStateView // Show same view while confirming
+                    idleStateView
 
                 case .uploading:
                     uploadingStateView
 
                 case .processing:
                     processingStateView
-
-                case .done(let item):
-                    doneStateView(item: item)
 
                 case .error(let msg):
                     errorStateView(message: msg)
@@ -98,8 +61,7 @@ struct UploadSheetView: View {
                     }
                     .font(.custom("Arial", size: 17))
                     .foregroundColor(ColorTokens.primary)
-                    .accessibilityLabel("Cancel upload")
-                    .accessibilityHint("Closes the upload screen and returns to the home screen.")
+                    .accessibilityLabel("Cancel")
                 }
             }
             .sheet(isPresented: $showPicker) {
@@ -107,18 +69,6 @@ struct UploadSheetView: View {
                     uploadManager.beginConfirm(fileURL: url)
                     showPicker = false
                 }
-            }
-            .sheet(isPresented: $showSampleSelection) {
-                SamplePDFSelectionSheet(
-                    onSelect: { samplePDF in
-                        let dummyURL = URL(fileURLWithPath: samplePDF.filename)
-                        showSampleSelection = false
-                        uploadManager.beginConfirm(fileURL: dummyURL)
-                    },
-                    onCancel: {
-                        showSampleSelection = false
-                    }
-                )
             }
             .overlay {
                 if case .confirming(let url) = uploadManager.state {
@@ -134,6 +84,11 @@ struct UploadSheetView: View {
                             uploadManager.reset()
                         }
                     )
+                }
+            }
+            .onAppear {
+                if case .done = uploadManager.state {
+                    uploadManager.reset()
                 }
             }
         }
@@ -153,23 +108,12 @@ struct UploadSheetView: View {
                 .foregroundColor(Color(hex: "#4E5055"))
                 .multilineTextAlignment(.center)
 
-            // Demo: Select from sample PDFs
-            Button("Browse Sample PDFs") {
-                haptics.tapSelection()
-                showSampleSelection = true
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .accessibilityLabel("Browse sample PDFs")
-            .accessibilityHint("Opens a list of sample PDF files to upload")
-            
-            // Or use real file picker
             Button("Browse from Device") {
                 haptics.tapSelection()
                 showPicker = true
             }
-            .buttonStyle(SecondaryButtonStyle())
-            .accessibilityLabel("Browse from device")
-            .accessibilityHint("Opens file picker to select a PDF from your device")
+            .buttonStyle(PrimaryButtonStyle())
+            .accessibilityLabel("Browse from Device")
         }
     }
     
@@ -183,18 +127,8 @@ struct UploadSheetView: View {
                 .font(.custom("Arial", size: 17))
                 .foregroundColor(Color(hex: "#4E5055"))
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Uploading file to server")
-        .onAppear {
-            haptics.tapSelection()
-            // VoiceOver announcement
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                UIAccessibility.post(
-                    notification: .announcement,
-                    argument: "Uploading file to server"
-                )
-            }
-        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Uploading")
     }
     
     private var processingStateView: some View {
@@ -204,62 +138,17 @@ struct UploadSheetView: View {
                 .accessibilityHidden(true)
             
             VStack(spacing: 4) {
-                Text("File uploaded. Processing in progress.")
+                Text("Processing")
                     .font(.custom("Arial", size: 17))
                     .foregroundColor(Color(hex: "#121417"))
-                    .multilineTextAlignment(.center)
                 
                 Text("You can continue with other work")
                     .font(.custom("Arial", size: 15))
                     .foregroundColor(Color(hex: "#61758A"))
-                    .multilineTextAlignment(.center)
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("File uploaded. Processing in progress. You can continue with other work.")
-        .onAppear {
-            haptics.success()
-            // VoiceOver announcement
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                UIAccessibility.post(
-                    notification: .announcement,
-                    argument: "File uploaded. Processing in progress. You can continue with other work."
-                )
-            }
-        }
-    }
-    
-    private func doneStateView(item: LessonIndexItem) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(ColorTokens.success)
-                .accessibilityHidden(true)
-            
-            Text("File uploaded. Processing complete.")
-                .font(.custom("Arial", size: 17).weight(.bold))
-                .foregroundColor(ColorTokens.success)
-                .multilineTextAlignment(.center)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Processing complete. \(item.title) is ready.")
-        .onAppear {
-            haptics.success()
-            lessonStore.addConverted(item)
-            
-            // VoiceOver announcement for completion
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                UIAccessibility.post(
-                    notification: .announcement,
-                    argument: "Processing complete. \(item.title) is ready to view."
-                )
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                uploadManager.reset()
-                dismiss()
-            }
-        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Processing")
     }
     
     private func errorStateView(message: String) -> some View {
@@ -280,141 +169,8 @@ struct UploadSheetView: View {
             }
             .buttonStyle(SecondaryButtonStyle())
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Error: \(message)")
-        .onAppear {
-            haptics.error()
-            // VoiceOver announcement
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                UIAccessibility.post(
-                    notification: .announcement,
-                    argument: "Error: \(message)"
-                )
-            }
-        }
-    }
-}
-
-// MARK: - Sample PDF Selection Sheet
-
-struct SamplePDFSelectionSheet: View {
-    let onSelect: (SamplePDF) -> Void
-    let onCancel: () -> Void
-    
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
-    private var maxWidth: CGFloat {
-        horizontalSizeClass == .regular ? 500 : .infinity
-    }
-    
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 12) {
-                    Text("Select a sample PDF to convert")
-                        .font(.custom("Arial", size: 15))
-                        .foregroundColor(Color(hex: "#61758A"))
-                        .padding(.top, 8)
-                        .accessibilityAddTraits(.isHeader)
-                    
-                    ForEach(SamplePDF.samples) { sample in
-                        Button {
-                            onSelect(sample)
-                        } label: {
-                            SamplePDFRow(sample: sample)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(sample.displayName)
-                        .accessibilityHint("Double tap to select this PDF for upload")
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            }
-            .frame(maxWidth: maxWidth)
-            .frame(maxWidth: .infinity)
-            .background(Color(hex: "#F6F7F8"))
-            .navigationTitle("Sample PDFs")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        onCancel()
-                    }
-                    .font(.custom("Arial", size: 17))
-                    .foregroundColor(ColorTokens.primary)
-                }
-            }
-        }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                UIAccessibility.post(
-                    notification: .announcement,
-                    argument: "Select a sample PDF to convert. \(SamplePDF.samples.count) samples available."
-                )
-            }
-        }
-    }
-}
-
-// MARK: - Sample PDF Row
-
-struct SamplePDFRow: View {
-    let sample: SamplePDF
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // PDF Icon - Use custom asset or fallback to SF Symbol
-            Group {
-                if UIImage(named: sample.iconName) != nil {
-                    Image(sample.iconName)
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    // Fallback SF Symbol
-                    Image(systemName: "doc.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(pdfIconColor(for: sample.id))
-                }
-            }
-            .frame(width: 40, height: 40)
-            .accessibilityHidden(true)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(sample.displayName)
-                    .font(.custom("Arial", size: 17))
-                    .foregroundColor(Color(hex: "#121417"))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                
-                Text(sample.filename)
-                    .font(.custom("Arial", size: 13))
-                    .foregroundColor(Color(hex: "#91949B"))
-            }
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: "#91949B"))
-                .accessibilityHidden(true)
-        }
-        .padding(16)
-        .background(Color.white)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-    
-    private func pdfIconColor(for id: String) -> Color {
-        switch id {
-        case "sample1": return Color(hex: "#214F9A") // Blue
-        case "sample2": return Color(hex: "#208515") // Green
-        case "sample3": return Color(hex: "#332177") // Purple
-        default: return Color(hex: "#B31111") // Red
-        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Error")
     }
 }
 
@@ -473,14 +229,6 @@ struct UploadConfirmationDialog: View {
             
             confirmationCard
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                UIAccessibility.post(
-                    notification: .announcement,
-                    argument: "Upload \(fileName)? Choose Yes to upload and convert, or No to cancel."
-                )
-            }
-        }
     }
     
     private var confirmationCard: some View {
@@ -506,6 +254,7 @@ struct UploadConfirmationDialog: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
+                .accessibilityLabel("Upload \(fileName)?")
             
             HStack(spacing: 16) {
                 Button {
@@ -522,7 +271,7 @@ struct UploadConfirmationDialog: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color(hex: "#1C636F"), lineWidth: 1)
                 )
-                .accessibilityLabel("No, cancel upload")
+                .accessibilityLabel("No")
                 
                 Button {
                     onConfirm()
@@ -534,7 +283,7 @@ struct UploadConfirmationDialog: View {
                 }
                 .background(Color(hex: "#1C636F"))
                 .cornerRadius(8)
-                .accessibilityLabel("Yes, upload and convert")
+                .accessibilityLabel("Yes")
             }
             .padding(.bottom, 20)
         }
@@ -542,8 +291,6 @@ struct UploadConfirmationDialog: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-        .onTapGesture {
-            // Prevent tap through
-        }
+        .onTapGesture { }
     }
 }
