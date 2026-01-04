@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import UIKit
+import WebKit
 
 /// Generic document reader - uses native VoiceOver rotor for reading
 /// NO custom play buttons - follows Figma design
@@ -26,16 +27,6 @@ struct DocumentRendererView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.large) {
-                    // Title - centered per Figma
-                    Text(title)
-                        .font(.custom("Arial", size: 28))
-                        .fontWeight(.bold)
-                        .foregroundColor(Color(hex: "#121417"))
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.bottom, Spacing.small)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityHeading(.h1)
-
                     VStack(alignment: .leading, spacing: Spacing.medium) {
                         ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
                             DocumentNodeView(node: node)
@@ -54,8 +45,9 @@ struct DocumentRendererView: View {
                 .padding(.bottom, Spacing.xLarge)
             }
         }
-        .navigationTitle("Worksheet")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(title)
+        .toolbarBackground(.visible, for: .navigationBar)
         .onDisappear {
             speech.stop(immediate: true)
         }
@@ -141,55 +133,115 @@ private struct DocumentMathPill: View {
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
     
-    private var displayText: String {
-        let text = latex ?? mathml ?? "Equation"
-        if text.count > 50 {
-            return String(text.prefix(47)) + "..."
-        }
-        return text
+    private var spokenString: String {
+        mathSpeech.speakable(from: mathml, latex: latex, verbosity: .verbose)
     }
     
-    private var spokenString: String {
-        if let l = latex, !l.isEmpty {
-            return mathSpeech.speakable(from: l, verbosity: .verbose)
+    private var displayText: String {
+        // Show a more readable representation
+        if let latex = latex, !latex.isEmpty {
+            // Clean up LaTeX for display (remove backslashes, simplify)
+            var display = latex
+            display = display.replacingOccurrences(of: "\\", with: "")
+            display = display.replacingOccurrences(of: "{", with: "")
+            display = display.replacingOccurrences(of: "}", with: "")
+            if display.count > 60 {
+                return String(display.prefix(57)) + "..."
+            }
+            return display
         }
-        if let m = mathml, !m.isEmpty {
-            return mathSpeech.speakable(from: m, verbosity: .verbose)
+        if let mathml = mathml, !mathml.isEmpty {
+            // Try to extract a simple representation from MathML
+            if let alttext = extractAltTextFromMathML(mathml) {
+                return alttext
+            }
+            return "Math Equation"
         }
-        return "equation"
+        return "Equation"
+    }
+    
+    private func extractAltTextFromMathML(_ mathml: String) -> String? {
+        let pattern = #"alttext=["']([^"']+)["']"#
+        if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+            let range = NSRange(mathml.startIndex..., in: mathml)
+            if let match = regex.firstMatch(in: mathml, options: [], range: range) {
+                if let altRange = Range(match.range(at: 1), in: mathml) {
+                    return String(mathml[altRange])
+                }
+            }
+        }
+        return nil
     }
     
     var body: some View {
-        Button {
-            haptics.mathStart()
-            
-            if UIAccessibility.isVoiceOverRunning {
-                UIAccessibility.post(notification: .announcement, argument: spokenString)
+        VStack(alignment: .leading, spacing: 8) {
+            // Render MathML if available, otherwise show LaTeX
+            if let mathml = mathml, !mathml.isEmpty {
+                MathMLView(mathml: mathml, latex: latex, displayType: display)
+                    .frame(height: 60)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(ColorTokens.primaryLight3)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    // Don't override accessibility - let VoiceOver read MathML natively
+                    // VoiceOver will automatically read MathML content correctly
+                    .accessibilityHint("Math equation. Double tap to explore equation elements in detail")
+                    .onAppear {
+                        if UIAccessibility.isVoiceOverRunning {
+                            haptics.mathTerm()
+                        }
+                    }
+            } else if let latex = latex, !latex.isEmpty {
+                // Fallback: Button with LaTeX text for cases without MathML
+                Button {
+                    haptics.mathStart()
+                    if UIAccessibility.isVoiceOverRunning {
+                        UIAccessibility.post(notification: .announcement, argument: spokenString)
+                    } else {
+                        speech.speak(spokenString)
+                    }
+                    haptics.mathEnd()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "function")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(ColorTokens.primary)
+                        
+                        Text(displayText)
+                            .font(.custom("Arial", size: 15))
+                            .foregroundColor(Color(hex: "#121417"))
+                            .lineLimit(2)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(ColorTokens.primaryLight3)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(spokenString)
+                .accessibilityHint("Double tap to hear the equation read aloud again")
+                .accessibilityAddTraits(.startsMediaSession)
             } else {
-                speech.speak(spokenString)
+                // No math data available
+                HStack(spacing: 8) {
+                    Image(systemName: "function")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(ColorTokens.primary)
+                    Text("Equation")
+                        .font(.custom("Arial", size: 15))
+                        .foregroundColor(Color(hex: "#121417"))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(ColorTokens.primaryLight3)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .accessibilityLabel("Math equation")
             }
-            
-            haptics.mathEnd()
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "function")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(ColorTokens.primary)
-                
-                Text(displayText)
-                    .font(.custom("Arial", size: 15))
-                    .foregroundColor(Color(hex: "#121417"))
-                    .lineLimit(2)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(ColorTokens.primaryLight3)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Equation")
-        .accessibilityHint("Double tap to hear the equation")
         .onAppear {
             if UIAccessibility.isVoiceOverRunning {
                 haptics.mathTerm()

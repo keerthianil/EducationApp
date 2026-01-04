@@ -182,13 +182,15 @@ struct DashboardView: View {
                 .buttonStyle(PrimaryButtonStyle())
 
                 Button("Scan files") { }
-                    .buttonStyle(TertiaryButtonStyle())
+                    .buttonStyle(TertiaryButtonStyle(isDisabled: true))
                     .disabled(true)
+                    .accessibilityHidden(true)
             }
 
             Text("or upload from")
                 .font(.custom("Arial", size: 15.9))
                 .foregroundColor(Color(hex: "#989CA6"))
+                .accessibilityHidden(true)
 
             HStack(spacing: 8) {
                 // Google Drive chip - using GoogleDrive asset
@@ -348,6 +350,8 @@ struct DashboardView: View {
                     .padding(.horizontal, horizontalPadding)
                     .padding(.vertical, 20)
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Uploaded by Teacher, \(teacherItems.count) file\(teacherItems.count == 1 ? "" : "s")")
             }
         }
     }
@@ -388,17 +392,22 @@ struct DashboardView: View {
 
 // MARK: - Tertiary Button Style
 public struct TertiaryButtonStyle: ButtonStyle {
-    public init() {}
+    var isDisabled: Bool = false
+    
+    public init(isDisabled: Bool = false) {
+        self.isDisabled = isDisabled
+    }
+    
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.custom("Arial", size: 17).weight(.bold))
-            .foregroundColor(ColorTokens.textPrimary)
+            .foregroundColor(isDisabled ? ColorTokens.textTertiary : ColorTokens.textPrimary)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(Color.white)
+            .background(isDisabled ? ColorTokens.primaryLight3 : Color.white)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+                    .stroke(isDisabled ? ColorTokens.primaryLight2 : Color(hex: "#DADDE2"), lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .opacity(configuration.isPressed ? 0.9 : 1.0)
@@ -413,57 +422,64 @@ private struct TeacherLessonCard: View {
     var onOpen: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
-                // Red PDF icon from assets
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(hex: "#FEDFDE"))
-                        .frame(width: 44, height: 44)
-                    
-                    Image("pdf-icon-red")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                }
-                .accessibilityHidden(true)
+        Button(action: onOpen) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 12) {
+                    // Red PDF icon from assets
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(hex: "#FEDFDE"))
+                            .frame(width: 44, height: 44)
+                        
+                        Image("pdf-icon-red")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    }
+                    .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.createdAt, style: .relative)
-                        .font(.custom("Arial", size: 13.5))
-                        .foregroundColor(Color(hex: "#91949B"))
-                    
-                    Text(item.title)
-                        .font(.custom("Arial", size: 18.6))
-                        .fontWeight(.medium)
-                        .foregroundColor(.black)
-                        .lineLimit(2)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.createdAt, style: .relative)
+                            .font(.custom("Arial", size: 13.5))
+                            .foregroundColor(Color(hex: "#91949B"))
+                        
+                        Text(item.title)
+                            .font(.custom("Arial", size: 18.6))
+                            .fontWeight(.medium)
+                            .foregroundColor(.black)
+                            .lineLimit(2)
 
-                    if let teacher = item.teacher {
-                        Text("Teacher : \(teacher)")
-                            .font(.custom("Arial", size: 14))
-                            .foregroundColor(Color(hex: "#61758A"))
+                        if let teacher = item.teacher {
+                            Text("Teacher : \(teacher)")
+                                .font(.custom("Arial", size: 14))
+                                .foregroundColor(Color(hex: "#61758A"))
+                        }
                     }
                 }
-            }
 
-            Button("Open") {
-                onOpen()
+                Text("Open")
+                    .font(.custom("Arial", size: 17).weight(.bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(ColorTokens.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .padding(16)
+            .frame(width: cardWidth, height: 133)
+            .background(Color.white)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: Color(hex: "#332177").opacity(0.15), radius: 4, x: 1, y: 1)
         }
-        .padding(16)
-        .frame(width: cardWidth, height: 133)
-        .background(Color.white)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color(hex: "#332177").opacity(0.15), radius: 4, x: 1, y: 1)
+        .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(item.title), from \(item.teacher ?? "teacher")")
         .accessibilityHint("Double tap to open")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
