@@ -10,8 +10,6 @@ import SwiftUI
 import UIKit
 import WebKit
 
-/// Generic document reader - uses native VoiceOver rotor for reading
-/// NO custom play buttons - follows Figma design
 struct DocumentRendererView: View {
     let title: String
     let nodes: [Node]
@@ -84,7 +82,7 @@ private struct DocumentNodeView: View {
     }
 }
 
-// MARK: - Document Paragraph (VoiceOver rotor enabled)
+// MARK: - Document Paragraph
 
 private struct DocumentParagraphView: View {
     let items: [Inline]
@@ -110,7 +108,6 @@ private struct DocumentParagraphView: View {
                 Text(combinedText)
                     .font(.custom("Arial", size: 17))
                     .foregroundColor(Color(hex: "#121417"))
-                    // VoiceOver rotor works on this text
             }
             
             ForEach(mathParts, id: \.0) { _, mathInline in
@@ -138,9 +135,7 @@ private struct DocumentMathPill: View {
     }
     
     private var displayText: String {
-        // Show a more readable representation
         if let latex = latex, !latex.isEmpty {
-            // Clean up LaTeX for display (remove backslashes, simplify)
             var display = latex
             display = display.replacingOccurrences(of: "\\", with: "")
             display = display.replacingOccurrences(of: "{", with: "")
@@ -151,7 +146,6 @@ private struct DocumentMathPill: View {
             return display
         }
         if let mathml = mathml, !mathml.isEmpty {
-            // Try to extract a simple representation from MathML
             if let alttext = extractAltTextFromMathML(mathml) {
                 return alttext
             }
@@ -175,7 +169,6 @@ private struct DocumentMathPill: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Render MathML if available, otherwise show LaTeX
             if let mathml = mathml, !mathml.isEmpty {
                 MathMLView(mathml: mathml, latex: latex, displayType: display)
                     .frame(height: 60)
@@ -184,8 +177,6 @@ private struct DocumentMathPill: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
-                    // Don't override accessibility - let VoiceOver read MathML natively
-                    // VoiceOver will automatically read MathML content correctly
                     .accessibilityHint("Math equation. Double tap to explore equation elements in detail")
                     .onAppear {
                         if UIAccessibility.isVoiceOverRunning {
@@ -193,7 +184,6 @@ private struct DocumentMathPill: View {
                         }
                     }
             } else if let latex = latex, !latex.isEmpty {
-                // Fallback: Button with LaTeX text for cases without MathML
                 Button {
                     haptics.mathStart()
                     if UIAccessibility.isVoiceOverRunning {
@@ -225,7 +215,6 @@ private struct DocumentMathPill: View {
                 .accessibilityHint("Double tap to hear the equation read aloud again")
                 .accessibilityAddTraits(.startsMediaSession)
             } else {
-                // No math data available
                 HStack(spacing: 8) {
                     Image(systemName: "function")
                         .font(.system(size: 16, weight: .medium))
@@ -272,18 +261,6 @@ private struct DocumentImageView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .accessibilityLabel(alt ?? "Image")
             }
-            
-            if let altText = alt, !altText.isEmpty {
-                Button {
-                    if UIAccessibility.isVoiceOverRunning {
-                        UIAccessibility.post(notification: .announcement, argument: altText)
-                    }
-                } label: {
-                    Text("View Description")
-                        .font(.custom("Arial", size: 14))
-                        .foregroundColor(ColorTokens.primary)
-                }
-            }
         }
     }
     
@@ -313,28 +290,12 @@ private struct DocumentSVGView: View {
             SVGView(svg: svg)
                 .frame(maxWidth: .infinity)
                 .frame(height: 200)
-                .accessibilityHidden(true)
-
-            if let desc = summaries?.first {
-                Text(desc)
-                    .font(.custom("Arial", size: 13))
-                    .foregroundColor(Color(hex: "#61758A"))
-            }
-            
-            Button {
-                if let desc = summaries?.first, UIAccessibility.isVoiceOverRunning {
-                    UIAccessibility.post(notification: .announcement, argument: desc)
-                }
-            } label: {
-                Text("View Description")
-                    .font(.custom("Arial", size: 14))
-                    .foregroundColor(ColorTokens.primary)
-            }
+                .accessibilityLabel(summaries?.first ?? title ?? "Graphic")
         }
     }
 }
 
-// MARK: - Accessible Image (shared)
+// MARK: - Accessible Image
 
 struct AccessibleImage: View {
     let dataURI: String

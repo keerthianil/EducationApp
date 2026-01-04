@@ -10,11 +10,6 @@ import UIKit
 import Foundation
 import WebKit
 
-/// Worksheet-style reader
-/// - VoiceOver rotor handles char/word/line navigation natively
-/// - Headers marked for rotor heading navigation
-/// - Math pills are tappable buttons
-/// - iPad compatible with adaptive layouts
 struct WorksheetView: View {
     let title: String
     let pages: [[WorksheetItem]]
@@ -26,7 +21,6 @@ struct WorksheetView: View {
 
     @State private var currentPage: Int = 0
     
-    // iPad-aware sizing
     private var contentMaxWidth: CGFloat {
         horizontalSizeClass == .regular ? 800 : .infinity
     }
@@ -48,6 +42,14 @@ struct WorksheetView: View {
         guard pages.indices.contains(safePageIndex) else { return [] }
         return pages[safePageIndex]
     }
+    
+    private var canGoPrevious: Bool {
+        safePageIndex > 0
+    }
+    
+    private var canGoNext: Bool {
+        safePageIndex < pages.count - 1
+    }
 
     var body: some View {
         ZStack {
@@ -57,7 +59,6 @@ struct WorksheetView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.medium) {
 
-                    // Page indicator
                     if !pages.isEmpty {
                         Text("Page \(safePageIndex + 1) of \(pages.count)")
                             .font(.custom("Arial", size: 13.5))
@@ -66,7 +67,6 @@ struct WorksheetView: View {
                             .padding(.horizontal, horizontalPadding)
                     }
 
-                    // MAIN CONTENT
                     VStack(alignment: .leading, spacing: Spacing.medium) {
                         ForEach(currentItems) { item in
                             ForEach(Array(item.nodes.enumerated()), id: \.offset) { _, node in
@@ -78,48 +78,73 @@ struct WorksheetView: View {
                     }
                     .padding(.horizontal, horizontalPadding)
 
-                    // Page navigation buttons
                     if pages.count > 1 {
                         HStack {
-                            Button {
-                                moveToPreviousPage()
-                            } label: {
+                            if canGoPrevious {
+                                Button {
+                                    moveToPreviousPage()
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "chevron.left")
+                                        Text("Prev")
+                                    }
+                                    .font(.custom("Arial", size: 14).weight(.semibold))
+                                    .foregroundColor(ColorTokens.primary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(ColorTokens.primary, lineWidth: 1)
+                                    )
+                                }
+                                .accessibilityLabel("Previous page")
+                            } else {
                                 HStack(spacing: 4) {
                                     Image(systemName: "chevron.left")
-                                    Text("Prev Qn")
+                                    Text("Prev")
                                 }
                                 .font(.custom("Arial", size: 14).weight(.semibold))
-                                .foregroundColor(ColorTokens.primary)
+                                .foregroundColor(ColorTokens.primary.opacity(0.4))
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .stroke(ColorTokens.primary, lineWidth: 1)
+                                        .stroke(ColorTokens.primary.opacity(0.4), lineWidth: 1)
                                 )
+                                .accessibilityHidden(true)
                             }
-                            .disabled(safePageIndex == 0)
-                            .opacity(safePageIndex == 0 ? 0.4 : 1.0)
-                            .accessibilityLabel("Previous question")
 
                             Spacer()
 
-                            Button {
-                                moveToNextPage()
-                            } label: {
+                            if canGoNext {
+                                Button {
+                                    moveToNextPage()
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Text("Next")
+                                        Image(systemName: "chevron.right")
+                                    }
+                                    .font(.custom("Arial", size: 14).weight(.semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(ColorTokens.primary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .accessibilityLabel("Next page")
+                            } else {
                                 HStack(spacing: 4) {
-                                    Text("Next Qn")
+                                    Text("Next")
                                     Image(systemName: "chevron.right")
                                 }
                                 .font(.custom("Arial", size: 14).weight(.semibold))
-                                .foregroundColor(.white)
+                                .foregroundColor(.white.opacity(0.6))
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
-                                .background(ColorTokens.primary)
+                                .background(ColorTokens.primary.opacity(0.4))
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .accessibilityHidden(true)
                             }
-                            .disabled(safePageIndex == pages.count - 1)
-                            .opacity(safePageIndex == pages.count - 1 ? 0.4 : 1.0)
-                            .accessibilityLabel("Next question")
                         }
                         .padding(.horizontal, horizontalPadding)
                         .padding(.top, Spacing.large)
@@ -143,8 +168,6 @@ struct WorksheetView: View {
             speech.stop(immediate: true)
         }
     }
-
-    // MARK: - Helpers
 
     private func moveToNextPage() {
         guard safePageIndex + 1 < pages.count else { return }
@@ -309,14 +332,8 @@ private struct MathEquationPill: View {
         mathSpeech.speakable(from: mathml, latex: latex, verbosity: .verbose)
     }
     
-    private var briefSpokenString: String {
-        mathSpeech.speakable(from: mathml, latex: latex, verbosity: .brief)
-    }
-    
     private var displayText: String {
-        // Show a more readable representation
         if let latex = latex, !latex.isEmpty {
-            // Clean up LaTeX for display (remove backslashes, simplify)
             var display = latex
             display = display.replacingOccurrences(of: "\\", with: "")
             display = display.replacingOccurrences(of: "{", with: "")
@@ -327,7 +344,6 @@ private struct MathEquationPill: View {
             return display
         }
         if let mathml = mathml, !mathml.isEmpty {
-            // Try to extract a simple representation from MathML
             if let alttext = extractAltTextFromMathML(mathml) {
                 return alttext
             }
@@ -355,7 +371,6 @@ private struct MathEquationPill: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Render MathML if available, otherwise show LaTeX
             if let mathml = mathml, !mathml.isEmpty {
                 MathMLView(mathml: mathml, latex: latex, displayType: display)
                     .frame(height: 60)
@@ -364,8 +379,6 @@ private struct MathEquationPill: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
-                    // Don't override accessibility - let VoiceOver read MathML natively
-                    // VoiceOver will automatically read MathML content correctly
                     .accessibilityHint("Math equation. Double tap to explore equation elements in detail")
                     .onAppear {
                         if UIAccessibility.isVoiceOverRunning {
@@ -373,7 +386,6 @@ private struct MathEquationPill: View {
                         }
                     }
             } else if let latex = latex, !latex.isEmpty {
-                // Fallback: Button with LaTeX text for cases without MathML
                 Button {
                     haptics.mathStart()
                     if UIAccessibility.isVoiceOverRunning {
@@ -406,7 +418,6 @@ private struct MathEquationPill: View {
                 .accessibilityHint("Double tap to hear the equation read aloud again")
                 .accessibilityAddTraits(.startsMediaSession)
             } else {
-                // No math data available
                 HStack(spacing: 8) {
                     Image(systemName: "function")
                         .font(.system(size: 16, weight: .medium))
@@ -458,20 +469,6 @@ private struct ImageBlockView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .accessibilityLabel(alt ?? "Image")
             }
-            
-            if let altText = alt, !altText.isEmpty {
-                Button {
-                    if UIAccessibility.isVoiceOverRunning {
-                        UIAccessibility.post(notification: .announcement, argument: altText)
-                    }
-                } label: {
-                    Text("View Description")
-                        .font(.custom("Arial", size: 14))
-                        .foregroundColor(ColorTokens.primary)
-                }
-                .accessibilityLabel("View image description")
-                .accessibilityHint("Double tap to hear: \(altText)")
-            }
         }
     }
     
@@ -507,24 +504,7 @@ private struct SVGBlockView: View {
             SVGView(svg: svg)
                 .frame(maxWidth: .infinity)
                 .frame(height: svgHeight)
-                .accessibilityHidden(true)
-
-            if let desc = summaries?.first {
-                Text(desc)
-                    .font(.custom("Arial", size: 13))
-                    .foregroundColor(Color(hex: "#61758A"))
-            }
-            
-            Button {
-                if let desc = summaries?.first, UIAccessibility.isVoiceOverRunning {
-                    UIAccessibility.post(notification: .announcement, argument: desc)
-                }
-            } label: {
-                Text("View Description")
-                    .font(.custom("Arial", size: 14))
-                    .foregroundColor(ColorTokens.primary)
-            }
-            .accessibilityLabel("View graphic description")
+                .accessibilityLabel(summaries?.first ?? title ?? "Graphic")
         }
         .accessibilityElement(children: .contain)
     }

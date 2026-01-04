@@ -230,10 +230,12 @@ struct DashboardFlow3View: View {
                         .stroke(Color(hex: "#ACD7DF"), style: StrokeStyle(lineWidth: 2, dash: [5]))
                 )
                 
+                // "Upload from Cloud" and cloud buttons - hidden from VoiceOver
                 Text("Upload from Cloud")
                     .font(.custom("Arial", size: 16).weight(.medium))
                     .foregroundColor(Color(hex: "#6F6F6F"))
                     .padding(.top, 8)
+                    .accessibilityHidden(true)
                 
                 HStack(spacing: 12) {
                     // Google Drive - using asset

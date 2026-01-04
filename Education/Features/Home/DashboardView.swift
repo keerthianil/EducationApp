@@ -16,6 +16,7 @@ struct DashboardView: View {
     @State private var showUpload = false
     @State private var selectedLesson: LessonIndexItem?
     @State private var selectedTab: HomeTab = .home
+    @State private var selectedSidebarItem: SidebarItem = .home
     @StateObject private var notificationDelegate = NotificationDelegate.shared
     @StateObject private var uploadManager = UploadManager()
     
@@ -28,19 +29,607 @@ struct DashboardView: View {
         case accessibility, home, allFiles
     }
     
+    enum SidebarItem: String, CaseIterable {
+        case home = "Home"
+        case uploads = "Uploads"
+        case teacherFiles = "Teacher Files"
+        case recent = "Recent"
+        case accessibility = "Accessibility"
+        case allFiles = "All Files"
+        case settings = "Settings"
+        
+        var icon: String {
+            switch self {
+            case .home: return "house.fill"
+            case .uploads: return "icloud.and.arrow.up"
+            case .teacherFiles: return "folder"
+            case .recent: return "clock"
+            case .accessibility: return "accessibility"
+            case .allFiles: return "doc.on.doc"
+            case .settings: return "gearshape"
+            }
+        }
+    }
+    
+    private var isIPad: Bool {
+        horizontalSizeClass == .regular
+    }
+    
     private var contentMaxWidth: CGFloat {
-        horizontalSizeClass == .regular ? 800 : .infinity
+        horizontalSizeClass == .regular ? .infinity : .infinity
     }
     
     private var horizontalPadding: CGFloat {
-        horizontalSizeClass == .regular ? 32 : 16
+        horizontalSizeClass == .regular ? 24 : 16
     }
     
     private var teacherCardWidth: CGFloat {
-        horizontalSizeClass == .regular ? 350 : 301
+        horizontalSizeClass == .regular ? 280 : 301
     }
 
     var body: some View {
+        Group {
+            if isIPad {
+                iPadLayout
+            } else {
+                iPhoneLayout
+            }
+        }
+        .sheet(isPresented: $showUpload) {
+            UploadSheetView(uploadManager: uploadManager)
+                .environmentObject(lessonStore)
+                .environmentObject(haptics)
+        }
+        .onAppear {
+            uploadManager.lessonStore = lessonStore
+            previousProcessingCount = lessonStore.processing.count
+            previousCompletedCount = lessonStore.downloaded.count
+        }
+        .fullScreenCover(item: $selectedLesson) { lesson in
+            NavigationStack {
+                ReaderContainer(item: lesson)
+            }
+        }
+        .onChange(of: notificationDelegate.selectedLessonId) { oldLessonId, newLessonId in
+            if let lessonId = newLessonId,
+               let lesson = lessonStore.recent.first(where: { $0.id == lessonId }) {
+                selectedLesson = lesson
+                notificationDelegate.selectedLessonId = nil
+            }
+        }
+        .onChange(of: lessonStore.processing.count) { oldCount, newCount in
+            previousProcessingCount = newCount
+        }
+        .onChange(of: lessonStore.downloaded.count) { oldCount, newCount in
+            previousCompletedCount = newCount
+        }
+        .toolbar(.hidden, for: .navigationBar)
+    }
+    
+    // MARK: - iPad Layout
+    
+    private var iPadLayout: some View {
+        HStack(spacing: 0) {
+            iPadSidebar
+            
+            iPadMainContent
+            
+            iPadRecentActivityPanel
+        }
+        .background(Color(hex: "#F6F7F8"))
+    }
+    
+    // MARK: - iPad Sidebar
+    
+    private var iPadSidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("STEMA11Y")
+                .font(.custom("Arial", size: 22).weight(.bold))
+                .foregroundColor(Color(hex: "#121417"))
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                .padding(.bottom, 24)
+            
+            VStack(spacing: 4) {
+                ForEach([SidebarItem.home, .uploads, .teacherFiles, .recent], id: \.self) { item in
+                    sidebarButton(item: item)
+                }
+                
+                Divider()
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                
+                sidebarButton(item: .accessibility, isExpandable: true)
+                sidebarButton(item: .allFiles, isExpandable: true)
+            }
+            .padding(.horizontal, 8)
+            
+            Spacer()
+            
+            sidebarButton(item: .settings)
+                .padding(.horizontal, 8)
+                .padding(.bottom, 24)
+        }
+        .frame(width: 240)
+        .background(Color.white)
+    }
+    
+    private func sidebarButton(item: SidebarItem, isExpandable: Bool = false) -> some View {
+        Button {
+            haptics.tapSelection()
+            selectedSidebarItem = item
+            switch item {
+            case .home:
+                selectedTab = .home
+            case .allFiles:
+                selectedTab = .allFiles
+            case .accessibility:
+                selectedTab = .accessibility
+            default:
+                selectedTab = .home
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: item.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(selectedSidebarItem == item ? .white : Color(hex: "#121417"))
+                    .frame(width: 24)
+                
+                Text(item.rawValue)
+                    .font(.custom("Arial", size: 16))
+                    .foregroundColor(selectedSidebarItem == item ? .white : Color(hex: "#121417"))
+                
+                Spacer()
+                
+                if isExpandable {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12))
+                        .foregroundColor(selectedSidebarItem == item ? .white : Color(hex: "#61758A"))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(selectedSidebarItem == item ? ColorTokens.primary : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(item.rawValue)
+        .accessibilityAddTraits(selectedSidebarItem == item ? .isSelected : [])
+    }
+    
+    // MARK: - iPad Main Content
+    
+    private var iPadMainContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Dashboard")
+                    .font(.custom("Arial", size: 28).weight(.bold))
+                    .foregroundColor(Color(hex: "#121417"))
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 16)
+                
+                if selectedTab == .home {
+                    iPadBannerSection
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 16)
+                    
+                    iPadUploadPanel
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 20)
+                    
+                    iPadUploadedSection
+                        .padding(.bottom, 12)
+                    
+                    iPadUploadedByTeacherSection
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 20)
+                } else if selectedTab == .allFiles {
+                    iPadAllFilesSection
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 20)
+                }
+            }
+            .padding(.bottom, 40)
+        }
+        .background(Color(hex: "#F6F7F8"))
+    }
+    
+    // MARK: - iPad Banner Section
+    
+    @ViewBuilder
+    private var iPadBannerSection: some View {
+        if let item = (lessonStore.banner ?? lessonStore.recent.first) {
+            HStack(spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(ColorTokens.primaryLight3)
+                        .frame(width: 56, height: 56)
+                    
+                    Image("pdf-icon-blue")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 32, height: 32)
+                }
+                .accessibilityHidden(true)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Important Update")
+                        .font(.custom("Arial", size: 14))
+                        .foregroundColor(ColorTokens.primary)
+                    
+                    Text(item.title)
+                        .font(.custom("Arial", size: 18).weight(.semibold))
+                        .foregroundColor(Color(hex: "#121417"))
+                    
+                    Text("Uploaded \(item.createdAt, style: .relative)")
+                        .font(.custom("Arial", size: 13))
+                        .foregroundColor(Color(hex: "#61758A"))
+                }
+                
+                Spacer()
+                
+                Button("View") {
+                    haptics.tapSelection()
+                    selectedLesson = item
+                }
+                .font(.custom("Arial", size: 14).weight(.bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(ColorTokens.primary)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .padding(16)
+            .background(Color(hex: "#F4F1FE"))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+    }
+    
+    // MARK: - iPad Upload Panel
+    
+    private var iPadUploadPanel: some View {
+        HStack(spacing: 24) {
+            VStack(spacing: 16) {
+                Text("Upload Panel")
+                    .font(.custom("Arial", size: 18).weight(.bold))
+                    .foregroundColor(Color(hex: "#121417"))
+                
+                Image(systemName: "icloud.and.arrow.up")
+                    .font(.system(size: 40))
+                    .foregroundColor(ColorTokens.primary.opacity(0.6))
+                    .accessibilityHidden(true)
+                
+                HStack(spacing: 12) {
+                    Button("Browse Files") {
+                        haptics.tapSelection()
+                        showUpload = true
+                    }
+                    .font(.custom("Arial", size: 14).weight(.bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(ColorTokens.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    
+                    Button("Scan Files") { }
+                        .font(.custom("Arial", size: 14).weight(.bold))
+                        .foregroundColor(Color(hex: "#121417"))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .disabled(true)
+                        .opacity(0.5)
+                        .accessibilityHidden(true)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+            
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Or upload from")
+                    .font(.custom("Arial", size: 16).weight(.medium))
+                    .foregroundColor(Color(hex: "#61758A"))
+                    .accessibilityHidden(true)
+                
+                Button { } label: {
+                    HStack {
+                        Image("GoogleDrive")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                        Text("Drive")
+                            .font(.custom("Arial", size: 14))
+                            .foregroundColor(Color(hex: "#121417"))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .accessibilityHidden(true)
+                
+                Button { } label: {
+                    HStack {
+                        Image("Dropbox")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                        Text("Dropbox")
+                            .font(.custom("Arial", size: 14))
+                            .foregroundColor(Color(hex: "#121417"))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .accessibilityHidden(true)
+            }
+            .frame(width: 200)
+            .padding(.vertical, 24)
+        }
+        .padding(.horizontal, 24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+        )
+    }
+    
+    // MARK: - iPad Uploaded Section
+    
+    @ViewBuilder
+    private var iPadUploadedSection: some View {
+        let processingFiles = lessonStore.processing
+        let recentCompletedFiles = lessonStore.downloaded.filter { item in
+            !processingFiles.contains { $0.item.id == item.id } &&
+            item.createdAt > Date().addingTimeInterval(-24 * 60 * 60)
+        }
+        
+        if !processingFiles.isEmpty || !recentCompletedFiles.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Uploaded")
+                    .font(.custom("Arial", size: 20).weight(.bold))
+                    .foregroundColor(Color(hex: "#121417"))
+                    .padding(.horizontal, 24)
+                    .accessibilityAddTraits(.isHeader)
+                
+                VStack(spacing: 8) {
+                    ForEach(processingFiles) { processingFile in
+                        ProcessingFileCard(processingFile: processingFile)
+                    }
+                    
+                    ForEach(recentCompletedFiles) { item in
+                        CompletedFileCard(item: item) {
+                            haptics.tapSelection()
+                            selectedLesson = item
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+        }
+    }
+    
+    // MARK: - iPad Uploaded by Teacher Section
+    
+    @ViewBuilder
+    private var iPadUploadedByTeacherSection: some View {
+        let teacherItems = lessonStore.recent.filter { $0.teacher != nil }
+        
+        if !teacherItems.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Uploaded by Teacher")
+                        .font(.custom("Arial", size: 20).weight(.bold))
+                        .foregroundColor(Color(hex: "#121417"))
+                    
+                    Spacer()
+                    
+                    Button("See all") {
+                        haptics.tapSelection()
+                    }
+                    .font(.custom("Arial", size: 14))
+                    .foregroundColor(ColorTokens.primary)
+                }
+                .accessibilityAddTraits(.isHeader)
+                
+                HStack(spacing: 16) {
+                    ForEach(teacherItems.prefix(3)) { item in
+                        iPadTeacherCard(item: item)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func iPadTeacherCard(item: LessonIndexItem) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(hex: "#E8F5E9"))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 18))
+                        .foregroundColor(Color(hex: "#4CAF50"))
+                }
+                .accessibilityHidden(true)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.title)
+                        .font(.custom("Arial", size: 16).weight(.medium))
+                        .foregroundColor(Color(hex: "#121417"))
+                        .lineLimit(1)
+                    
+                    if let teacher = item.teacher {
+                        Text("\(teacher) • \(item.createdAt, style: .relative)")
+                            .font(.custom("Arial", size: 12))
+                            .foregroundColor(Color(hex: "#61758A"))
+                    }
+                }
+                
+                Spacer()
+                
+                Text("PDF")
+                    .font(.custom("Arial", size: 11).weight(.medium))
+                    .foregroundColor(Color(hex: "#61758A"))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(hex: "#F5F5F5"))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            
+            Button("Open") {
+                haptics.tapSelection()
+                selectedLesson = item
+            }
+            .font(.custom("Arial", size: 14).weight(.medium))
+            .foregroundColor(Color(hex: "#121417"))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(Color(hex: "#F5F5F5"))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(16)
+        .frame(width: 260)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.title), from \(item.teacher ?? "teacher")")
+        .accessibilityHint("Double tap to open")
+    }
+    
+    // MARK: - iPad All Files Section
+    
+    @ViewBuilder
+    private var iPadAllFilesSection: some View {
+        let allUploadedFiles = lessonStore.downloaded.sorted { $0.createdAt > $1.createdAt }
+        
+        VStack(alignment: .leading, spacing: 12) {
+            Text("All Files")
+                .font(.custom("Arial", size: 20).weight(.bold))
+                .foregroundColor(Color(hex: "#121417"))
+                .padding(.top, 20)
+                .accessibilityAddTraits(.isHeader)
+            
+            if allUploadedFiles.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "doc")
+                        .font(.system(size: 48))
+                        .foregroundColor(Color(hex: "#989CA6"))
+                        .accessibilityHidden(true)
+                    
+                    Text("No files yet")
+                        .font(.custom("Arial", size: 17))
+                        .foregroundColor(Color(hex: "#61758A"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(allUploadedFiles) { item in
+                        CompletedFileCard(item: item) {
+                            haptics.tapSelection()
+                            selectedLesson = item
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - iPad Recent Activity Panel
+    
+    private var iPadRecentActivityPanel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Recent Activity")
+                .font(.custom("Arial", size: 20).weight(.bold))
+                .foregroundColor(Color(hex: "#121417"))
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                .padding(.bottom, 16)
+            
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(lessonStore.recent.prefix(10)) { item in
+                        iPadRecentActivityRow(item: item)
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+            
+            Spacer()
+        }
+        .frame(width: 280)
+        .background(Color.white)
+    }
+    
+    private func iPadRecentActivityRow(item: LessonIndexItem) -> some View {
+        Button {
+            haptics.tapSelection()
+            selectedLesson = item
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(hex: "#DEECF8"))
+                        .frame(width: 40, height: 40)
+                    
+                    Image("pdf-icon-blue")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
+                }
+                .accessibilityHidden(true)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.title)
+                        .font(.custom("Arial", size: 14).weight(.medium))
+                        .foregroundColor(Color(hex: "#121417"))
+                        .lineLimit(1)
+                    
+                    Text("Opened \(item.createdAt, style: .relative)")
+                        .font(.custom("Arial", size: 12))
+                        .foregroundColor(Color(hex: "#61758A"))
+                }
+                
+                Spacer()
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(item.title)
+        .accessibilityHint("Double tap to open")
+    }
+    
+    // MARK: - iPhone Layout
+    
+    private var iPhoneLayout: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -82,35 +671,6 @@ struct DashboardView: View {
             HomeTabBar(selectedTab: $selectedTab)
         }
         .ignoresSafeArea(edges: .bottom)
-        .sheet(isPresented: $showUpload) {
-            UploadSheetView(uploadManager: uploadManager)
-                .environmentObject(lessonStore)
-                .environmentObject(haptics)
-        }
-        .onAppear {
-            uploadManager.lessonStore = lessonStore
-            previousProcessingCount = lessonStore.processing.count
-            previousCompletedCount = lessonStore.downloaded.count
-        }
-        .fullScreenCover(item: $selectedLesson) { lesson in
-            NavigationStack {
-                ReaderContainer(item: lesson)
-            }
-        }
-        .onChange(of: notificationDelegate.selectedLessonId) { oldLessonId, newLessonId in
-            if let lessonId = newLessonId,
-               let lesson = lessonStore.recent.first(where: { $0.id == lessonId }) {
-                selectedLesson = lesson
-                notificationDelegate.selectedLessonId = nil
-            }
-        }
-        .onChange(of: lessonStore.processing.count) { oldCount, newCount in
-            previousProcessingCount = newCount
-        }
-        .onChange(of: lessonStore.downloaded.count) { oldCount, newCount in
-            previousCompletedCount = newCount
-        }
-        .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: - Header Section
@@ -193,7 +753,6 @@ struct DashboardView: View {
                 .accessibilityHidden(true)
 
             HStack(spacing: 8) {
-                // Google Drive chip - using GoogleDrive asset
                 HStack(spacing: 8) {
                     Image("GoogleDrive")
                         .resizable()
@@ -214,7 +773,6 @@ struct DashboardView: View {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                // Dropbox chip - using Dropbox asset
                 HStack(spacing: 8) {
                     Image("Dropbox")
                         .resizable()
@@ -415,7 +973,7 @@ public struct TertiaryButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - Teacher Lesson Card (Using pdf-icon-red)
+// MARK: - Teacher Lesson Card
 private struct TeacherLessonCard: View {
     let item: LessonIndexItem
     let cardWidth: CGFloat
@@ -425,7 +983,6 @@ private struct TeacherLessonCard: View {
         Button(action: onOpen) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top, spacing: 12) {
-                    // Red PDF icon from assets
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color(hex: "#FEDFDE"))
@@ -483,7 +1040,7 @@ private struct TeacherLessonCard: View {
     }
 }
 
-// MARK: - Recent Row (Using pdf-icon-blue)
+// MARK: - Recent Row
 private struct RecentRow: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -491,7 +1048,6 @@ private struct RecentRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // Blue PDF icon from assets
                 ZStack {
                     RoundedRectangle(cornerRadius: 13.75)
                         .fill(Color(hex: "#DEECF8"))
@@ -632,14 +1188,13 @@ private struct ReaderContainer: View {
     }
 }
 
-// MARK: - Processing File Card (Using pdf-icon-red)
+// MARK: - Processing File Card
 private struct ProcessingFileCard: View {
     let processingFile: ProcessingFile
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         HStack(spacing: 12) {
-            // Red PDF icon from assets
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: "#FEDFDE"))
@@ -700,7 +1255,7 @@ private struct ProcessingFileCard: View {
     }
 }
 
-// MARK: - Completed File Card (Using pdf-icon-red and tick-mark)
+// MARK: - Completed File Card
 private struct CompletedFileCard: View {
     let item: LessonIndexItem
     var onTap: () -> Void
@@ -709,7 +1264,6 @@ private struct CompletedFileCard: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // Red PDF icon from assets
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(hex: "#FEDFDE"))
@@ -735,7 +1289,6 @@ private struct CompletedFileCard: View {
                 
                 Spacer()
                 
-                // Tick mark from assets
                 Image("tick-mark")
                     .resizable()
                     .scaledToFit()
