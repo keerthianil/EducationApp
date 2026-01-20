@@ -197,13 +197,15 @@ struct DashboardFlow2View: View {
                 .buttonStyle(PrimaryButtonStyle())
                 
                 Button("Scan files") {}
-                    .buttonStyle(TertiaryButtonStyle())
+                    .buttonStyle(TertiaryButtonStyle(isDisabled: true))
                     .disabled(true)
+                    .accessibilityHidden(true)
             }
             
             Text("or upload from")
                 .font(.custom("Arial", size: 15.9))
                 .foregroundColor(Color(hex: "#989CA6"))
+                .accessibilityHidden(true)
             
             HStack(spacing: 8) {
                 // Google Drive - using asset
@@ -290,6 +292,8 @@ struct DashboardFlow2View: View {
                     .padding(.horizontal, horizontalPadding)
                     .padding(.vertical, 16)
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Uploaded by teacher, \(teacherItems.count) file\(teacherItems.count == 1 ? "" : "s")")
             }
         }
     }
