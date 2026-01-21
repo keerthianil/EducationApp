@@ -125,12 +125,8 @@ struct DashboardFlow3View: View {
             
             Spacer()
             
-            Text("Dashboard")
-                .font(.custom("Arial", size: 18).weight(.bold))
-                .foregroundColor(Color(hex: "#0D141C"))
-            
-            Spacer()
-            
+            // Hamburger menu - temporarily hidden
+            /*
             Button {
                 haptics.tapSelection()
                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -147,7 +143,17 @@ struct DashboardFlow3View: View {
                 .frame(width: 48, height: 48)
             }
             .accessibilityLabel("Menu")
+            */
+            
+            Spacer()
+                .frame(width: 48)
         }
+        .overlay(
+            Text("StemAlly")
+                .font(.custom("Arial", size: 18).weight(.bold))
+                .foregroundColor(Color(hex: "#0D141C")),
+            alignment: .center
+        )
         .padding(.horizontal, 16)
         .padding(.top, 16)
         .padding(.bottom, 8)
@@ -230,7 +236,8 @@ struct DashboardFlow3View: View {
                         .stroke(Color(hex: "#ACD7DF"), style: StrokeStyle(lineWidth: 2, dash: [5]))
                 )
                 
-                // "Upload from Cloud" and cloud buttons - hidden from VoiceOver
+                // "Upload from Cloud" text and cloud buttons - temporarily commented out for testing
+                /*
                 Text("Upload from Cloud")
                     .font(.custom("Arial", size: 16).weight(.medium))
                     .foregroundColor(Color(hex: "#6F6F6F"))
@@ -273,6 +280,7 @@ struct DashboardFlow3View: View {
                     }
                 }
                 .accessibilityHidden(true)
+                */
             }
             .padding(16)
             

@@ -123,9 +123,11 @@ struct DashboardView: View {
     
     private var iPadSidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("STEMA11Y")
+            Text("StemAlly")
                 .font(.custom("Arial", size: 22).weight(.bold))
                 .foregroundColor(Color(hex: "#121417"))
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
                 .padding(.bottom, 24)
@@ -204,9 +206,11 @@ struct DashboardView: View {
     private var iPadMainContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Dashboard")
+                Text("StemAlly")
                     .font(.custom("Arial", size: 28).weight(.bold))
                     .foregroundColor(Color(hex: "#121417"))
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
                     .padding(.top, 24)
                     .padding(.bottom, 16)
@@ -314,6 +318,8 @@ struct DashboardView: View {
                     .background(ColorTokens.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     
+                    // Scan Files button - temporarily commented out for testing
+                    /*
                     Button("Scan Files") { }
                         .font(.custom("Arial", size: 14).weight(.bold))
                         .foregroundColor(Color(hex: "#121417"))
@@ -328,11 +334,14 @@ struct DashboardView: View {
                         .disabled(true)
                         .opacity(0.5)
                         .accessibilityHidden(true)
+                    */
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 24)
             
+            // "Or upload from" text and cloud buttons - temporarily commented out for testing
+            /*
             VStack(alignment: .leading, spacing: 16) {
                 Text("Or upload from")
                     .font(.custom("Arial", size: 16).weight(.medium))
@@ -385,6 +394,7 @@ struct DashboardView: View {
             }
             .frame(width: 200)
             .padding(.vertical, 24)
+            */
         }
         .padding(.horizontal, 24)
         .background(Color.white)
@@ -676,14 +686,10 @@ struct DashboardView: View {
     // MARK: - Header Section
     private func headerSection() -> some View {
         HStack {
-            Text("Logo")
-                .font(.custom("Arial", size: 22.3))
-                .fontWeight(.bold)
-                .foregroundColor(Color(hex: "#47494F"))
-                .accessibilityLabel("Education App")
-
             Spacer()
-
+            
+            // Three dot menu - temporarily hidden
+            /*
             Button {
                 haptics.tapSelection()
             } label: {
@@ -698,7 +704,18 @@ struct DashboardView: View {
                     )
             }
             .accessibilityLabel("More options")
+            */
+            
+            Spacer()
         }
+        .overlay(
+            Text("StemAlly")
+                .font(.custom("Arial", size: 22.3))
+                .fontWeight(.bold)
+                .foregroundColor(Color(hex: "#47494F"))
+                .accessibilityLabel("StemAlly"),
+            alignment: .center
+        )
     }
 
     // MARK: - Banner Section
@@ -723,16 +740,17 @@ struct DashboardView: View {
                 .foregroundColor(ColorTokens.primary)
                 .accessibilityHidden(true)
 
-            VStack(spacing: 4) {
-                Text("Upload Your Files")
-                    .font(.custom("Arial", size: 20.3))
-                    .fontWeight(.bold)
-                    .foregroundColor(Color(hex: "#4E5055"))
+            Text("Upload Your Files")
+                .font(.custom("Arial", size: 20.3))
+                .fontWeight(.bold)
+                .foregroundColor(Color(hex: "#4E5055"))
 
-                Text("Browse files or scan")
-                    .font(.custom("Arial", size: 15.9))
-                    .foregroundColor(Color(hex: "#989CA6"))
-            }
+            // "Browse files or scan" text - temporarily commented out for testing
+            /*
+            Text("Browse files or scan")
+                .font(.custom("Arial", size: 15.9))
+                .foregroundColor(Color(hex: "#989CA6"))
+            */
 
             VStack(spacing: 12) {
                 Button("Browse files") {
@@ -741,12 +759,17 @@ struct DashboardView: View {
                 }
                 .buttonStyle(PrimaryButtonStyle())
 
+                // Scan files button - temporarily commented out for testing
+                /*
                 Button("Scan files") { }
                     .buttonStyle(TertiaryButtonStyle(isDisabled: true))
                     .disabled(true)
                     .accessibilityHidden(true)
+                */
             }
 
+            // "or upload from" text and cloud buttons - temporarily commented out for testing
+            /*
             Text("or upload from")
                 .font(.custom("Arial", size: 15.9))
                 .foregroundColor(Color(hex: "#989CA6"))
@@ -794,6 +817,7 @@ struct DashboardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .accessibilityHidden(true)
+            */
         }
         .padding(.vertical, 32)
         .padding(.horizontal, 25)
@@ -1110,7 +1134,10 @@ private struct HomeTabBar: View {
                 .frame(height: 1)
             
             HStack(spacing: 8) {
+                // Accessibility tab - temporarily commented out for testing stage
+                /*
                 tabButton(tab: .accessibility, icon: "accessibility", label: "Accessibility")
+                */
                 tabButton(tab: .home, icon: "house.fill", label: "Home")
                 tabButton(tab: .allFiles, icon: "doc.on.doc", label: "All files")
             }

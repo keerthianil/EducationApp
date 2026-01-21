@@ -39,7 +39,7 @@ final class UploadManager: ObservableObject {
                 id: "sample1_upload_\(UUID().uuidString.prefix(8))",
                 title: "The Science of Accessible Design",
                 teacher: nil,
-                localFiles: ["sample1_page1.json", "sample1_page2.json"],
+                localFiles: ["sample1_page1.json"], // sample1_page2.json temporarily removed for testing
                 createdAt: Date()
             )
         } else if baseName.contains("compound") || baseName.contains("area") || baseName.contains("figures") {
@@ -50,6 +50,8 @@ final class UploadManager: ObservableObject {
                 localFiles: ["sample2_page1.json", "sample2_page2.json"],
                 createdAt: Date()
             )
+        // Precalculus file mapping - temporarily commented out for testing
+        /*
         } else if baseName.contains("precalculus") || baseName.contains("math packet") || baseName.contains("calculus") {
             mapped = LessonIndexItem(
                 id: "sample3_upload_\(UUID().uuidString.prefix(8))",
@@ -58,6 +60,7 @@ final class UploadManager: ObservableObject {
                 localFiles: (1...10).map { "sample3_page\($0).json" },
                 createdAt: Date()
             )
+        */
         } else if baseName.contains("algebra") {
             mapped = LessonIndexItem(
                 id: "algebra_upload_\(UUID().uuidString.prefix(8))",

@@ -39,8 +39,8 @@ struct DashboardFlow2View: View {
             VStack(alignment: .leading, spacing: 0) {
                 flow2Header
                     .padding(.horizontal, horizontalPadding)
-                    .padding(.top, 20)
-                    .padding(.bottom, 8)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 
                 flow2TopTabs
                     .padding(.bottom, 16)
@@ -70,6 +70,10 @@ struct DashboardFlow2View: View {
             .padding(.bottom, 40)
         }
         .background(Color(hex: "#F6F7F8"))
+        .safeAreaInset(edge: .top) {
+            Spacer()
+                .frame(height: 44)
+        }
         .sheet(isPresented: $showUpload) {
             UploadSheetView(uploadManager: uploadManager)
                 .environmentObject(lessonStore)
@@ -106,13 +110,10 @@ struct DashboardFlow2View: View {
     // MARK: - Header
     private var flow2Header: some View {
         HStack {
-            Text("Logo")
-                .font(.custom("Arial", size: 18).weight(.bold))
-                .foregroundColor(Color(hex: "#121417"))
-                .accessibilityLabel("Education App")
-            
             Spacer()
             
+            // Hamburger menu - temporarily hidden
+            /*
             Button {
                 haptics.tapSelection()
             } label: {
@@ -126,7 +127,17 @@ struct DashboardFlow2View: View {
                 .frame(width: 48, height: 48)
             }
             .accessibilityLabel("Menu")
+            */
+            
+            Spacer()
         }
+        .overlay(
+            Text("StemAlly")
+                .font(.custom("Arial", size: 18).weight(.bold))
+                .foregroundColor(Color(hex: "#121417"))
+                .accessibilityLabel("StemAlly"),
+            alignment: .center
+        )
     }
     
     // MARK: - Top Tabs
@@ -196,12 +207,17 @@ struct DashboardFlow2View: View {
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 
+                // Scan files button - temporarily commented out for testing
+                /*
                 Button("Scan files") {}
                     .buttonStyle(TertiaryButtonStyle(isDisabled: true))
                     .disabled(true)
                     .accessibilityHidden(true)
+                */
             }
             
+            // "or upload from" text and cloud buttons - temporarily commented out for testing
+            /*
             Text("or upload from")
                 .font(.custom("Arial", size: 15.9))
                 .foregroundColor(Color(hex: "#989CA6"))
@@ -243,6 +259,7 @@ struct DashboardFlow2View: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .accessibilityHidden(true)
+            */
         }
         .padding(.vertical, 32)
         .padding(.horizontal, 25)
@@ -508,9 +525,12 @@ private struct Flow2RecentRow: View {
     
     private func bookCoverImageName(for item: LessonIndexItem) -> String {
         let title = item.title.lowercased()
+        // Precalculus check - temporarily commented out for testing
+        /*
         if title.contains("precalculus") || title.contains("calculus") {
             return "book-cover-calculus"
-        } else if title.contains("compound") || title.contains("figures") || title.contains("geometry") {
+        } else */
+        if title.contains("compound") || title.contains("figures") || title.contains("geometry") {
             return "book-cover-geometry"
         } else {
             return "book-cover-algebra"

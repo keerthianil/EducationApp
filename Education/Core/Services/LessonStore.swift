@@ -22,13 +22,14 @@ final class LessonStore: ObservableObject {
     // MARK: - Seed lessons from teacher (3 sample PDFs)
 
     /// Accessibility article – samples in `raw_json/sample1`
+    /// Page 2 removed for testing - temporarily using only page 1
     let teacherSeed: LessonIndexItem? = LessonIndexItem(
         id: "sample1_accessibility",
         title: "The Science of Accessible Design",
         teacher: "Ms. Rivera",
         localFiles: [
-            "sample1_page1",      // looks up sample1_page1.json in bundle
-            "sample1_page2"
+            "sample1_page1"      // looks up sample1_page1.json in bundle
+            // "sample1_page2" - temporarily removed for testing
         ],
         createdAt: Date()
     )
@@ -45,7 +46,8 @@ final class LessonStore: ObservableObject {
         createdAt: Date().addingTimeInterval(-3600)
     )
 
-    /// Precalculus packet – `raw_json/sample3`
+    /// Precalculus packet – `raw_json/sample3` - temporarily commented out for testing (will use 2 documents instead)
+    /*
     private let sample3Lesson = LessonIndexItem(
         id: "sample3_precalculus",
         title: "Precalculus Math Packet",
@@ -64,6 +66,7 @@ final class LessonStore: ObservableObject {
         ],
         createdAt: Date().addingTimeInterval(-7200)
     )
+    */
 
     // MARK: - Published lists for dashboard
 
@@ -80,9 +83,11 @@ final class LessonStore: ObservableObject {
     @Published var processing: [ProcessingFile] = []
 
     init() {
-        // Seed dashboard with all three teacher lessons so they’re visible
+        // Seed dashboard with teacher lessons so they're visible (using 2 documents for testing)
         if let seed = teacherSeed {
-            recent = [seed, sample2Lesson, sample3Lesson]
+            recent = [seed, sample2Lesson]
+            // Precalculus lesson commented out - temporarily removed for testing
+            // recent = [seed, sample2Lesson, sample3Lesson]
             banner = seed
         }
     }
