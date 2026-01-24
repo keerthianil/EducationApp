@@ -50,7 +50,8 @@ final class UploadManager: ObservableObject {
                 localFiles: ["sample2_page1.json", "sample2_page2.json"],
                 createdAt: Date()
             )
-        // Precalculus file mapping - temporarily commented out for testing
+        // Precalculus file mapping - temporarily commented out for user testing
+        // We are only using 2 documents for the first round of user testing
         /*
         } else if baseName.contains("precalculus") || baseName.contains("math packet") || baseName.contains("calculus") {
             mapped = LessonIndexItem(
@@ -62,11 +63,12 @@ final class UploadManager: ObservableObject {
             )
         */
         } else if baseName.contains("algebra") {
+            // Map algebra to sample2 (Area of Compound Figures) for testing
             mapped = LessonIndexItem(
                 id: "algebra_upload_\(UUID().uuidString.prefix(8))",
                 title: "Algebra Practice 4",
                 teacher: nil,
-                localFiles: ["sample3_page1.json", "sample3_page2.json"],
+                localFiles: ["sample2_page1.json", "sample2_page2.json"],
                 createdAt: Date()
             )
         } else {

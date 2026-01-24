@@ -4,6 +4,7 @@
 //
 //  Created by Keerthi Reddy on 11/7/25.
 //
+//
 
 import Foundation
 import SwiftUI
@@ -16,7 +17,10 @@ struct DocumentRendererView: View {
 
     @EnvironmentObject var speech: SpeechService
     @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var mathSpeech: MathSpeechService
     @Environment(\.dismiss) private var dismiss
+    
+    @AccessibilityFocusState private var isBackButtonFocused: Bool
 
     var body: some View {
         ZStack {
@@ -28,6 +32,9 @@ struct DocumentRendererView: View {
                     VStack(alignment: .leading, spacing: Spacing.medium) {
                         ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
                             DocumentNodeView(node: node)
+                                .environmentObject(haptics)
+                                .environmentObject(mathSpeech)
+                                .environmentObject(speech)
                         }
                     }
                     .padding(Spacing.large)
@@ -43,9 +50,37 @@ struct DocumentRendererView: View {
                 .padding(.bottom, Spacing.xLarge)
             }
         }
+        .onAppear {
+            // FIXED: Focus back button after toolbar renders
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                isBackButtonFocused = true
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(title)
         .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    speech.stop(immediate: true)
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.black)
+                }
+                // FIXED: Clear accessibility label
+                .accessibilityLabel("Back")
+                .accessibilityHint("Return to dashboard")
+                .accessibilityFocused($isBackButtonFocused)
+                .accessibilitySortPriority(1000)
+            }
+        }
+        // FIXED: Support 3-finger swipe right to go back
+        .accessibilityAction(.escape) {
+            speech.stop(immediate: true)
+            dismiss()
+        }
         .onDisappear {
             speech.stop(immediate: true)
         }
@@ -56,6 +91,10 @@ struct DocumentRendererView: View {
 
 private struct DocumentNodeView: View {
     let node: Node
+    
+    @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var mathSpeech: MathSpeechService
+    @EnvironmentObject var speech: SpeechService
     
     var body: some View {
         switch node {
@@ -69,6 +108,9 @@ private struct DocumentNodeView: View {
 
         case .paragraph(let items):
             DocumentParagraphView(items: items)
+                .environmentObject(haptics)
+                .environmentObject(mathSpeech)
+                .environmentObject(speech)
 
         case .image(let src, let alt):
             DocumentImageView(dataURI: src, alt: alt)
@@ -86,6 +128,10 @@ private struct DocumentNodeView: View {
 
 private struct DocumentParagraphView: View {
     let items: [Inline]
+    
+    @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var mathSpeech: MathSpeechService
+    @EnvironmentObject var speech: SpeechService
     
     private var textParts: [String] {
         items.compactMap { inline -> String? in
@@ -110,18 +156,22 @@ private struct DocumentParagraphView: View {
                     .foregroundColor(Color(hex: "#121417"))
             }
             
+            // Use MathCAT behavior
             ForEach(mathParts, id: \.0) { _, mathInline in
                 if case .math(let latex, let mathml, let display) = mathInline {
-                    DocumentMathPill(latex: latex, mathml: mathml, display: display)
+                    DocumentMathCATView(latex: latex, mathml: mathml, display: display)
+                        .environmentObject(haptics)
+                        .environmentObject(mathSpeech)
+                        .environmentObject(speech)
                 }
             }
         }
     }
 }
 
-// MARK: - Document Math Pill
+// MARK: - Document MathCAT View
 
-private struct DocumentMathPill: View {
+private struct DocumentMathCATView: View {
     let latex: String?
     let mathml: String?
     let display: String?
@@ -134,134 +184,58 @@ private struct DocumentMathPill: View {
         mathSpeech.speakable(from: mathml, latex: latex, verbosity: .verbose)
     }
     
-    private var displayText: String {
-        if let latex = latex, !latex.isEmpty {
-            var display = latex
-            display = display.replacingOccurrences(of: "\\", with: "")
-            display = display.replacingOccurrences(of: "{", with: "")
-            display = display.replacingOccurrences(of: "}", with: "")
-            if display.count > 60 {
-                return String(display.prefix(57)) + "..."
-            }
-            return display
-        }
-        if let mathml = mathml, !mathml.isEmpty {
-            if let alttext = extractAltTextFromMathML(mathml) {
-                return alttext
-            }
-            return "Math Equation"
-        }
-        return "Equation"
-    }
-    
-    private func extractAltTextFromMathML(_ mathml: String) -> String? {
-        let pattern = #"alttext=["']([^"']+)["']"#
-        if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-            let range = NSRange(mathml.startIndex..., in: mathml)
-            if let match = regex.firstMatch(in: mathml, options: [], range: range) {
-                if let altRange = Range(match.range(at: 1), in: mathml) {
-                    return String(mathml[altRange])
-                }
-            }
-        }
-        return nil
+    private var mathParts: [MathPart] {
+        MathParser.parse(mathml: mathml, latex: latex)
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let mathml = mathml, !mathml.isEmpty {
-                MathMLView(mathml: mathml, latex: latex, displayType: display)
-                    .frame(height: 60)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ColorTokens.primaryLight3)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .accessibilityHint("Math equation. Double tap to explore equation elements in detail")
-                    .onAppear {
-                        if UIAccessibility.isVoiceOverRunning {
-                            haptics.mathTerm()
-                        }
-                    }
-            } else if let latex = latex, !latex.isEmpty {
-                Button {
-                    haptics.mathStart()
-                    if UIAccessibility.isVoiceOverRunning {
-                        UIAccessibility.post(notification: .announcement, argument: spokenString)
-                    } else {
-                        speech.speak(spokenString)
-                    }
-                    haptics.mathEnd()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "function")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(ColorTokens.primary)
-                        
-                        Text(displayText)
-                            .font(.custom("Arial", size: 15))
-                            .foregroundColor(Color(hex: "#121417"))
-                            .lineLimit(2)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ColorTokens.primaryLight3)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(spokenString)
-                .accessibilityHint("Double tap to hear the equation read aloud again")
-                .accessibilityAddTraits(.startsMediaSession)
-            } else {
-                HStack(spacing: 8) {
-                    Image(systemName: "function")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(ColorTokens.primary)
-                    Text("Equation")
-                        .font(.custom("Arial", size: 15))
-                        .foregroundColor(Color(hex: "#121417"))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(ColorTokens.primaryLight3)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .accessibilityLabel("Math equation")
+        MathCATView(
+            mathml: mathml,
+            latex: latex,
+            fullSpokenText: spokenString,
+            mathParts: mathParts,
+            displayType: display,
+            onEnterMathMode: {
+                haptics.mathStart()
+            },
+            onExitMathMode: {
+                haptics.mathEnd()
             }
-        }
-        .onAppear {
-            if UIAccessibility.isVoiceOverRunning {
-                haptics.mathTerm()
-            }
-        }
+        )
+        .frame(height: 60)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(ColorTokens.primaryLight3)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
-// MARK: - Document Image View
+// MARK: - Document Image View (Single Accessibility Element - NO JUMPING)
 
 private struct DocumentImageView: View {
     let dataURI: String
     let alt: String?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        Group {
             if let img = decodeImage(dataURI: dataURI) {
                 Image(uiImage: img)
                     .resizable()
                     .aspectRatio(img.size, contentMode: .fit)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .accessibilityLabel(alt ?? "Image")
             } else {
                 Rectangle()
                     .fill(Color(hex: "#DEECF8"))
                     .frame(height: 160)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .accessibilityLabel(alt ?? "Image")
             }
         }
+        // FIXED: Entire image is ONE element
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(alt ?? "Image")
+        .accessibilityAddTraits(.isImage)
     }
     
     private func decodeImage(dataURI: String) -> UIImage? {
@@ -272,12 +246,20 @@ private struct DocumentImageView: View {
     }
 }
 
-// MARK: - Document SVG View
+// MARK: - Document SVG View (Single Accessibility Element - NO JUMPING)
 
 private struct DocumentSVGView: View {
     let svg: String
     let title: String?
     let summaries: [String]?
+    
+    private var accessibilityDescription: String {
+        var description = title ?? "Graphic"
+        if let summaries = summaries, !summaries.isEmpty {
+            description += ". " + summaries.joined(separator: ". ")
+        }
+        return description
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xSmall) {
@@ -285,17 +267,21 @@ private struct DocumentSVGView: View {
                 Text(t)
                     .font(.custom("Arial", size: 17).weight(.bold))
                     .foregroundColor(Color(hex: "#121417"))
+                    .accessibilityHidden(true)
             }
 
             SVGView(svg: svg)
                 .frame(maxWidth: .infinity)
                 .frame(height: 200)
-                .accessibilityLabel(summaries?.first ?? title ?? "Graphic")
         }
+        // FIXED: Entire graphic is ONE element - NO JUMPING
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityAddTraits(.isImage)
     }
 }
 
-// MARK: - Accessible Image
+// MARK: - Accessible Image (Legacy Support)
 
 struct AccessibleImage: View {
     let dataURI: String
@@ -308,7 +294,9 @@ struct AccessibleImage: View {
                 .aspectRatio(img.size, contentMode: .fit)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .accessibilityElement(children: .ignore)
                 .accessibilityLabel(alt ?? "image")
+                .accessibilityAddTraits(.isImage)
         } else {
             Rectangle()
                 .fill(Color(hex: "#DEECF8"))
@@ -319,7 +307,9 @@ struct AccessibleImage: View {
                         .foregroundColor(Color(hex: "#121417"))
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .accessibilityElement(children: .ignore)
                 .accessibilityLabel(alt ?? "image")
+                .accessibilityAddTraits(.isImage)
         }
     }
 
