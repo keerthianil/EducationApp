@@ -2,6 +2,7 @@
 //  DashboardFlow3View.swift
 //  Education
 //
+//
 
 import SwiftUI
 import UIKit
@@ -29,10 +30,29 @@ struct DashboardFlow3View: View {
     enum Flow3Tab: String, CaseIterable {
         case upload = "Upload"
         case uploadedByTeacher = "Uploaded by Teacher"
-        case recent = "Recent"
+        
+        static var allCases: [Flow3Tab] {
+            return [.upload, .uploadedByTeacher]
+        }
     }
     
-    enum Flow3BottomTab { case home, files }
+    enum Flow3BottomTab: CaseIterable {
+        case home, allFiles
+        
+        var title: String {
+            switch self {
+            case .home: return "Home"
+            case .allFiles: return "All files"
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .home: return "house"
+            case .allFiles: return "doc.on.doc"
+            }
+        }
+    }
     
     private var horizontalPadding: CGFloat {
         horizontalSizeClass == .regular ? 32 : 16
@@ -55,8 +75,6 @@ struct DashboardFlow3View: View {
                             uploadTabContent
                         case .uploadedByTeacher:
                             uploadedByTeacherTabContent
-                        case .recent:
-                            recentTabContent
                         }
                     }
                     .frame(maxWidth: contentMaxWidth)
@@ -70,12 +88,15 @@ struct DashboardFlow3View: View {
                 bottomTabBar
             }
             
+            // Hamburger menu - temporarily disabled for user testing
+            /*
             if showHamburgerMenu {
                 HamburgerMenuView(isShowing: $showHamburgerMenu)
                     .environmentObject(haptics)
                     .transition(.move(edge: .trailing))
                     .zIndex(100)
             }
+            */
         }
         .onAppear {
             uploadManager.lessonStore = lessonStore
@@ -92,6 +113,8 @@ struct DashboardFlow3View: View {
                 Flow3ReaderContainer(item: lesson)
                     .environmentObject(lessonStore)
                     .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             }
         }
         .onChange(of: notificationDelegate.selectedLessonId) { _, newValue in
@@ -110,22 +133,16 @@ struct DashboardFlow3View: View {
         .toolbar(.hidden, for: .navigationBar)
     }
     
-    // MARK: - Top Bar
+    // MARK: - Top Bar (Removed back button - this is dashboard screen)
     private var topBar: some View {
         HStack {
-            Button {
-                haptics.tapSelection()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Color(hex: "#0D141C"))
-                    .frame(width: 48, height: 48)
-            }
-            .accessibilityLabel("Back")
+            // Back button removed - dashboard is the main screen
+            Spacer()
+                .frame(width: 48)
             
             Spacer()
             
-            // Hamburger menu - temporarily hidden
+            // Hamburger menu - temporarily hidden for user testing
             /*
             Button {
                 haptics.tapSelection()
@@ -151,7 +168,8 @@ struct DashboardFlow3View: View {
         .overlay(
             Text("StemAlly")
                 .font(.custom("Arial", size: 18).weight(.bold))
-                .foregroundColor(Color(hex: "#0D141C")),
+                .foregroundColor(Color(hex: "#0D141C"))
+                .accessibilityAddTraits(.isHeader),
             alignment: .center
         )
         .padding(.horizontal, 16)
@@ -160,30 +178,40 @@ struct DashboardFlow3View: View {
         .background(Color(hex: "#F7FAFC"))
     }
     
-    // MARK: - Tab Bar
+    // MARK: - Tab Bar (FIXED: Proper VoiceOver tab announcement)
     private var tabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(Flow3Tab.allCases, id: \.self) { tab in
+        let allTabs = Flow3Tab.allCases
+        let tabCount = allTabs.count
+        
+        return HStack(spacing: 0) {
+            ForEach(Array(allTabs.enumerated()), id: \.element) { index, tab in
+                let isSelected = (selectedTab == tab)
+                
                 Button {
+                    haptics.tapSelection()
                     selectedTab = tab
                 } label: {
                     VStack(spacing: 0) {
                         Text(tab.rawValue)
                             .font(.custom("Arial", size: tab == .uploadedByTeacher ? 13 : 15).weight(.bold))
-                            .foregroundColor(selectedTab == tab ? ColorTokens.primary : Color(hex: "#8B919C"))
+                            .foregroundColor(isSelected ? ColorTokens.primary : Color(hex: "#8B919C"))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                             .padding(.top, 16)
                             .padding(.bottom, 13)
                         
                         Rectangle()
-                            .fill(selectedTab == tab ? ColorTokens.primary : Color(hex: "#E5E8EB"))
+                            .fill(isSelected ? ColorTokens.primary : Color(hex: "#E5E8EB"))
                             .frame(height: 3)
                     }
                 }
                 .frame(maxWidth: .infinity)
+                // FIXED: Proper VoiceOver tab announcement format
+                .accessibilityElement(children: .ignore)
                 .accessibilityLabel(tab.rawValue)
-                .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
+                .accessibilityValue(isSelected ? "selected" : "")
+                .accessibilityHint("Tab \(index + 1) of \(tabCount)")
+                .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
             }
         }
         .padding(.horizontal, 8)
@@ -194,9 +222,10 @@ struct DashboardFlow3View: View {
                 .frame(height: 1),
             alignment: .bottom
         )
+        .accessibilityElement(children: .contain)
     }
     
-    // MARK: - Upload Tab Content
+    // MARK: - Upload Tab Content (Changed "Drag and drop" to "Upload your files")
     private var uploadTabContent: some View {
         VStack(spacing: 16) {
             Text("Upload from Device")
@@ -209,7 +238,8 @@ struct DashboardFlow3View: View {
             
             VStack(spacing: 10) {
                 VStack(spacing: 8) {
-                    Text("Drag and drop files here")
+                    // Changed from "Drag and drop files here" to "Upload your files"
+                    Text("Upload your files")
                         .font(.custom("Arial", size: 18).weight(.bold))
                         .foregroundColor(Color(hex: "#0D141C"))
                     
@@ -236,7 +266,7 @@ struct DashboardFlow3View: View {
                         .stroke(Color(hex: "#ACD7DF"), style: StrokeStyle(lineWidth: 2, dash: [5]))
                 )
                 
-                // "Upload from Cloud" text and cloud buttons - temporarily commented out for testing
+                // "Upload from Cloud" text and cloud buttons - temporarily commented out for user testing
                 /*
                 Text("Upload from Cloud")
                     .font(.custom("Arial", size: 16).weight(.medium))
@@ -245,7 +275,6 @@ struct DashboardFlow3View: View {
                     .accessibilityHidden(true)
                 
                 HStack(spacing: 12) {
-                    // Google Drive - using asset
                     Button { } label: {
                         HStack(spacing: 4) {
                             Image("GoogleDrive")
@@ -262,7 +291,6 @@ struct DashboardFlow3View: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     
-                    // Dropbox - using asset
                     Button { } label: {
                         HStack(spacing: 4) {
                             Image("Dropbox")
@@ -337,6 +365,8 @@ struct DashboardFlow3View: View {
     // MARK: - Uploaded by Teacher Tab (Using subject assets)
     private var uploadedByTeacherTabContent: some View {
         VStack(spacing: 16) {
+            // Filter chips - temporarily commented out for user testing
+            /*
             HStack(spacing: 12) {
                 filterChip(title: "Subject")
                 filterChip(title: "Date")
@@ -344,6 +374,7 @@ struct DashboardFlow3View: View {
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)
+            */
             
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 12),
@@ -351,15 +382,18 @@ struct DashboardFlow3View: View {
             ], spacing: 12) {
                 subjectCard(title: "Maths", teacher: "Ms. Rivera", imageName: "subject-maths", sampleId: "sample1")
                 subjectCard(title: "Physics", teacher: "Ms. Rivera", imageName: "subject-physics", sampleId: "sample2")
-                subjectCard(title: "Chemistry", teacher: "Ms. Rivera", imageName: "subject-chemistry", sampleId: "sample3")
+                subjectCard(title: "Chemistry", teacher: "Ms. Rivera", imageName: "subject-chemistry", sampleId: "sample1")
                 subjectCard(title: "Biology", teacher: "Ms. Rivera", imageName: "subject-biology", sampleId: "sample1")
                 subjectCard(title: "History", teacher: "Ms. Rivera", imageName: "subject-history", sampleId: "sample2")
-                subjectCard(title: "Geography", teacher: "Ms. Rivera", imageName: "subject-geography", sampleId: "sample3")
+                subjectCard(title: "Geography", teacher: "Ms. Rivera", imageName: "subject-geography", sampleId: "sample1")
             }
             .padding(.horizontal, horizontalPadding)
+            .padding(.top, 16)
         }
     }
     
+    // Filter chip - temporarily commented out for user testing
+    /*
     private func filterChip(title: String) -> some View {
         HStack(spacing: 8) {
             Text(title)
@@ -375,6 +409,7 @@ struct DashboardFlow3View: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .accessibilityLabel("\(title) filter")
     }
+    */
     
     private func subjectCard(title: String, teacher: String, imageName: String, sampleId: String) -> some View {
         Button {
@@ -384,12 +419,12 @@ struct DashboardFlow3View: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: 12) {
-                // Subject image from assets
                 Image(imageName)
                     .resizable()
                     .scaledToFill()
                     .frame(height: 173)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .accessibilityHidden(true)
                 
                 Text(title)
                     .font(.custom("Inter", size: 16).weight(.medium))
@@ -404,60 +439,43 @@ struct DashboardFlow3View: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(title), uploaded by \(teacher)")
         .accessibilityHint("Double tap to open")
+        .accessibilityAddTraits(.isButton)
     }
     
-    // MARK: - Recent Tab
-    private var recentTabContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            recentSection(title: "Today", items: recentItemsForPeriod(.today))
-            recentSection(title: "Last 3 Days", items: recentItemsForPeriod(.last3Days))
-            recentSection(title: "Earlier", items: recentItemsForPeriod(.earlier))
-        }
-        .padding(.top, 16)
-    }
-    
-    @ViewBuilder
-    private func recentSection(title: String, items: [LessonIndexItem]) -> some View {
-        if !items.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.custom("Inter", size: 18).weight(.bold))
-                    .foregroundColor(Color(hex: "#0D141C"))
-                    .padding(.horizontal, horizontalPadding)
-                    .accessibilityAddTraits(.isHeader)
-                
-                ForEach(items) { item in
-                    Flow3RecentFileRow(item: item) {
-                        haptics.tapSelection()
-                        selectedLesson = item
-                    }
-                    .padding(.horizontal, horizontalPadding)
-                }
-            }
-        }
-    }
-    
-    private enum TimePeriod { case today, last3Days, earlier }
-    
-    private func recentItemsForPeriod(_ period: TimePeriod) -> [LessonIndexItem] {
-        let now = Date()
-        let calendar = Calendar.current
-        
-        return lessonStore.recent.filter { item in
-            let daysDiff = calendar.dateComponents([.day], from: item.createdAt, to: now).day ?? 0
-            switch period {
-            case .today: return daysDiff == 0
-            case .last3Days: return daysDiff > 0 && daysDiff <= 3
-            case .earlier: return daysDiff > 3
-            }
-        }
-    }
-    
-    // MARK: - Bottom Tab Bar
+    // MARK: - Bottom Tab Bar (FIXED: Proper VoiceOver tab announcement)
     private var bottomTabBar: some View {
-        HStack(spacing: 0) {
-            bottomTabButton(tab: .home, icon: "house", title: "Home")
-            bottomTabButton(tab: .files, icon: "doc.on.doc", title: "Files")
+        let allTabs = Flow3BottomTab.allCases
+        let tabCount = allTabs.count
+        
+        return HStack(spacing: 0) {
+            ForEach(Array(allTabs.enumerated()), id: \.element) { index, tab in
+                let isSelected = (selectedBottomTab == tab)
+                
+                Button {
+                    haptics.tapSelection()
+                    selectedBottomTab = tab
+                    if tab == .home {
+                        selectedTab = .upload
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: isSelected ? "\(tab.icon).fill" : tab.icon)
+                            .font(.system(size: 24))
+                            .foregroundColor(isSelected ? ColorTokens.primary : Color(hex: "#61758A"))
+                        
+                        Text(tab.title)
+                            .font(.custom("Arial", size: 12))
+                            .foregroundColor(isSelected ? ColorTokens.primary : Color(hex: "#61758A"))
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                // FIXED: Proper VoiceOver tab announcement format
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(tab.title)
+                .accessibilityValue(isSelected ? "selected" : "")
+                .accessibilityHint("Tab \(index + 1) of \(tabCount)")
+                .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
+            }
         }
         .padding(.top, 8)
         .padding(.bottom, 20)
@@ -468,34 +486,11 @@ struct DashboardFlow3View: View {
                 .frame(height: 1),
             alignment: .top
         )
-    }
-    
-    private func bottomTabButton(tab: Flow3BottomTab, icon: String, title: String) -> some View {
-        Button {
-            selectedBottomTab = tab
-            if tab == .home {
-                selectedTab = .upload
-            } else {
-                selectedTab = .recent
-            }
-        } label: {
-            VStack(spacing: 4) {
-                Image(systemName: selectedBottomTab == tab ? "\(icon).fill" : icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(selectedBottomTab == tab ? ColorTokens.primary : Color(hex: "#61758A"))
-                
-                Text(title)
-                    .font(.custom("Arial", size: 12))
-                    .foregroundColor(selectedBottomTab == tab ? ColorTokens.primary : Color(hex: "#61758A"))
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(selectedBottomTab == tab ? .isSelected : [])
+        .accessibilityElement(children: .contain)
     }
 }
 
-// MARK: - Flow 3 Processing Card (Using pdf-icon-red)
+// MARK: - Flow 3 Processing Card
 private struct Flow3ProcessingCard: View {
     let processingFile: ProcessingFile
     
@@ -550,7 +545,7 @@ private struct Flow3ProcessingCard: View {
     }
 }
 
-// MARK: - Flow 3 Uploaded Card (Using pdf-icon-red and tick-mark)
+// MARK: - Flow 3 Uploaded Card
 private struct Flow3UploadedCard: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -582,7 +577,6 @@ private struct Flow3UploadedCard: View {
                 
                 Spacer()
                 
-                // Tick mark from assets
                 Image("tick-mark")
                     .resizable()
                     .scaledToFit()
@@ -597,6 +591,7 @@ private struct Flow3UploadedCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(item.title), completed")
         .accessibilityHint("Double tap to open")
+        .accessibilityAddTraits(.isButton)
     }
     
     private func formatMeta(_ item: LessonIndexItem) -> String {
@@ -607,7 +602,7 @@ private struct Flow3UploadedCard: View {
     }
 }
 
-// MARK: - Flow 3 History Row (Using pdf-icon-red)
+// MARK: - Flow 3 History Row
 private struct Flow3HistoryRow: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -648,6 +643,7 @@ private struct Flow3HistoryRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(item.title)
         .accessibilityHint("Double tap to open")
+        .accessibilityAddTraits(.isButton)
     }
     
     private func formatDate(_ date: Date) -> String {
@@ -657,62 +653,12 @@ private struct Flow3HistoryRow: View {
     }
 }
 
-// MARK: - Flow 3 Recent File Row (Using pdf-icon-red)
-private struct Flow3RecentFileRow: View {
-    let item: LessonIndexItem
-    let onTap: () -> Void
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(hex: "#FEDFDE"))
-                        .frame(width: 48, height: 48)
-                    
-                    Image("pdf-icon-red")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                }
-                .accessibilityHidden(true)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.title)
-                        .font(.custom("Inter", size: 16).weight(.medium))
-                        .foregroundColor(Color(hex: "#0D141C"))
-                        .lineLimit(1)
-                    
-                    Text(formatTimeAndSize(item))
-                        .font(.custom("Inter", size: 14))
-                        .foregroundColor(Color(hex: "#4D7399"))
-                }
-                
-                Spacer()
-            }
-            .padding(16)
-            .frame(height: 72)
-            .background(Color(hex: "#F7FAFC"))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(item.title)
-        .accessibilityHint("Double tap to open")
-    }
-    
-    private func formatTimeAndSize(_ item: LessonIndexItem) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        let time = formatter.string(from: item.createdAt)
-        return "\(time), \(item.localFiles.count * 150)KB"
-    }
-}
-
-// MARK: - Reader Container
+// MARK: - Reader Container (FIXED: Proper Environment Object Passing + Escape Gesture)
 private struct Flow3ReaderContainer: View {
     @EnvironmentObject var lessonStore: LessonStore
     @EnvironmentObject var speech: SpeechService
+    @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var mathSpeech: MathSpeechService
     @Environment(\.dismiss) private var dismiss
     let item: LessonIndexItem
     
@@ -722,22 +668,21 @@ private struct Flow3ReaderContainer: View {
         Group {
             if !pages.isEmpty {
                 WorksheetView(title: item.title, pages: pages)
+                    .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             } else {
                 DocumentRendererView(title: item.title, nodes: lessonStore.loadNodes(forFilenames: item.localFiles))
+                    .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    speech.stop(immediate: true)
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.black)
-                }
-                .accessibilityLabel("Back")
-            }
+        .navigationBarBackButtonHidden(true)
+        // FIXED: Support escape gesture (two-finger scrub / 3-finger swipe right) to go back
+        .accessibilityAction(.escape) {
+            speech.stop(immediate: true)
+            dismiss()
         }
     }
 }

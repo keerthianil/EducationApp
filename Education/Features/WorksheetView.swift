@@ -4,6 +4,7 @@
 //
 //  Created by Keerthi Reddy on 11/13/25.
 //
+//
 
 import SwiftUI
 import UIKit
@@ -16,10 +17,12 @@ struct WorksheetView: View {
 
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var speech: SpeechService
+    @EnvironmentObject var mathSpeech: MathSpeechService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var currentPage: Int = 0
+    @AccessibilityFocusState private var isBackButtonFocused: Bool
     
     private var contentMaxWidth: CGFloat {
         horizontalSizeClass == .regular ? 800 : .infinity
@@ -56,107 +59,130 @@ struct WorksheetView: View {
             Color(hex: "#F5F5F5")
                 .ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.medium) {
-
-                    if !pages.isEmpty {
-                        Text("Page \(safePageIndex + 1) of \(pages.count)")
-                            .font(.custom("Arial", size: 13.5))
-                            .foregroundColor(Color(hex: "#91949B"))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, horizontalPadding)
-                    }
-
+            ScrollViewReader { scrollProxy in
+                ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.medium) {
-                        ForEach(currentItems) { item in
-                            ForEach(Array(item.nodes.enumerated()), id: \.offset) { _, node in
-                                if !shouldSkipQuestionHeading(node) {
-                                    NodeBlockView(node: node)
+                        // Invisible anchor for scroll-to-top
+                        Color.clear
+                            .frame(height: 1)
+                            .id("topAnchor")
+
+                        // FIXED: Page indicator hidden from accessibility
+                        // This prevents it from being announced instead of Back button
+                        if !pages.isEmpty {
+                            Text("Page \(safePageIndex + 1) of \(pages.count)")
+                                .font(.custom("Arial", size: 13.5))
+                                .foregroundColor(Color(hex: "#91949B"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, horizontalPadding)
+                                .accessibilityHidden(true)
+                        }
+
+                        VStack(alignment: .leading, spacing: Spacing.medium) {
+                            ForEach(currentItems) { item in
+                                ForEach(Array(item.nodes.enumerated()), id: \.offset) { _, node in
+                                    if !shouldSkipQuestionHeading(node) {
+                                        NodeBlockView(node: node)
+                                            .environmentObject(haptics)
+                                            .environmentObject(mathSpeech)
+                                            .environmentObject(speech)
+                                    }
                                 }
                             }
                         }
-                    }
-                    .padding(.horizontal, horizontalPadding)
+                        .padding(.horizontal, horizontalPadding)
 
-                    if pages.count > 1 {
-                        HStack {
-                            if canGoPrevious {
-                                Button {
-                                    moveToPreviousPage()
-                                } label: {
+                        if pages.count > 1 {
+                            HStack {
+                                if canGoPrevious {
+                                    Button {
+                                        moveToPreviousPage(scrollProxy: scrollProxy)
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "chevron.left")
+                                            Text("Prev")
+                                        }
+                                        .font(.custom("Arial", size: 14).weight(.semibold))
+                                        .foregroundColor(ColorTokens.primary)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(ColorTokens.primary, lineWidth: 1)
+                                        )
+                                    }
+                                    .accessibilityLabel("Previous page")
+                                    .accessibilityHint("Go to page \(safePageIndex)")
+                                } else {
                                     HStack(spacing: 4) {
                                         Image(systemName: "chevron.left")
                                         Text("Prev")
                                     }
                                     .font(.custom("Arial", size: 14).weight(.semibold))
-                                    .foregroundColor(ColorTokens.primary)
+                                    .foregroundColor(ColorTokens.primary.opacity(0.4))
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10)
-                                            .stroke(ColorTokens.primary, lineWidth: 1)
+                                            .stroke(ColorTokens.primary.opacity(0.4), lineWidth: 1)
                                     )
+                                    .accessibilityHidden(true)
                                 }
-                                .accessibilityLabel("Previous page")
-                            } else {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "chevron.left")
-                                    Text("Prev")
-                                }
-                                .font(.custom("Arial", size: 14).weight(.semibold))
-                                .foregroundColor(ColorTokens.primary.opacity(0.4))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(ColorTokens.primary.opacity(0.4), lineWidth: 1)
-                                )
-                                .accessibilityHidden(true)
-                            }
 
-                            Spacer()
+                                Spacer()
 
-                            if canGoNext {
-                                Button {
-                                    moveToNextPage()
-                                } label: {
+                                if canGoNext {
+                                    Button {
+                                        moveToNextPage(scrollProxy: scrollProxy)
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text("Next")
+                                            Image(systemName: "chevron.right")
+                                        }
+                                        .font(.custom("Arial", size: 14).weight(.semibold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(ColorTokens.primary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    }
+                                    .accessibilityLabel("Next page")
+                                    .accessibilityHint("Go to page \(safePageIndex + 2)")
+                                } else {
                                     HStack(spacing: 4) {
                                         Text("Next")
                                         Image(systemName: "chevron.right")
                                     }
                                     .font(.custom("Arial", size: 14).weight(.semibold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.white.opacity(0.6))
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
-                                    .background(ColorTokens.primary)
+                                    .background(ColorTokens.primary.opacity(0.4))
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .accessibilityHidden(true)
                                 }
-                                .accessibilityLabel("Next page")
-                            } else {
-                                HStack(spacing: 4) {
-                                    Text("Next")
-                                    Image(systemName: "chevron.right")
-                                }
-                                .font(.custom("Arial", size: 14).weight(.semibold))
-                                .foregroundColor(.white.opacity(0.6))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(ColorTokens.primary.opacity(0.4))
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .accessibilityHidden(true)
                             }
+                            .padding(.horizontal, horizontalPadding)
+                            .padding(.top, Spacing.large)
                         }
-                        .padding(.horizontal, horizontalPadding)
-                        .padding(.top, Spacing.large)
+                    }
+                    .frame(maxWidth: contentMaxWidth)
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, Spacing.xLarge)
+                }
+                .onChange(of: currentPage) { _ in
+                    // FIXED: Scroll to top immediately on page change
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        scrollProxy.scrollTo("topAnchor", anchor: .top)
                     }
                 }
-                .frame(maxWidth: contentMaxWidth)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, Spacing.xLarge)
             }
         }
         .onAppear {
-            announcePageChange()
+            // FIXED: Focus back button after a short delay to ensure toolbar is rendered
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                isBackButtonFocused = true
+            }
         }
         .onChange(of: currentPage) { _ in
             announcePageChange()
@@ -164,18 +190,42 @@ struct WorksheetView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(title)
         .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    speech.stop(immediate: true)
+                    dismiss()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                    }
+                    .foregroundColor(.black)
+                }
+                // FIXED: Back button has clear, distinct accessibility label
+                .accessibilityLabel("Back")
+                .accessibilityHint("Return to dashboard")
+                .accessibilityFocused($isBackButtonFocused)
+                .accessibilitySortPriority(1000)
+            }
+        }
+        // FIXED: Support 3-finger swipe right to go back (escape gesture)
+        .accessibilityAction(.escape) {
+            speech.stop(immediate: true)
+            dismiss()
+        }
         .onDisappear {
             speech.stop(immediate: true)
         }
     }
 
-    private func moveToNextPage() {
+    private func moveToNextPage(scrollProxy: ScrollViewProxy) {
         guard safePageIndex + 1 < pages.count else { return }
         haptics.pageChange()
         currentPage = safePageIndex + 1
     }
 
-    private func moveToPreviousPage() {
+    private func moveToPreviousPage(scrollProxy: ScrollViewProxy) {
         guard safePageIndex > 0 else { return }
         haptics.pageChange()
         currentPage = safePageIndex - 1
@@ -186,7 +236,8 @@ struct WorksheetView: View {
         haptics.sectionChange()
         
         if UIAccessibility.isVoiceOverRunning {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            // FIXED: Announce page change after scroll completes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 UIAccessibility.post(
                     notification: .announcement,
                     argument: "Page \(safePageIndex + 1) of \(pages.count)"
@@ -216,6 +267,8 @@ private struct NodeBlockView: View {
     let node: Node
     
     @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var mathSpeech: MathSpeechService
+    @EnvironmentObject var speech: SpeechService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     private var contentPadding: CGFloat {
@@ -249,6 +302,9 @@ private struct NodeBlockView: View {
 
         case .paragraph(let items):
             ParagraphBlockView(items: items)
+                .environmentObject(haptics)
+                .environmentObject(mathSpeech)
+                .environmentObject(speech)
 
         case .image(let src, let alt):
             ImageBlockView(dataURI: src, alt: alt)
@@ -275,6 +331,10 @@ private struct NodeBlockView: View {
 
 private struct ParagraphBlockView: View {
     let items: [Inline]
+    
+    @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var mathSpeech: MathSpeechService
+    @EnvironmentObject var speech: SpeechService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     private var textParts: [String] {
@@ -302,23 +362,24 @@ private struct ParagraphBlockView: View {
                 Text(combinedText)
                     .font(.custom("Arial", size: bodyFontSize))
                     .foregroundColor(Color(hex: "#121417"))
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(combinedText)
             }
             
+            // Use MathCAT behavior for equations
             ForEach(mathParts, id: \.0) { _, mathInline in
                 if case .math(let latex, let mathml, let display) = mathInline {
-                    MathEquationPill(latex: latex, mathml: mathml, display: display)
+                    MathCATEquationView(latex: latex, mathml: mathml, display: display)
+                        .environmentObject(haptics)
+                        .environmentObject(mathSpeech)
+                        .environmentObject(speech)
                 }
             }
         }
-        .accessibilityElement(children: .contain)
     }
 }
 
-// MARK: - Math Equation Pill
+// MARK: - MathCAT Equation View (EXACT MathCAT Behavior)
 
-private struct MathEquationPill: View {
+private struct MathCATEquationView: View {
     let latex: String?
     let mathml: String?
     let display: String?
@@ -332,117 +393,34 @@ private struct MathEquationPill: View {
         mathSpeech.speakable(from: mathml, latex: latex, verbosity: .verbose)
     }
     
-    private var displayText: String {
-        if let latex = latex, !latex.isEmpty {
-            var display = latex
-            display = display.replacingOccurrences(of: "\\", with: "")
-            display = display.replacingOccurrences(of: "{", with: "")
-            display = display.replacingOccurrences(of: "}", with: "")
-            if display.count > 60 {
-                return String(display.prefix(57)) + "..."
-            }
-            return display
-        }
-        if let mathml = mathml, !mathml.isEmpty {
-            if let alttext = extractAltTextFromMathML(mathml) {
-                return alttext
-            }
-            return "Math Equation"
-        }
-        return "Equation"
-    }
-    
-    private func extractAltTextFromMathML(_ mathml: String) -> String? {
-        let pattern = #"alttext=["']([^"']+)["']"#
-        if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-            let range = NSRange(mathml.startIndex..., in: mathml)
-            if let match = regex.firstMatch(in: mathml, options: [], range: range) {
-                if let altRange = Range(match.range(at: 1), in: mathml) {
-                    return String(mathml[altRange])
-                }
-            }
-        }
-        return nil
-    }
-    
-    private var pillFontSize: CGFloat {
-        horizontalSizeClass == .regular ? 17 : 15
+    private var mathParts: [MathPart] {
+        MathParser.parse(mathml: mathml, latex: latex)
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let mathml = mathml, !mathml.isEmpty {
-                MathMLView(mathml: mathml, latex: latex, displayType: display)
-                    .frame(height: 60)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ColorTokens.primaryLight3)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .accessibilityHint("Math equation. Double tap to explore equation elements in detail")
-                    .onAppear {
-                        if UIAccessibility.isVoiceOverRunning {
-                            haptics.mathTerm()
-                        }
-                    }
-            } else if let latex = latex, !latex.isEmpty {
-                Button {
-                    haptics.mathStart()
-                    if UIAccessibility.isVoiceOverRunning {
-                        UIAccessibility.post(notification: .announcement, argument: spokenString)
-                    } else {
-                        speech.speak(spokenString)
-                    }
-                    haptics.mathEnd()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "function")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(ColorTokens.primary)
-                        
-                        Text(displayText)
-                            .font(.custom("Arial", size: pillFontSize))
-                            .foregroundColor(Color(hex: "#121417"))
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ColorTokens.primaryLight3)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(spokenString)
-                .accessibilityHint("Double tap to hear the equation read aloud again")
-                .accessibilityAddTraits(.startsMediaSession)
-            } else {
-                HStack(spacing: 8) {
-                    Image(systemName: "function")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(ColorTokens.primary)
-                    Text("Equation")
-                        .font(.custom("Arial", size: pillFontSize))
-                        .foregroundColor(Color(hex: "#121417"))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(ColorTokens.primaryLight3)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .accessibilityLabel("Math equation")
+        MathCATView(
+            mathml: mathml,
+            latex: latex,
+            fullSpokenText: spokenString,
+            mathParts: mathParts,
+            displayType: display,
+            onEnterMathMode: {
+                haptics.mathStart()
+            },
+            onExitMathMode: {
+                haptics.mathEnd()
             }
-        }
-        .onAppear {
-            if UIAccessibility.isVoiceOverRunning {
-                haptics.mathTerm()
-            }
-        }
+        )
+        .frame(height: 60)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(ColorTokens.primaryLight3)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
-// MARK: - Image Block
+// MARK: - Image Block (Single Accessibility Element - NO JUMPING)
 
 private struct ImageBlockView: View {
     let dataURI: String
@@ -454,22 +432,24 @@ private struct ImageBlockView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        Group {
             if let img = decodeImage(dataURI: dataURI) {
                 Image(uiImage: img)
                     .resizable()
                     .aspectRatio(img.size, contentMode: .fit)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .accessibilityLabel(alt ?? "Image")
             } else {
                 Rectangle()
                     .fill(Color(hex: "#DEECF8"))
                     .frame(height: imageHeight)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .accessibilityLabel(alt ?? "Image")
             }
         }
+        // FIXED: Entire image is ONE accessibility element - VoiceOver won't jump inside
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(alt ?? "Image")
+        .accessibilityAddTraits(.isImage)
     }
     
     private func decodeImage(dataURI: String) -> UIImage? {
@@ -480,7 +460,7 @@ private struct ImageBlockView: View {
     }
 }
 
-// MARK: - SVG Block
+// MARK: - SVG Block (Single Accessibility Element - NO JUMPING)
 
 private struct SVGBlockView: View {
     let svg: String
@@ -492,20 +472,99 @@ private struct SVGBlockView: View {
         horizontalSizeClass == .regular ? 300 : 200
     }
     
+    private var accessibilityDescription: String {
+        var description = title ?? "Graphic"
+        if let summaries = summaries, !summaries.isEmpty {
+            description += ". " + summaries.joined(separator: ". ")
+        }
+        return description
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xSmall) {
             if let t = title {
                 Text(t)
                     .font(.custom("Arial", size: 17).weight(.bold))
                     .foregroundColor(Color(hex: "#121417"))
-                    .accessibilityAddTraits(.isHeader)
+                    // FIXED: Title is part of the combined accessibility element
+                    .accessibilityHidden(true)
             }
 
-            SVGView(svg: svg)
+            SVGWebView(svg: svg)
                 .frame(maxWidth: .infinity)
                 .frame(height: svgHeight)
-                .accessibilityLabel(summaries?.first ?? title ?? "Graphic")
         }
-        .accessibilityElement(children: .contain)
+        // FIXED: Entire graphic is ONE accessibility element
+        // VoiceOver will NOT jump between internal SVG elements
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityAddTraits(.isImage)
+    }
+}
+
+// MARK: - SVG WebView (Completely Hidden from Accessibility)
+
+private struct SVGWebView: UIViewRepresentable {
+    let svg: String
+
+    func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.backgroundColor = .clear
+        
+        // CRITICAL: Completely hide from VoiceOver
+        webView.isAccessibilityElement = false
+        webView.accessibilityElementsHidden = true
+        webView.scrollView.isAccessibilityElement = false
+        webView.scrollView.accessibilityElementsHidden = true
+        
+        return webView
+    }
+    
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        // HTML with aria-hidden to completely hide from screen readers
+        let html = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no"/>
+            <style>
+                * {
+                    -webkit-user-select: none;
+                    user-select: none;
+                }
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background: #fff;
+                }
+                svg {
+                    max-width: 100%;
+                    height: auto;
+                    display: block;
+                }
+                /* Hide all interactive elements from accessibility */
+                [tabindex], a, button, input, [role] {
+                    pointer-events: none;
+                }
+            </style>
+        </head>
+        <body aria-hidden="true" role="presentation" tabindex="-1">
+            <div aria-hidden="true" role="presentation">
+                \(svg)
+            </div>
+        </body>
+        </html>
+        """
+        webView.loadHTMLString(html, baseURL: nil)
+        
+        // Ensure accessibility is completely disabled
+        webView.isAccessibilityElement = false
+        webView.accessibilityElementsHidden = true
+        webView.scrollView.isAccessibilityElement = false
+        webView.scrollView.accessibilityElementsHidden = true
     }
 }

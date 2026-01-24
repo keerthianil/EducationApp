@@ -2,6 +2,7 @@
 //  DashboardView.swift
 //  Education
 //
+//
 
 import SwiftUI
 import UIKit
@@ -25,8 +26,10 @@ struct DashboardView: View {
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    // Removed accessibility tab for user testing
     enum HomeTab {
-        case accessibility, home, allFiles
+        case home, allFiles
+        // case accessibility - temporarily removed for user testing
     }
     
     enum SidebarItem: String, CaseIterable {
@@ -34,7 +37,7 @@ struct DashboardView: View {
         case uploads = "Uploads"
         case teacherFiles = "Teacher Files"
         case recent = "Recent"
-        case accessibility = "Accessibility"
+        // case accessibility = "Accessibility" - temporarily removed for user testing
         case allFiles = "All Files"
         case settings = "Settings"
         
@@ -44,7 +47,7 @@ struct DashboardView: View {
             case .uploads: return "icloud.and.arrow.up"
             case .teacherFiles: return "folder"
             case .recent: return "clock"
-            case .accessibility: return "accessibility"
+            // case .accessibility: return "accessibility"
             case .allFiles: return "doc.on.doc"
             case .settings: return "gearshape"
             }
@@ -88,6 +91,10 @@ struct DashboardView: View {
         .fullScreenCover(item: $selectedLesson) { lesson in
             NavigationStack {
                 ReaderContainer(item: lesson)
+                    .environmentObject(lessonStore)
+                    .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             }
         }
         .onChange(of: notificationDelegate.selectedLessonId) { oldLessonId, newLessonId in
@@ -111,9 +118,7 @@ struct DashboardView: View {
     private var iPadLayout: some View {
         HStack(spacing: 0) {
             iPadSidebar
-            
             iPadMainContent
-            
             iPadRecentActivityPanel
         }
         .background(Color(hex: "#F6F7F8"))
@@ -141,7 +146,6 @@ struct DashboardView: View {
                     .padding(.vertical, 12)
                     .padding(.horizontal, 16)
                 
-                sidebarButton(item: .accessibility, isExpandable: true)
                 sidebarButton(item: .allFiles, isExpandable: true)
             }
             .padding(.horizontal, 8)
@@ -165,8 +169,6 @@ struct DashboardView: View {
                 selectedTab = .home
             case .allFiles:
                 selectedTab = .allFiles
-            case .accessibility:
-                selectedTab = .accessibility
             default:
                 selectedTab = .home
             }
@@ -318,7 +320,7 @@ struct DashboardView: View {
                     .background(ColorTokens.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     
-                    // Scan Files button - temporarily commented out for testing
+                    // Scan Files button - temporarily commented out for user testing
                     /*
                     Button("Scan Files") { }
                         .font(.custom("Arial", size: 14).weight(.bold))
@@ -340,12 +342,12 @@ struct DashboardView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 24)
             
-            // "Or upload from" text and cloud buttons - temporarily commented out for testing
+            // "Or upload from" text and cloud buttons - temporarily commented out for user testing
             /*
             VStack(alignment: .leading, spacing: 16) {
                 Text("Or upload from")
                     .font(.custom("Arial", size: 16).weight(.medium))
-                    .foregroundColor(Color(hex: "#61758A"))
+                    .foregroundColor(Color(hex: "#6F6F6F"))
                     .accessibilityHidden(true)
                 
                 Button { } label: {
@@ -688,7 +690,7 @@ struct DashboardView: View {
         HStack {
             Spacer()
             
-            // Three dot menu - temporarily hidden
+            // Three dot menu - temporarily hidden for user testing
             /*
             Button {
                 haptics.tapSelection()
@@ -745,7 +747,7 @@ struct DashboardView: View {
                 .fontWeight(.bold)
                 .foregroundColor(Color(hex: "#4E5055"))
 
-            // "Browse files or scan" text - temporarily commented out for testing
+            // "Browse files or scan" text - temporarily commented out for user testing
             /*
             Text("Browse files or scan")
                 .font(.custom("Arial", size: 15.9))
@@ -759,7 +761,7 @@ struct DashboardView: View {
                 }
                 .buttonStyle(PrimaryButtonStyle())
 
-                // Scan files button - temporarily commented out for testing
+                // Scan files button - temporarily commented out for user testing
                 /*
                 Button("Scan files") { }
                     .buttonStyle(TertiaryButtonStyle(isDisabled: true))
@@ -768,7 +770,7 @@ struct DashboardView: View {
                 */
             }
 
-            // "or upload from" text and cloud buttons - temporarily commented out for testing
+            // "or upload from" text and cloud buttons - temporarily commented out for user testing
             /*
             Text("or upload from")
                 .font(.custom("Arial", size: 15.9))
@@ -1118,13 +1120,21 @@ private struct RecentRow: View {
     }
 }
 
-// MARK: - Bottom Tab Bar
+// MARK: - Bottom Tab Bar (Removed Accessibility tab for user testing)
 private struct HomeTabBar: View {
     @Binding var selectedTab: DashboardView.HomeTab
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     private var tabBarHeight: CGFloat {
         horizontalSizeClass == .regular ? 105 : 95
+    }
+    
+    // Tab definitions
+    private var tabs: [(tab: DashboardView.HomeTab, icon: String, label: String)] {
+        [
+            (.home, "house.fill", "Home"),
+            (.allFiles, "doc.on.doc", "All files")
+        ]
     }
 
     var body: some View {
@@ -1134,12 +1144,15 @@ private struct HomeTabBar: View {
                 .frame(height: 1)
             
             HStack(spacing: 8) {
-                // Accessibility tab - temporarily commented out for testing stage
-                /*
-                tabButton(tab: .accessibility, icon: "accessibility", label: "Accessibility")
-                */
-                tabButton(tab: .home, icon: "house.fill", label: "Home")
-                tabButton(tab: .allFiles, icon: "doc.on.doc", label: "All files")
+                ForEach(Array(tabs.enumerated()), id: \.element.tab) { index, item in
+                    tabButton(
+                        tab: item.tab,
+                        icon: item.icon,
+                        label: item.label,
+                        index: index + 1,
+                        total: tabs.count
+                    )
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -1151,9 +1164,10 @@ private struct HomeTabBar: View {
         }
         .frame(height: tabBarHeight)
         .background(Color.white)
+        .accessibilityElement(children: .contain)
     }
 
-    private func tabButton(tab: DashboardView.HomeTab, icon: String, label: String) -> some View {
+    private func tabButton(tab: DashboardView.HomeTab, icon: String, label: String, index: Int, total: Int) -> some View {
         let isSelected = (tab == selectedTab)
 
         return Button {
@@ -1173,15 +1187,21 @@ private struct HomeTabBar: View {
             .background(isSelected ? Color(hex: "#E8F2F2") : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 27))
         }
+        // FIXED: Proper VoiceOver tab announcement
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityValue(isSelected ? "selected" : "")
+        .accessibilityHint("Tab \(index) of \(total)")
+        .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
     }
 }
 
-// MARK: - Reader Container
+// MARK: - Reader Container (FIXED: Escape Gesture)
 private struct ReaderContainer: View {
     @EnvironmentObject var lessonStore: LessonStore
     @EnvironmentObject var speech: SpeechService
+    @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var mathSpeech: MathSpeechService
     @Environment(\.dismiss) private var dismiss
     let item: LessonIndexItem
 
@@ -1194,23 +1214,22 @@ private struct ReaderContainer: View {
         Group {
             if !pages.isEmpty {
                 WorksheetView(title: item.title, pages: pages)
+                    .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             } else {
                 let nodes = lessonStore.loadNodes(forFilenames: item.localFiles)
                 DocumentRendererView(title: item.title, nodes: nodes)
+                    .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    speech.stop(immediate: true)
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.black)
-                }
-                .accessibilityLabel("Back")
-            }
+        .navigationBarBackButtonHidden(true)
+        // FIXED: 3-finger swipe right (escape gesture) to go back
+        .accessibilityAction(.escape) {
+            speech.stop(immediate: true)
+            dismiss()
         }
     }
 }
