@@ -480,6 +480,16 @@ private struct SVGBlockView: View {
         return description
     }
     
+    private var scene: TactileScene {
+        SVGToTactileParser.parse(svgContent: svg, viewSize: CGSize(width: 400, height: svgHeight))
+    }
+    
+    private var hasTactileElements: Bool {
+        !scene.lineSegments.isEmpty || 
+        !scene.polygons.isEmpty || 
+        !scene.vertices.isEmpty
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xSmall) {
             if let t = title {
@@ -490,9 +500,16 @@ private struct SVGBlockView: View {
                     .accessibilityHidden(true)
             }
 
-            SVGWebView(svg: svg)
-                .frame(maxWidth: .infinity)
-                .frame(height: svgHeight)
+            if hasTactileElements {
+                // Geometric diagram - render with tactile Canvas for blind user exploration
+                TactileCanvasView(scene: scene, title: title, summaries: summaries)
+                    .frame(height: svgHeight)
+            } else {
+                // Decorative SVG - render as normal image using WKWebView
+                SVGWebView(svg: svg)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: svgHeight)
+            }
         }
         // FIXED: Entire graphic is ONE accessibility element
         // VoiceOver will NOT jump between internal SVG elements

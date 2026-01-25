@@ -261,18 +261,52 @@ private struct DocumentSVGView: View {
         return description
     }
     
+    // Try to parse for tactile elements, but don't force it
+    private var scene: TactileScene? {
+        // Only parse if we detect geometric elements (lines, circles)
+        // This avoids parsing decorative SVGs unnecessarily
+        if svg.contains("<line") || svg.contains("<circle") || svg.contains("<polygon") {
+            return SVGToTactileParser.parse(svgContent: svg, viewSize: CGSize(width: 400, height: 300))
+        }
+        return nil
+    }
+    
+    private var hasTactileElements: Bool {
+        guard let scene = scene else { return false }
+        return !scene.lineSegments.isEmpty || 
+               !scene.polygons.isEmpty || 
+               !scene.vertices.isEmpty
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xSmall) {
-            if let t = title {
-                Text(t)
-                    .font(.custom("Arial", size: 17).weight(.bold))
-                    .foregroundColor(Color(hex: "#121417"))
-                    .accessibilityHidden(true)
+        Group {
+            if hasTactileElements, let scene = scene {
+                // Geometric diagram - render with tactile Canvas for blind user exploration
+                VStack(alignment: .leading, spacing: Spacing.xSmall) {
+                    if let t = title {
+                        Text(t)
+                            .font(.custom("Arial", size: 17).weight(.bold))
+                            .foregroundColor(Color(hex: "#121417"))
+                            .accessibilityHidden(true) // Title is in accessibility description
+                    }
+                    TactileCanvasView(scene: scene, title: nil, summaries: summaries)
+                }
+                .padding(.vertical, Spacing.medium)
+            } else {
+                // Use SVGKit for proper native SVG rendering (handles all SVG features correctly)
+                // This avoids manual parsing issues with text, coordinates, etc.
+                VStack(alignment: .leading, spacing: Spacing.xSmall) {
+                    if let t = title {
+                        Text(t)
+                            .font(.custom("Arial", size: 17).weight(.bold))
+                            .foregroundColor(Color(hex: "#121417"))
+                            .accessibilityHidden(true)
+                    }
+                    SVGKitView(svg: svg, contentMode: .scaleAspectFit)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 200)
+                }
             }
-
-            SVGView(svg: svg)
-                .frame(maxWidth: .infinity)
-                .frame(height: 200)
         }
         // FIXED: Entire graphic is ONE element - NO JUMPING
         .accessibilityElement(children: .ignore)
