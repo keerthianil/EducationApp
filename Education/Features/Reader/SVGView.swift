@@ -23,14 +23,10 @@ struct SVGView: UIViewRepresentable {
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.backgroundColor = .clear
         
-        // CRITICAL: COMPLETELY disable accessibility on the WebView
-        // This prevents VoiceOver from jumping to internal SVG elements
-        // The parent SwiftUI view handles all accessibility
         webView.isAccessibilityElement = false
         webView.accessibilityElementsHidden = true
         webView.accessibilityTraits = []
         
-        // Also disable on scroll view
         webView.scrollView.isAccessibilityElement = false
         webView.scrollView.accessibilityElementsHidden = true
         
@@ -38,8 +34,6 @@ struct SVGView: UIViewRepresentable {
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // Create HTML with aria-hidden to completely hide from screen readers
-        // The parent SwiftUI view provides the single accessibility label
         let html = """
         <!DOCTYPE html>
         <html lang="en">
@@ -61,11 +55,9 @@ struct SVGView: UIViewRepresentable {
                     height: auto;
                     display: block;
                 }
-                /* Remove all accessibility from SVG internals */
                 svg * {
                     pointer-events: none;
                 }
-                /* Hide all interactive/focusable elements from accessibility */
                 [tabindex], a, button, input, [role], [aria-label] {
                     pointer-events: none;
                     -webkit-user-select: none;
@@ -81,39 +73,32 @@ struct SVGView: UIViewRepresentable {
         """
         webView.loadHTMLString(html, baseURL: nil)
         
-        // CRITICAL: Ensure WebView accessibility is COMPLETELY disabled after load
         webView.isAccessibilityElement = false
         webView.accessibilityElementsHidden = true
         webView.accessibilityTraits = []
         
-        // Also disable accessibility on scroll view
         webView.scrollView.isAccessibilityElement = false
         webView.scrollView.accessibilityElementsHidden = true
     }
     
-    /// Sanitize SVG to remove any accessibility attributes that might cause jumping
     private func sanitizeSVG(_ svg: String) -> String {
         var result = svg
         
-        // Remove aria attributes that might cause VoiceOver to find elements
         let ariaPattern = #"\s*aria-[a-z]+="[^"]*""#
         if let regex = try? NSRegularExpression(pattern: ariaPattern, options: .caseInsensitive) {
             result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "")
         }
         
-        // Remove role attributes
         let rolePattern = #"\s*role="[^"]*""#
         if let regex = try? NSRegularExpression(pattern: rolePattern, options: .caseInsensitive) {
             result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "")
         }
         
-        // Remove tabindex attributes
         let tabPattern = #"\s*tabindex="[^"]*""#
         if let regex = try? NSRegularExpression(pattern: tabPattern, options: .caseInsensitive) {
             result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "")
         }
         
-        // Add aria-hidden to the SVG root if not present
         if !result.contains("aria-hidden") {
             result = result.replacingOccurrences(of: "<svg", with: "<svg aria-hidden=\"true\"", options: .caseInsensitive)
         }
@@ -122,9 +107,8 @@ struct SVGView: UIViewRepresentable {
     }
 }
 
-// MARK: - Alternative: UIKit-based SVG View for complete accessibility control
+// MARK: - Alternative: UIKit-based SVG View
 
-/// A UIKit wrapper that ensures the WebView is completely invisible to VoiceOver
 class AccessibilityHiddenSVGView: UIView {
     private var webView: WKWebView?
     
@@ -152,7 +136,6 @@ class AccessibilityHiddenSVGView: UIView {
         wv.scrollView.isScrollEnabled = false
         wv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         
-        // COMPLETELY hide from accessibility
         wv.isAccessibilityElement = false
         wv.accessibilityElementsHidden = true
         wv.scrollView.isAccessibilityElement = false
@@ -161,7 +144,6 @@ class AccessibilityHiddenSVGView: UIView {
         addSubview(wv)
         self.webView = wv
         
-        // Hide self from accessibility too - parent view handles it
         self.isAccessibilityElement = false
         self.accessibilityElementsHidden = true
     }

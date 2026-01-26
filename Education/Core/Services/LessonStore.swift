@@ -40,8 +40,8 @@ final class LessonStore: ObservableObject {
         title: "Area of Compound Figures",
         teacher: "Ms. Rivera",
         localFiles: [
-            "sample2_page1",
-            "sample2_page2"
+            "sample2_page1"
+            // "sample2_page2" - temporarily removed (wrongly rendered)
         ],
         createdAt: Date().addingTimeInterval(-3600)
     )
@@ -158,6 +158,14 @@ final class LessonStore: ObservableObject {
         var all: [Node] = []
 
         for f in files {
+            // Skip sample2_page2 (temporarily - wrongly rendered)
+            if f == "sample2_page2" || f == "sample2_page2.json" {
+                #if DEBUG
+                print("[LessonStore] ⛔ Skipping sample2_page2.json")
+                #endif
+                continue
+            }
+            
             if let data = try? loadBundleJSON(named: f) {
                 let pageNodes = FlexibleLessonParser.parseNodes(from: data)
                 all.append(contentsOf: pageNodes)

@@ -7,13 +7,12 @@
 
 import Foundation
 
-/// A strict “document” shape some converters output: { "content": [nodes...] }
+/// A strict "document" shape some converters output: { "content": [nodes...] }
 struct LessonDocument: Codable {
     let content: [Node]
 }
 
-/// High-level blocks in the lesson – these are what the UI renders into
-/// separate items: headings, paragraphs, images, SVGs, etc.
+/// High-level blocks in the lesson
 enum Node: Codable, Identifiable {
     case heading(level: Int, text: String)
     case paragraph(items: [Inline])
@@ -21,11 +20,26 @@ enum Node: Codable, Identifiable {
     case svgNode(svg: String, title: String?, summaries: [String]?)
     case unknown
 
-    /// We don’t rely on identity across frames, so a random UUID per node is fine.
-    var id: UUID { UUID() }
+    // FIXED: Store UUID instead of generating new one each access
+    private static var uuidCache: [ObjectIdentifier: UUID] = [:]
+    
+    var id: String {
+        // Generate stable ID based on content hash
+        switch self {
+        case .heading(let level, let text):
+            return "heading_\(level)_\(text.hashValue)"
+        case .paragraph(let items):
+            return "paragraph_\(items.hashValue)"
+        case .image(let src, _):
+            return "image_\(src.hashValue)"
+        case .svgNode(let svg, _, _):
+            return "svg_\(svg.hashValue)"
+        case .unknown:
+            return "unknown_\(UUID().uuidString)"
+        }
+    }
 
     init(from decoder: Decoder) throws {
-        // Not used – we parse via FlexibleLessonParser instead.
         self = .unknown
     }
 
@@ -35,12 +49,50 @@ enum Node: Codable, Identifiable {
 }
 
 /// Inline content inside a paragraph: plain text or math runs.
-enum Inline: Codable, Identifiable {
+enum Inline: Codable, Identifiable, Hashable {
     case text(String)
     case math(latex: String?, mathml: String?, display: String?)
     case unknown
 
-    var id: UUID { UUID() }
+    var id: String {
+        switch self {
+        case .text(let t):
+            return "text_\(t.hashValue)"
+        case .math(let latex, let mathml, _):
+            return "math_\(latex?.hashValue ?? 0)_\(mathml?.hashValue ?? 0)"
+        case .unknown:
+            return "unknown_\(UUID().uuidString)"
+        }
+    }
+    
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        switch self {
+        case .text(let t):
+            hasher.combine("text")
+            hasher.combine(t)
+        case .math(let latex, let mathml, let display):
+            hasher.combine("math")
+            hasher.combine(latex)
+            hasher.combine(mathml)
+            hasher.combine(display)
+        case .unknown:
+            hasher.combine("unknown")
+        }
+    }
+    
+    static func == (lhs: Inline, rhs: Inline) -> Bool {
+        switch (lhs, rhs) {
+        case (.text(let l), .text(let r)):
+            return l == r
+        case (.math(let l1, let l2, let l3), .math(let r1, let r2, let r3)):
+            return l1 == r1 && l2 == r2 && l3 == r3
+        case (.unknown, .unknown):
+            return true
+        default:
+            return false
+        }
+    }
 
     init(from decoder: Decoder) throws { self = .unknown }
     func encode(to encoder: Encoder) throws {}
@@ -48,11 +100,9 @@ enum Inline: Codable, Identifiable {
 
 // MARK: - Flexible parser that tolerates multiple JSON shapes produced by converters
 
-/// Central place that turns arbitrary lesson JSON into `[Node]`.
-/// each sentence / equation / block is preserved as its own object.
 enum FlexibleLessonParser {
     static func parseNodes(from data: Data) -> [Node] {
-        // 1) Try the strict shape first (our original)
+        // 1) Try the strict shape first
         if let doc = try? JSONDecoder().decode(LessonDocumentStrict.self, from: data) {
             return doc.content.map { $0.asNode() }
         }
@@ -62,20 +112,17 @@ enum FlexibleLessonParser {
         return extractNodes(fromAny: obj)
     }
 
-    // Accepts whole JSON (page, document, or array)
     private static func extractNodes(fromAny any: Any) -> [Node] {
         if let arr = any as? [[String: Any]] {
             return arr.compactMap(parseNodeDict)
         }
         if let dict = any as? [String: Any] {
-            // common keys: content / nodes / blocks / elements / items / pageContent
             let keys = ["content", "nodes", "blocks", "elements", "items", "pageContent"]
             for k in keys {
                 if let arr = dict[k] as? [[String: Any]] {
                     return arr.compactMap(parseNodeDict)
                 }
             }
-            // sometimes each page lives under "pages": [ { content:[...] }, ...]
             if let pages = dict["pages"] as? [[String: Any]] {
                 return pages.flatMap { extractNodes(fromAny: $0) }
             }
@@ -83,7 +130,6 @@ enum FlexibleLessonParser {
         return []
     }
 
-    // Convert one node dictionary into Node
     private static func parseNodeDict(_ d: [String: Any]) -> Node? {
         let rawType = (d["type"] as? String)?.lowercased() ?? ""
 
@@ -104,7 +150,19 @@ enum FlexibleLessonParser {
         if rawType == "image" || rawType == "img" {
             let attrs = d["attrs"] as? [String: Any]
             let src = (attrs?["src"] as? String) ?? ""
-            let alt = attrs?["alt"] as? String
+            // Handle alt as String or array (take first element if array)
+            let alt: String?
+            if let altString = attrs?["alt"] as? String {
+                alt = altString
+            } else if let altArray = attrs?["alt"] as? [String], let first = altArray.first {
+                alt = first
+            } else if let longDesc = attrs?["long_desc"] as? [String], let first = longDesc.first {
+                alt = first
+            } else if let shortDesc = attrs?["short_desc"] as? [String], let first = shortDesc.first {
+                alt = first
+            } else {
+                alt = nil
+            }
             return .image(src: src, alt: alt)
         }
 
@@ -121,7 +179,6 @@ enum FlexibleLessonParser {
 
         // Unknown containers that still hold "content"
         if let content = d["content"] as? [[String: Any]], rawType.isEmpty == false {
-            // treat it like a paragraph
             return .paragraph(items: content.compactMap(parseInlineDict))
         }
 
@@ -146,7 +203,6 @@ enum FlexibleLessonParser {
         if let content = node["content"] as? [[String: Any]] {
             return content.compactMap(parseInlineDict)
         }
-        // fallback: paragraph has "text"
         if let t = node["text"] as? String { return [.text(t)] }
         return []
     }
@@ -169,12 +225,7 @@ enum FlexibleLessonParser {
     }
 }
 
-// MARK: - A strict model some JSONs already use; converted to Node
-//
-//  NOTE: attrs is [String:String]. If the actual JSON uses numbers for some
-//  attributes (like "level": 2), decoding this strict model might fail; in
-//  that case we fall back to the FlexibleLessonParser above, so the app
-//  still won’t crash.
+// MARK: - Strict model
 
 private struct LessonDocumentStrict: Codable {
     let content: [StrictNode]

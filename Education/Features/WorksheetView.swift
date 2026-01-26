@@ -4,7 +4,6 @@
 //
 //  Created by Keerthi Reddy on 11/13/25.
 //
-//
 
 import SwiftUI
 import UIKit
@@ -23,15 +22,15 @@ struct WorksheetView: View {
 
     @State private var currentPage: Int = 0
     @AccessibilityFocusState private var isBackButtonFocused: Bool
-    
+
     private var contentMaxWidth: CGFloat {
         horizontalSizeClass == .regular ? 800 : .infinity
     }
-    
+
     private var horizontalPadding: CGFloat {
         horizontalSizeClass == .regular ? 48 : Spacing.screenPadding
     }
-    
+
     private var titleFontSize: CGFloat {
         horizontalSizeClass == .regular ? 34 : 28
     }
@@ -45,11 +44,11 @@ struct WorksheetView: View {
         guard pages.indices.contains(safePageIndex) else { return [] }
         return pages[safePageIndex]
     }
-    
+
     private var canGoPrevious: Bool {
         safePageIndex > 0
     }
-    
+
     private var canGoNext: Bool {
         safePageIndex < pages.count - 1
     }
@@ -62,13 +61,10 @@ struct WorksheetView: View {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.medium) {
-                        // Invisible anchor for scroll-to-top
                         Color.clear
                             .frame(height: 1)
                             .id("topAnchor")
 
-                        // FIXED: Page indicator hidden from accessibility
-                        // This prevents it from being announced instead of Back button
                         if !pages.isEmpty {
                             Text("Page \(safePageIndex + 1) of \(pages.count)")
                                 .font(.custom("Arial", size: 13.5))
@@ -78,18 +74,29 @@ struct WorksheetView: View {
                                 .accessibilityHidden(true)
                         }
 
+                        // ✅ Critical: give the node list a real width inside ScrollView
                         VStack(alignment: .leading, spacing: Spacing.medium) {
+                            // Filter out third SVG globally across all items
+                            let allNodes = currentItems.flatMap { $0.nodes }
+                            let filteredNodes = filterNodes(allNodes)
+                            let filteredNodeIds = Set(filteredNodes.map { $0.id })
+
                             ForEach(currentItems) { item in
                                 ForEach(Array(item.nodes.enumerated()), id: \.offset) { _, node in
-                                    if !shouldSkipQuestionHeading(node) {
+                                    // Skip if this is the third SVG (not in filtered list)
+                                    if !filteredNodeIds.contains(node.id) {
+                                        EmptyView() // Skip third SVG
+                                    } else if !shouldSkipQuestionHeading(node) {
                                         NodeBlockView(node: node)
                                             .environmentObject(haptics)
                                             .environmentObject(mathSpeech)
                                             .environmentObject(speech)
+                                            .frame(maxWidth: .infinity, alignment: .leading) // ✅ card expands
                                     }
                                 }
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading) // ✅ node stack expands (prevents 0-width)
                         .padding(.horizontal, horizontalPadding)
 
                         if pages.count > 1 {
@@ -167,11 +174,10 @@ struct WorksheetView: View {
                         }
                     }
                     .frame(maxWidth: contentMaxWidth)
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.bottom, Spacing.xLarge)
                 }
                 .onChange(of: currentPage) { _ in
-                    // FIXED: Scroll to top immediately on page change
                     withAnimation(.easeInOut(duration: 0.2)) {
                         scrollProxy.scrollTo("topAnchor", anchor: .top)
                     }
@@ -179,7 +185,6 @@ struct WorksheetView: View {
             }
         }
         .onAppear {
-            // FIXED: Focus back button after a short delay to ensure toolbar is rendered
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isBackButtonFocused = true
             }
@@ -202,14 +207,12 @@ struct WorksheetView: View {
                     }
                     .foregroundColor(.black)
                 }
-                // FIXED: Back button has clear, distinct accessibility label
                 .accessibilityLabel("Back")
                 .accessibilityHint("Return to dashboard")
                 .accessibilityFocused($isBackButtonFocused)
                 .accessibilitySortPriority(1000)
             }
         }
-        // FIXED: Support 3-finger swipe right to go back (escape gesture)
         .accessibilityAction(.escape) {
             speech.stop(immediate: true)
             dismiss()
@@ -234,9 +237,8 @@ struct WorksheetView: View {
     private func announcePageChange() {
         guard !pages.isEmpty else { return }
         haptics.sectionChange()
-        
+
         if UIAccessibility.isVoiceOverRunning {
-            // FIXED: Announce page change after scroll completes
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 UIAccessibility.post(
                     notification: .announcement,
@@ -259,18 +261,42 @@ struct WorksheetView: View {
                lower.hasPrefix("q.") ||
                lower.hasPrefix("q ")
     }
+
+    // Filter out third SVG node globally across all items (temporary fix)
+    private func filterNodes(_ nodes: [Node]) -> [Node] {
+        var svgCount = 0
+        let filtered = nodes.compactMap { node -> Node? in
+            if case .svgNode = node {
+                svgCount += 1
+                #if DEBUG
+                print("[SVG Filter] Found SVG #\(svgCount)")
+                #endif
+                if svgCount == 3 {
+                    #if DEBUG
+                    print("[SVG Filter] ⛔ Skipping third SVG")
+                    #endif
+                    return nil // Skip third SVG
+                }
+            }
+            return node
+        }
+        #if DEBUG
+        print("[SVG Filter] Total SVGs: \(svgCount), Filtered count: \(filtered.count)")
+        #endif
+        return filtered
+    }
 }
 
 // MARK: - Node Block View
 
 private struct NodeBlockView: View {
     let node: Node
-    
+
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     private var contentPadding: CGFloat {
         horizontalSizeClass == .regular ? Spacing.large : Spacing.medium
     }
@@ -288,7 +314,7 @@ private struct NodeBlockView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
-    
+
     @ViewBuilder
     private var nodeContent: some View {
         switch node {
@@ -308,6 +334,7 @@ private struct NodeBlockView: View {
 
         case .image(let src, let alt):
             ImageBlockView(dataURI: src, alt: alt)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
         case .svgNode(let svg, let title, let summaries):
             SVGBlockView(svg: svg, title: title, summaries: summaries)
@@ -316,7 +343,7 @@ private struct NodeBlockView: View {
             EmptyView()
         }
     }
-    
+
     private func headingSize(for level: Int) -> CGFloat {
         let baseSize: CGFloat = horizontalSizeClass == .regular ? 26 : 22
         switch level {
@@ -331,30 +358,30 @@ private struct NodeBlockView: View {
 
 private struct ParagraphBlockView: View {
     let items: [Inline]
-    
+
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     private var textParts: [String] {
         items.compactMap { inline -> String? in
             if case .text(let t) = inline { return t }
             return nil
         }
     }
-    
+
     private var mathParts: [(Int, Inline)] {
         items.enumerated().compactMap { idx, inline in
             if case .math = inline { return (idx, inline) }
             return nil
         }
     }
-    
+
     private var bodyFontSize: CGFloat {
         horizontalSizeClass == .regular ? 19 : 17
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             let combinedText = textParts.joined()
@@ -363,8 +390,7 @@ private struct ParagraphBlockView: View {
                     .font(.custom("Arial", size: bodyFontSize))
                     .foregroundColor(Color(hex: "#121417"))
             }
-            
-            // Use MathCAT behavior for equations
+
             ForEach(mathParts, id: \.0) { _, mathInline in
                 if case .math(let latex, let mathml, let display) = mathInline {
                     MathCATEquationView(latex: latex, mathml: mathml, display: display)
@@ -377,26 +403,26 @@ private struct ParagraphBlockView: View {
     }
 }
 
-// MARK: - MathCAT Equation View (EXACT MathCAT Behavior)
+// MARK: - MathCAT Equation View
 
 private struct MathCATEquationView: View {
     let latex: String?
     let mathml: String?
     let display: String?
-    
+
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     private var spokenString: String {
         mathSpeech.speakable(from: mathml, latex: latex, verbosity: .verbose)
     }
-    
+
     private var mathParts: [MathPart] {
         MathParser.parse(mathml: mathml, latex: latex)
     }
-    
+
     var body: some View {
         MathCATView(
             mathml: mathml,
@@ -420,58 +446,120 @@ private struct MathCATEquationView: View {
     }
 }
 
-// MARK: - Image Block (Single Accessibility Element - NO JUMPING)
+// MARK: - Image Block
+
+// MARK: - Image Block
 
 private struct ImageBlockView: View {
     let dataURI: String
     let alt: String?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
-    private var imageHeight: CGFloat {
+    @State private var decodedImage: UIImage? = nil
+    @State private var isLoading: Bool = true
+
+    private var placeholderHeight: CGFloat {
         horizontalSizeClass == .regular ? 300 : 160
     }
+
+    private var maxImageHeight: CGFloat {
+        horizontalSizeClass == .regular ? 500 : 350
+    }
     
+    // Simple in-memory cache to prevent re-decoding
+    private static var imageCache: [String: UIImage] = [:]
+    private static let cacheQueue = DispatchQueue(label: "imageCache", attributes: .concurrent)
+
     var body: some View {
-        Group {
-            if let img = decodeImage(dataURI: dataURI) {
+        GeometryReader { geometry in
+            if let img = decodedImage {
+                let aspectRatio = img.size.width / img.size.height
+                let containerWidth = geometry.size.width
+                let naturalHeight = containerWidth / aspectRatio
+                let finalHeight = min(naturalHeight, maxImageHeight)
+                let finalWidth = finalHeight * aspectRatio
+                
                 Image(uiImage: img)
                     .resizable()
-                    .aspectRatio(img.size, contentMode: .fit)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .aspectRatio(aspectRatio, contentMode: .fit)
+                    .frame(width: finalWidth, height: finalHeight)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(alt ?? "Image")
+                    .accessibilityAddTraits(.isImage)
             } else {
                 Rectangle()
                     .fill(Color(hex: "#DEECF8"))
-                    .frame(height: imageHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: isLoading ? placeholderHeight : placeholderHeight)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(alt ?? "Image")
+                    .accessibilityAddTraits(.isImage)
             }
         }
-        // FIXED: Entire image is ONE accessibility element - VoiceOver won't jump inside
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(alt ?? "Image")
-        .accessibilityAddTraits(.isImage)
+        .frame(height: maxImageHeight)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear {
+            loadImage()
+        }
     }
     
-    private func decodeImage(dataURI: String) -> UIImage? {
-        guard let range = dataURI.range(of: "base64,") else { return nil }
-        let base64 = String(dataURI[range.upperBound...])
-        guard let data = Data(base64Encoded: base64) else { return nil }
-        return UIImage(data: data)
+    private func loadImage() {
+        // Check cache first
+        ImageBlockView.cacheQueue.sync {
+            if let cached = ImageBlockView.imageCache[dataURI] {
+                DispatchQueue.main.async {
+                    decodedImage = cached
+                    isLoading = false
+                }
+                return
+            }
+        }
+        
+        // Decode on background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            guard let range = dataURI.range(of: "base64,") else {
+                DispatchQueue.main.async {
+                    isLoading = false
+                }
+                return
+            }
+            let base64 = String(dataURI[range.upperBound...])
+            guard let data = Data(base64Encoded: base64),
+                  let img = UIImage(data: data) else {
+                DispatchQueue.main.async {
+                    isLoading = false
+                }
+                return
+            }
+            
+            // Cache the decoded image
+            ImageBlockView.cacheQueue.async(flags: .barrier) {
+                ImageBlockView.imageCache[dataURI] = img
+            }
+            
+            // Update UI on main thread
+            DispatchQueue.main.async {
+                decodedImage = img
+                isLoading = false
+            }
+        }
     }
 }
 
-// MARK: - SVG Block (Single Accessibility Element - NO JUMPING)
+
+// MARK: - SVG Block
 
 private struct SVGBlockView: View {
     let svg: String
     let title: String?
     let summaries: [String]?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     private var svgHeight: CGFloat {
-        horizontalSizeClass == .regular ? 300 : 200
+        horizontalSizeClass == .regular ? 300 : 250
     }
-    
+
     private var accessibilityDescription: String {
         var description = title ?? "Graphic"
         if let summaries = summaries, !summaries.isEmpty {
@@ -479,47 +567,70 @@ private struct SVGBlockView: View {
         }
         return description
     }
-    
-    private var scene: TactileScene {
-        SVGToTactileParser.parse(svgContent: svg, viewSize: CGSize(width: 400, height: svgHeight))
-    }
-    
+
     private var hasTactileElements: Bool {
-        !scene.lineSegments.isEmpty || 
-        !scene.polygons.isEmpty || 
-        !scene.vertices.isEmpty
+        svg.contains("<line") || svg.contains("<circle") || svg.contains("<polygon") || svg.contains("<path")
     }
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xSmall) {
+        VStack(alignment: .center, spacing: Spacing.xSmall) {
             if let t = title {
                 Text(t)
                     .font(.custom("Arial", size: 17).weight(.bold))
                     .foregroundColor(Color(hex: "#121417"))
-                    // FIXED: Title is part of the combined accessibility element
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityHidden(true)
             }
 
             if hasTactileElements {
-                // Geometric diagram - render with tactile Canvas for blind user exploration
-                TactileCanvasView(scene: scene, title: title, summaries: summaries)
-                    .frame(height: svgHeight)
+                let scene = SVGToTactileParser.parse(svgContent: svg, viewSize: .zero)
+                let aspectSize = CGSize(
+                    width: max(1, scene.viewBox.width),
+                    height: max(1, scene.viewBox.height)
+                )
+                GeometryReader { geometry in
+                    let w = max(1, geometry.size.width)
+                    let h = max(1, geometry.size.height)
+                    TactileCanvasView(scene: scene, title: title, summaries: summaries)
+                        .frame(width: w, height: h)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                .aspectRatio(aspectSize.width / aspectSize.height, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .frame(maxHeight: svgHeight)
             } else {
-                // Decorative SVG - render as normal image using WKWebView
                 SVGWebView(svg: svg)
                     .frame(maxWidth: .infinity)
                     .frame(height: svgHeight)
             }
         }
-        // FIXED: Entire graphic is ONE accessibility element
-        // VoiceOver will NOT jump between internal SVG elements
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityDescription)
-        .accessibilityAddTraits(.isImage)
+        .frame(maxWidth: .infinity)
+        .modifier(SVGBlockAccessibility(
+            hasTactileElements: hasTactileElements,
+            accessibilityDescription: accessibilityDescription
+        ))
     }
 }
 
-// MARK: - SVG WebView (Completely Hidden from Accessibility)
+private struct SVGBlockAccessibility: ViewModifier {
+    let hasTactileElements: Bool
+    let accessibilityDescription: String
+
+    func body(content: Content) -> some View {
+        Group {
+            if hasTactileElements {
+                content
+            } else {
+                content
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(accessibilityDescription)
+                    .accessibilityAddTraits(.isImage)
+            }
+        }
+    }
+}
+
+// MARK: - SVG WebView
 
 private struct SVGWebView: UIViewRepresentable {
     let svg: String
@@ -531,18 +642,14 @@ private struct SVGWebView: UIViewRepresentable {
         webView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.backgroundColor = .clear
-        
-        // CRITICAL: Completely hide from VoiceOver
         webView.isAccessibilityElement = false
         webView.accessibilityElementsHidden = true
         webView.scrollView.isAccessibilityElement = false
         webView.scrollView.accessibilityElementsHidden = true
-        
         return webView
     }
-    
+
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // HTML with aria-hidden to completely hide from screen readers
         let html = """
         <!DOCTYPE html>
         <html lang="en">
@@ -563,7 +670,6 @@ private struct SVGWebView: UIViewRepresentable {
                     height: auto;
                     display: block;
                 }
-                /* Hide all interactive elements from accessibility */
                 [tabindex], a, button, input, [role] {
                     pointer-events: none;
                 }
@@ -577,8 +683,7 @@ private struct SVGWebView: UIViewRepresentable {
         </html>
         """
         webView.loadHTMLString(html, baseURL: nil)
-        
-        // Ensure accessibility is completely disabled
+
         webView.isAccessibilityElement = false
         webView.accessibilityElementsHidden = true
         webView.scrollView.isAccessibilityElement = false

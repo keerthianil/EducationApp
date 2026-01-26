@@ -14,46 +14,36 @@ struct MultisensoryTactileView: View {
     let summaries: [String]?
     
     @Environment(\.dismiss) private var dismiss
+    @State private var isVoiceOverOn = false
     @State private var currentTouch: CGPoint?
     @State private var activeHit: HitResult?
     @State private var exploredPath: [CGPoint] = []
     @State private var canvasSize: CGSize = .zero
     @State private var haptics = TactileHapticEngine()
-    @State private var audioPlayer: AVAudioPlayer?
     
     // Enhanced rendering parameters for multisensory mode
-    private let thickLineWidth: CGFloat = 4.0  // Thicker borders
-    private let vertexRadius: CGFloat = 8.0    // Larger vertices
-    private let lineWidthMultiplier: CGFloat = 2.5  // Make lines much thicker
+    private let thickLineWidth: CGFloat = 4.0
+    private let vertexRadius: CGFloat = 8.0
+    private let lineWidthMultiplier: CGFloat = 2.5
     
     var body: some View {
-        ZStack {
-            Color.white.ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                // Header with title and close button
-                HStack {
-                    if let t = title {
+        NavigationStack {
+            ZStack {
+                Color.white.ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                // Header with title
+                if let t = title {
+                    HStack {
                         Text(t)
                             .font(.custom("Arial", size: 22).weight(.bold))
                             .foregroundColor(Color(hex: "#121417"))
+                        Spacer()
                     }
-                    
-                    Spacer()
-                    
-                    Button {
-                        haptics.stop()
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Color(hex: "#47494F"))
-                    }
-                    .accessibilityLabel("Close multisensory view")
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 12)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
                 
                 // Multisensory canvas
                 GeometryReader { geometry in
@@ -62,11 +52,11 @@ struct MultisensoryTactileView: View {
                     ZStack {
                         // Enhanced visual rendering with thicker lines
                         Canvas { context, size in
-                            let renderSize = CGSize(width: min(size.width, geometry.size.width), 
+                            let renderSize = CGSize(width: min(size.width, geometry.size.width),
                                                    height: min(size.height, geometry.size.height))
                             
-                            let scaleX = renderSize.width / scene.viewBox.width
-                            let scaleY = renderSize.height / scene.viewBox.height
+                            let scaleX = renderSize.width / max(scene.viewBox.width, 1)
+                            let scaleY = renderSize.height / max(scene.viewBox.height, 1)
                             let scale = min(scaleX, scaleY)
                             
                             // Draw all line segments with THICK borders
@@ -77,7 +67,6 @@ struct MultisensoryTactileView: View {
                                 path.move(to: start)
                                 path.addLine(to: end)
                                 
-                                // Much thicker stroke width for tactile exploration
                                 let scaledStrokeWidth = max(thickLineWidth, line.strokeWidth * scale * lineWidthMultiplier)
                                 
                                 context.stroke(
@@ -103,7 +92,7 @@ struct MultisensoryTactileView: View {
                                 }
                             }
                             
-                            // Draw vertices as LARGE circles (easier to feel)
+                            // Draw vertices as LARGE circles
                             let scaledVertexRadius = max(vertexRadius, vertexRadius * scale)
                             for vertex in scene.vertices {
                                 var path = Path()
@@ -140,6 +129,11 @@ struct MultisensoryTactileView: View {
                             onDrag: handleDrag,
                             onEnd: handleTouchEnd
                         )
+                        // Add accessibility gesture for VoiceOver users
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Tactile graphic exploration area")
+                        .accessibilityHint("Touch and drag to explore the graphic. Corners will make a sound when touched.")
+                        .accessibilityAddTraits(.allowsDirectInteraction)
                     }
                     .onAppear {
                         canvasSize = actualSize
@@ -151,44 +145,72 @@ struct MultisensoryTactileView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
                 // Instructions footer
-                Text("Touch and explore the shape. Vertices will make a sound when touched.")
+                Text("Touch and explore the shape. Corners will make a sound when touched.")
                     .font(.custom("Arial", size: 14))
                     .foregroundColor(Color(hex: "#6B7280"))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        haptics.stop()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(Color(hex: "#47494F"))
+                    }
+                    .accessibilityLabel("Close multisensory view")
+                }
             }
         }
         .onAppear {
+            isVoiceOverOn = UIAccessibility.isVoiceOverRunning
+            // Prepare haptics immediately and repeatedly for VoiceOver
+            haptics.prepare()
+            if isVoiceOverOn {
+                // Re-prepare every second when VoiceOver is on
+                Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                    haptics.prepare()
+                }
+            }
             announceInitialDescription()
-            setupAudioPlayer()
         }
         .onDisappear {
             haptics.stop()
-            audioPlayer?.stop()
-            print("📱 Multisensory view onDisappear called")
         }
-        .onChange(of: scene.id) { _ in
-            // Prevent dismissal if scene changes
+        .onChange(of: UIAccessibility.isVoiceOverRunning) { newValue in
+            isVoiceOverOn = newValue
+            if newValue {
+                haptics.prepare()
+            }
         }
     }
     
     // MARK: - Coordinate Transformation
     
+    /// Transform a point from viewBox coordinates to canvas coordinates
     private func transformPoint(_ point: CGPoint, size: CGSize) -> CGPoint {
         guard scene.viewBox.width > 0 && scene.viewBox.height > 0 else {
             return point
         }
         
+        // Calculate uniform scale to fit viewBox in canvas while preserving aspect ratio
         let scaleX = size.width / scene.viewBox.width
         let scaleY = size.height / scene.viewBox.height
         let scale = min(scaleX, scaleY)
         
+        // Calculate centering offsets
         let scaledWidth = scene.viewBox.width * scale
         let scaledHeight = scene.viewBox.height * scale
         let offsetX = (size.width - scaledWidth) / 2
         let offsetY = (size.height - scaledHeight) / 2
         
+        // Transform: (point - viewBox.origin) * scale + offset
         return CGPoint(
             x: (point.x - scene.viewBox.origin.x) * scale + offsetX,
             y: (point.y - scene.viewBox.origin.y) * scale + offsetY
@@ -202,16 +224,45 @@ struct MultisensoryTactileView: View {
         currentTouch = svgPoint
         exploredPath = [svgPoint]
         
-        if let hit = scene.hitTest(at: svgPoint) {
+        #if DEBUG
+        print("[Multisensory] Touch at: \(point), VoiceOver: \(isVoiceOverOn)")
+        #endif
+        
+        // Use larger threshold when VoiceOver is on for easier detection
+        let vertexThreshold: CGFloat = isVoiceOverOn ? 35.0 : 20.0
+        let lineThreshold: CGFloat = isVoiceOverOn ? 40.0 : 25.0
+        
+        if let hit = scene.hitTest(at: svgPoint, vertexThreshold: vertexThreshold, lineThreshold: lineThreshold) {
             activeHit = hit
+            
+            #if DEBUG
+            print("[Multisensory] Hit detected: \(hit.type), VoiceOver: \(isVoiceOverOn)")
+            #endif
+            
+            // Always prepare and play immediately - no delays
+            haptics.prepare()
             haptics.play(for: hit.type)
             
-            // Play audio "ding" for vertices
+            // Always play ding for vertices, especially with VoiceOver
             if hit.type == .onVertex {
                 playDingSound()
+                // With VoiceOver, give extra time for announcement
+                if isVoiceOverOn {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        self.announce(hit: hit)
+                    }
+                } else {
+                    announce(hit: hit)
+                }
+            } else {
+                if isVoiceOverOn {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.announce(hit: hit)
+                    }
+                } else {
+                    announce(hit: hit)
+                }
             }
-            
-            announce(hit: hit)
         } else {
             activeHit = nil
             haptics.stop()
@@ -219,27 +270,55 @@ struct MultisensoryTactileView: View {
     }
     
     private func handleDrag(from: CGPoint, to: CGPoint) {
-        let svgFrom = inverseTransformPoint(from)
         let svgTo = inverseTransformPoint(to)
         
         exploredPath.append(svgTo)
         currentTouch = svgTo
         
-        if let hit = scene.hitTest(at: svgTo) {
+        // Use larger threshold when VoiceOver is on
+        let vertexThreshold: CGFloat = isVoiceOverOn ? 35.0 : 20.0
+        let lineThreshold: CGFloat = isVoiceOverOn ? 40.0 : 25.0
+        
+        if let hit = scene.hitTest(at: svgTo, vertexThreshold: vertexThreshold, lineThreshold: lineThreshold) {
             if activeHit?.primitive.id != hit.primitive.id {
-                // Crossed boundary
-                haptics.pulse()
                 activeHit = hit
                 
-                // Play ding for vertices
+                // Always prepare and play immediately
+                haptics.prepare()
+                haptics.pulse()
+                haptics.play(for: hit.type)
+                
+                // Always play ding for vertices
                 if hit.type == .onVertex {
                     playDingSound()
+                    // With VoiceOver, delay announcement slightly to let ding play
+                    if isVoiceOverOn {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            self.announce(hit: hit)
+                        }
+                    } else {
+                        announce(hit: hit)
+                    }
+                } else {
+                    if isVoiceOverOn {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.announce(hit: hit)
+                        }
+                    } else {
+                        announce(hit: hit)
+                    }
                 }
-                
-                announce(hit: hit)
             } else {
-                // Moving along same element
-                haptics.continuous()
+                // Continue haptics for lines
+                if hit.type == .onLine {
+                    haptics.continuous()
+                } else if hit.type == .onVertex {
+                    // Re-trigger ding if staying on vertex
+                    if isVoiceOverOn {
+                        haptics.prepare()
+                    }
+                    haptics.pulse()
+                }
             }
         } else {
             haptics.stop()
@@ -254,21 +333,25 @@ struct MultisensoryTactileView: View {
         haptics.stop()
     }
     
+    /// Transform a point from canvas coordinates back to viewBox coordinates
     private func inverseTransformPoint(_ point: CGPoint) -> CGPoint {
         guard canvasSize.width > 0 && canvasSize.height > 0,
               scene.viewBox.width > 0 && scene.viewBox.height > 0 else {
             return point
         }
         
+        // Same scale calculation as transformPoint
         let scaleX = canvasSize.width / scene.viewBox.width
         let scaleY = canvasSize.height / scene.viewBox.height
         let scale = min(scaleX, scaleY)
         
+        // Same offset calculation
         let scaledWidth = scene.viewBox.width * scale
         let scaledHeight = scene.viewBox.height * scale
         let offsetX = (canvasSize.width - scaledWidth) / 2
         let offsetY = (canvasSize.height - scaledHeight) / 2
         
+        // Inverse transform: (point - offset) / scale + viewBox.origin
         return CGPoint(
             x: (point.x - offsetX) / scale + scene.viewBox.origin.x,
             y: (point.y - offsetY) / scale + scene.viewBox.origin.y
@@ -277,42 +360,51 @@ struct MultisensoryTactileView: View {
     
     // MARK: - Audio Feedback
     
-    private func setupAudioPlayer() {
-        // Create a "ding" sound using system audio
-        // Using a simple sine wave tone as a ding sound
-        guard let url = createDingSound() else { return }
-        
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.prepareToPlay()
-        } catch {
-            print("⚠️ Failed to setup audio player: \(error)")
-        }
-    }
-    
-    private func createDingSound() -> URL? {
-        // Create a temporary audio file with a "ding" tone
-        // Using system sound ID for a simple ding
-        return nil  // We'll use AudioServicesPlaySystemSound instead
-    }
-    
     private func playDingSound() {
-        // Play system sound - using a pleasant ding tone (1057 is a nice "peek" sound)
+        // Always play ding sound, especially important with VoiceOver
         AudioServicesPlaySystemSound(1057)
-        
-        // Also provide haptic feedback
+        // Play haptics immediately - no delays
+        haptics.prepare()
         haptics.pulse()
+        // Double pulse for better detection with VoiceOver
+        if isVoiceOverOn {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                self.haptics.prepare()
+                self.haptics.pulse()
+            }
+        }
     }
     
     // MARK: - Announcements
     
     private func announceInitialDescription() {
         let description = summaries?.first ?? title ?? "Multisensory tactile exploration"
-        UIAccessibility.post(notification: .announcement, argument: description)
+        if isVoiceOverOn {
+            // Delay slightly to ensure view is fully loaded
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                UIAccessibility.post(notification: .screenChanged, argument: description)
+            }
+        } else {
+            UIAccessibility.post(notification: .announcement, argument: description)
+        }
     }
     
     private func announce(hit: HitResult) {
+        guard isVoiceOverOn else { return }
+        
         let announcement = scene.announcement(for: hit)
-        UIAccessibility.post(notification: .announcement, argument: announcement)
+        
+        // For vertices, make announcement more prominent
+        if hit.type == .onVertex {
+            // Use screen notification for vertices (more prominent)
+            UIAccessibility.post(notification: .screenChanged, argument: announcement)
+            // Also post announcement for redundancy
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                UIAccessibility.post(notification: .announcement, argument: announcement)
+            }
+        } else {
+            // Regular announcement for other elements
+            UIAccessibility.post(notification: .announcement, argument: announcement)
+        }
     }
 }

@@ -28,6 +28,31 @@ struct TactileScene: Identifiable {
         primitives.append(contentsOf: labels.map { .label($0) })
         return primitives
     }
+    
+    /// Returns a summary description for VoiceOver
+    var accessibilitySummary: String {
+        var parts: [String] = []
+        
+        if let title = title {
+            parts.append(title)
+        }
+        
+        let vertexCount = vertices.count
+        let edgeCount = lineSegments.count
+        let labelCount = labels.filter { !$0.text.isEmpty }.count
+        
+        if vertexCount > 0 {
+            parts.append("\(vertexCount) corner\(vertexCount == 1 ? "" : "s")")
+        }
+        if edgeCount > 0 {
+            parts.append("\(edgeCount) edge\(edgeCount == 1 ? "" : "s")")
+        }
+        if labelCount > 0 {
+            parts.append("\(labelCount) measurement\(labelCount == 1 ? "" : "s")")
+        }
+        
+        return parts.joined(separator: ", ")
+    }
 }
 
 // MARK: - Tactile Primitive Types
@@ -46,6 +71,15 @@ enum TactilePrimitive: Identifiable {
         case .label(let label): return label.id
         }
     }
+    
+    var accessibilityDescription: String {
+        switch self {
+        case .lineSegment(let line): return line.accessibilityDescription
+        case .polygon(let polygon): return polygon.accessibilityDescription
+        case .vertex(let vertex): return vertex.accessibilityDescription
+        case .label(let label): return label.accessibilityDescription
+        }
+    }
 }
 
 // MARK: - Line Segment (from SVG <line>)
@@ -61,6 +95,46 @@ struct TactileLineSegment: Identifiable {
         let dx = end.x - start.x
         let dy = end.y - start.y
         return sqrt(dx * dx + dy * dy)
+    }
+    
+    /// Angle in degrees (-180 to 180)
+    var angle: CGFloat {
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        return atan2(dy, dx) * 180 / .pi
+    }
+    
+    var isHorizontal: Bool {
+        let normalizedAngle = abs(angle.truncatingRemainder(dividingBy: 180))
+        return normalizedAngle < 15 || normalizedAngle > 165
+    }
+    
+    var isVertical: Bool {
+        let normalizedAngle = abs(angle.truncatingRemainder(dividingBy: 180))
+        return normalizedAngle > 75 && normalizedAngle < 105
+    }
+    
+    /// Returns the midpoint of the line
+    var midpoint: CGPoint {
+        CGPoint(x: (start.x + end.x) / 2, y: (start.y + end.y) / 2)
+    }
+    
+    var accessibilityDescription: String {
+        var description: String
+        
+        if isHorizontal {
+            description = "Horizontal edge"
+        } else if isVertical {
+            description = "Vertical edge"
+        } else {
+            description = "Diagonal edge"
+        }
+        
+        if let label = associatedLabel, !label.isEmpty {
+            description += ", \(label)"
+        }
+        
+        return description
     }
     
     func contains(point: CGPoint, tolerance: CGFloat = 15.0) -> Bool {
@@ -129,6 +203,25 @@ struct TactilePolygon: Identifiable {
     var sideCount: Int {
         boundary.count
     }
+    
+    var shapeType: String {
+        switch sideCount {
+        case 3: return "triangle"
+        case 4: return "quadrilateral"
+        case 5: return "pentagon"
+        case 6: return "hexagon"
+        case 7: return "heptagon"
+        case 8: return "octagon"
+        default: return "\(sideCount)-sided polygon"
+        }
+    }
+    
+    var accessibilityDescription: String {
+        if let label = label, !label.isEmpty {
+            return "\(shapeType.capitalized), \(label)"
+        }
+        return shapeType.capitalized
+    }
 }
 
 // MARK: - Vertex (intersection point)
@@ -137,12 +230,34 @@ struct TactileVertex: Identifiable {
     let id: String
     let position: CGPoint
     let connectedLineIds: [String]    // IDs of lines meeting here
+    let vertexIndex: Int?             // Optional index for labeling (e.g., "Vertex 1")
     
-    func contains(point: CGPoint, tolerance: CGFloat = 10.0) -> Bool {
-        let dx = point.x - position.x
-        let dy = point.y - position.y
-        let distance = sqrt(dx * dx + dy * dy)
-        return distance <= tolerance
+    init(id: String, position: CGPoint, connectedLineIds: [String], vertexIndex: Int? = nil) {
+        self.id = id
+        self.position = position
+        self.connectedLineIds = connectedLineIds
+        self.vertexIndex = vertexIndex
+    }
+    
+    var accessibilityDescription: String {
+        let connections = connectedLineIds.count
+        var description: String
+        
+        if let index = vertexIndex {
+            description = "Corner \(index)"
+        } else {
+            description = "Corner point"
+        }
+        
+        if connections > 0 {
+            description += ", \(connections) edge\(connections == 1 ? "" : "s") meet here"
+        }
+        
+        return description
+    }
+    
+    func contains(point: CGPoint, tolerance: CGFloat = 20.0) -> Bool {
+        distance(to: point) <= tolerance
     }
     
     func distance(to point: CGPoint) -> CGFloat {
@@ -159,12 +274,36 @@ struct TactileLabel: Identifiable {
     let position: CGPoint
     let text: String                  // "35 in.", "50 ft."
     let nearestLineId: String?        // Associated line segment ID
+    let estimatedSize: CGSize?        // For better hit testing
     
-    func contains(point: CGPoint, tolerance: CGFloat = 20.0) -> Bool {
-        let dx = point.x - position.x
-        let dy = point.y - position.y
-        let distance = sqrt(dx * dx + dy * dy)
-        return distance <= tolerance
+    init(id: String, position: CGPoint, text: String, nearestLineId: String?, estimatedSize: CGSize? = nil) {
+        self.id = id
+        self.position = position
+        self.text = text
+        self.nearestLineId = nearestLineId
+        self.estimatedSize = estimatedSize
+    }
+    
+    var accessibilityDescription: String {
+        if text.isEmpty {
+            return "Label"
+        }
+        return "Measurement: \(text)"
+    }
+    
+    func contains(point: CGPoint, tolerance: CGFloat = 25.0) -> Bool {
+        if let size = estimatedSize {
+            // Rectangular hit area for text
+            let rect = CGRect(
+                x: position.x - tolerance,
+                y: position.y - size.height - tolerance,
+                width: size.width + tolerance * 2,
+                height: size.height + tolerance * 2
+            )
+            return rect.contains(point)
+        }
+        // Fallback to circular hit area
+        return distance(to: point) <= tolerance
     }
     
     func distance(to point: CGPoint) -> CGFloat {
@@ -181,6 +320,10 @@ struct HitResult {
     let type: HitType
     let distance: CGFloat
     let point: CGPoint
+    
+    var accessibilityAnnouncement: String {
+        primitive.accessibilityDescription
+    }
 }
 
 enum HitType {

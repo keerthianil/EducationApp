@@ -21,6 +21,8 @@ struct TactileTouchOverlay: UIViewRepresentable {
         view.onTouch = onTouch
         view.onDrag = onDrag
         view.onEnd = onEnd
+        view.isAccessibilityElement = false
+        view.accessibilityElementsHidden = true
         return view
     }
     
@@ -47,8 +49,12 @@ class TouchTrackingView: UIView {
         isUserInteractionEnabled = true
         backgroundColor = .clear
         isMultipleTouchEnabled = false
-        // Ensure view can receive touches
         isExclusiveTouch = false
+        // Critical: Allow touches even when VoiceOver is on
+        isAccessibilityElement = false
+        accessibilityElementsHidden = true
+        // Ensure we can receive touches with VoiceOver
+        accessibilityTraits = []
     }
     
     required init?(coder: NSCoder) {
@@ -76,9 +82,18 @@ class TouchTrackingView: UIView {
         lastLocation = location
         isTracking = true
         
-        // Call on main thread
-        DispatchQueue.main.async { [weak self] in
-            self?.onTouch?(location)
+        #if DEBUG
+        print("[TouchOverlay] touchesBegan at: \(location), VoiceOver: \(UIAccessibility.isVoiceOverRunning)")
+        #endif
+        
+        // Call on main thread immediately - don't delay with VoiceOver
+        // VoiceOver can suppress touches if we delay
+        if Thread.isMainThread {
+            self.onTouch?(location)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.onTouch?(location)
+            }
         }
     }
     
@@ -89,9 +104,13 @@ class TouchTrackingView: UIView {
         let current = touch.location(in: self)
         
         if let last = lastLocation {
-            // Call on main thread
-            DispatchQueue.main.async { [weak self] in
-                self?.onDrag?(last, current)
+            // Call immediately on main thread - don't delay with VoiceOver
+            if Thread.isMainThread {
+                self.onDrag?(last, current)
+            } else {
+                DispatchQueue.main.async { [weak self] in
+                    self?.onDrag?(last, current)
+                }
             }
         }
         lastLocation = current

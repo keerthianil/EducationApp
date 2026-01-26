@@ -47,7 +47,7 @@ final class UploadManager: ObservableObject {
                 id: "sample2_upload_\(UUID().uuidString.prefix(8))",
                 title: "Area of Compound Figures",
                 teacher: nil,
-                localFiles: ["sample2_page1.json", "sample2_page2.json"],
+                localFiles: ["sample2_page1.json"], // sample2_page2.json temporarily removed (wrongly rendered)
                 createdAt: Date()
             )
         // Precalculus file mapping - temporarily commented out for user testing
@@ -68,7 +68,7 @@ final class UploadManager: ObservableObject {
                 id: "algebra_upload_\(UUID().uuidString.prefix(8))",
                 title: "Algebra Practice 4",
                 teacher: nil,
-                localFiles: ["sample2_page1.json", "sample2_page2.json"],
+                localFiles: ["sample2_page1.json"], // sample2_page2.json temporarily removed (wrongly rendered)
                 createdAt: Date()
             )
         } else {

@@ -22,6 +22,11 @@ struct EducationApp: App {
         
         // Set up notification delegate for handling taps
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+        
+        #if DEBUG
+        // Optionally clear graphic cache on launch (uncomment to enable)
+        // GraphicCacheService.clearAllCache()
+        #endif
     }
 
     var body: some Scene {
