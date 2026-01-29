@@ -14,14 +14,13 @@ class MathParser {
     
     /// Parse a math expression - returns parts for compatibility
     static func parse(mathml: String?, latex: String?) -> [MathPart] {
-        // Return single part - navigation not needed for simplified version
+        // Return single part - navigation handled in MathAccessibilityElement
         return [MathPart(text: "equation", level: .term)]
     }
     
     /// Generate full spoken text for the equation using MathSpeechService
     static func fullSpokenText(mathml: String?, latex: String?, mathSpeech: MathSpeechService) -> String {
         let result = mathSpeech.speakable(from: mathml, latex: latex, verbosity: .verbose)
-        print("MathParser: Generated spoken text: '\(result)'")
         return result
     }
 }

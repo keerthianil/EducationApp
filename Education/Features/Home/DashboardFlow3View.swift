@@ -62,6 +62,11 @@ struct DashboardFlow3View: View {
         horizontalSizeClass == .regular ? 800 : .infinity
     }
     
+    // Get teacher-uploaded files
+    private var teacherFiles: [LessonIndexItem] {
+        lessonStore.recent.filter { $0.teacher != nil }
+    }
+    
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
@@ -178,7 +183,7 @@ struct DashboardFlow3View: View {
         .background(Color(hex: "#F7FAFC"))
     }
     
-    // MARK: - Tab Bar (FIXED: Proper VoiceOver tab announcement)
+    // MARK: - Tab Bar (VoiceOver: Label → Value → Traits → Hint)
     private var tabBar: some View {
         let allTabs = Flow3Tab.allCases
         let tabCount = allTabs.count
@@ -206,12 +211,13 @@ struct DashboardFlow3View: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                // FIXED: Proper VoiceOver tab announcement format
+                // VoiceOver announces: Label → Value → Traits → Hint
+                // Result: "Upload, selected, button, Tab 1 of 2"
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(tab.rawValue)
                 .accessibilityValue(isSelected ? "selected" : "")
-                .accessibilityHint("Tab \(index + 1) of \(tabCount)")
                 .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
+                .accessibilityHint("Tab \(index + 1) of \(tabCount)")
             }
         }
         .padding(.horizontal, 8)
@@ -362,7 +368,7 @@ struct DashboardFlow3View: View {
         }
     }
     
-    // MARK: - Uploaded by Teacher Tab (Using subject assets)
+    // MARK: - Uploaded by Teacher Tab (UPDATED: Shows actual teacher files as cards)
     private var uploadedByTeacherTabContent: some View {
         VStack(spacing: 16) {
             // Filter chips - temporarily commented out for user testing
@@ -376,19 +382,36 @@ struct DashboardFlow3View: View {
             .padding(.top, 12)
             */
             
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ], spacing: 12) {
-                subjectCard(title: "Maths", teacher: "Ms. Rivera", imageName: "subject-maths", sampleId: "sample1")
-                subjectCard(title: "Physics", teacher: "Ms. Rivera", imageName: "subject-physics", sampleId: "sample2")
-                subjectCard(title: "Chemistry", teacher: "Ms. Rivera", imageName: "subject-chemistry", sampleId: "sample1")
-                subjectCard(title: "Biology", teacher: "Ms. Rivera", imageName: "subject-biology", sampleId: "sample1")
-                subjectCard(title: "History", teacher: "Ms. Rivera", imageName: "subject-history", sampleId: "sample2")
-                subjectCard(title: "Geography", teacher: "Ms. Rivera", imageName: "subject-geography", sampleId: "sample1")
+            if teacherFiles.isEmpty {
+                // Empty state
+                VStack(spacing: 16) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 48))
+                        .foregroundColor(Color(hex: "#989CA6"))
+                        .accessibilityHidden(true)
+                    
+                    Text("No files from teacher yet")
+                        .font(.custom("Arial", size: 17))
+                        .foregroundColor(Color(hex: "#61758A"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 60)
+            } else {
+                // Teacher file cards - similar to Flow 1/2
+                LazyVGrid(columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12)
+                ], spacing: 12) {
+                    ForEach(teacherFiles) { item in
+                        Flow3TeacherFileCard(item: item) {
+                            haptics.tapSelection()
+                            selectedLesson = item
+                        }
+                    }
+                }
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, 16)
             }
-            .padding(.horizontal, horizontalPadding)
-            .padding(.top, 16)
         }
     }
     
@@ -411,38 +434,7 @@ struct DashboardFlow3View: View {
     }
     */
     
-    private func subjectCard(title: String, teacher: String, imageName: String, sampleId: String) -> some View {
-        Button {
-            if let item = lessonStore.recent.first(where: { $0.id.contains(sampleId) }) ?? lessonStore.recent.first {
-                haptics.tapSelection()
-                selectedLesson = item
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: 12) {
-                Image(imageName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 173)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .accessibilityHidden(true)
-                
-                Text(title)
-                    .font(.custom("Inter", size: 16).weight(.medium))
-                    .foregroundColor(Color(hex: "#0D141C"))
-                
-                Text("Uploaded by \(teacher)")
-                    .font(.custom("Inter", size: 14))
-                    .foregroundColor(Color(hex: "#4D7399"))
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(title), uploaded by \(teacher)")
-        .accessibilityHint("Double tap to open")
-        .accessibilityAddTraits(.isButton)
-    }
-    
-    // MARK: - Bottom Tab Bar (FIXED: Proper VoiceOver tab announcement)
+    // MARK: - Bottom Tab Bar (VoiceOver: Label → Value → Traits → Hint)
     private var bottomTabBar: some View {
         let allTabs = Flow3BottomTab.allCases
         let tabCount = allTabs.count
@@ -469,12 +461,13 @@ struct DashboardFlow3View: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                // FIXED: Proper VoiceOver tab announcement format
+                // VoiceOver announces: Label → Value → Traits → Hint
+                // Result: "Home, selected, button, Tab 1 of 2"
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(tab.title)
                 .accessibilityValue(isSelected ? "selected" : "")
-                .accessibilityHint("Tab \(index + 1) of \(tabCount)")
                 .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
+                .accessibilityHint("Tab \(index + 1) of \(tabCount)")
             }
         }
         .padding(.top, 8)
@@ -487,6 +480,66 @@ struct DashboardFlow3View: View {
             alignment: .top
         )
         .accessibilityElement(children: .contain)
+    }
+}
+
+// MARK: - Flow 3 Teacher File Card (NEW - replaces subject cards)
+private struct Flow3TeacherFileCard: View {
+    let item: LessonIndexItem
+    let onTap: () -> Void
+    
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
+    private var cardHeight: CGFloat {
+        horizontalSizeClass == .regular ? 220 : 200
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                // File preview/thumbnail area
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(hex: "#DEECF8"))
+                        .frame(height: cardHeight - 80)
+                    
+                    VStack(spacing: 8) {
+                        Image("pdf-icon-blue")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                        
+                        Text("PDF")
+                            .font(.custom("Arial", size: 12).weight(.medium))
+                            .foregroundColor(Color(hex: "#61758A"))
+                    }
+                }
+                .accessibilityHidden(true)
+                
+                // File info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.title)
+                        .font(.custom("Inter", size: 16).weight(.medium))
+                        .foregroundColor(Color(hex: "#0D141C"))
+                        .lineLimit(2)
+                    
+                    if let teacher = item.teacher {
+                        Text("Uploaded by \(teacher)")
+                            .font(.custom("Inter", size: 13))
+                            .foregroundColor(Color(hex: "#4D7399"))
+                    }
+                }
+            }
+            .padding(12)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.title), uploaded by \(item.teacher ?? "teacher")")
+        .accessibilityHint("Double tap to open")
+        .accessibilityAddTraits(.isButton)
     }
 }
 

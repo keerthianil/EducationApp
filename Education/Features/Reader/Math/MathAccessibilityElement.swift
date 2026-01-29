@@ -2,9 +2,14 @@
 //  MathAccessibilityElement.swift
 //  Education
 //
-//  Behavior:
-//  - On VoiceOver focus: Says "Math equation. Double tap to read."
-//  - On double-tap: VoiceOver reads the full equation with pauses
+//
+//  Flow:
+//  1. Focus: "Math equation. Double tap to explore."
+//  2. First double tap: Enter math mode → Announce instructions ONLY
+//  3. Second double tap: Read ENTIRE equation
+//  4. Swipe up/down: Change navigation level
+//  5. Swipe left/right: Navigate through equation parts
+//  6. Third double tap: Exit math mode
 //
 
 import UIKit
@@ -31,34 +36,70 @@ enum MathNavigationLevel: String, CaseIterable {
     case term = "Term"
     case structure = "Structure"
     
-    var next: MathNavigationLevel { self }
-    var previous: MathNavigationLevel { self }
-}
-
-// MARK: - MathCAT Accessibility Container
-
-class MathCATAccessibilityContainer: UIView {
-    
-    // The full equation spoken text (set by MathCATView)
-    var fullEquationText: String = "equation" {
-        didSet {
-            // Debug: print when text is set
-            print("MathCAT: fullEquationText set to: \(fullEquationText)")
+    var next: MathNavigationLevel {
+        switch self {
+        case .character: return .symbol
+        case .symbol: return .term
+        case .term: return .structure
+        case .structure: return .character
         }
     }
     
+    var previous: MathNavigationLevel {
+        switch self {
+        case .character: return .structure
+        case .symbol: return .character
+        case .term: return .symbol
+        case .structure: return .term
+        }
+    }
+}
+
+// MARK: - Math Mode State
+
+private enum MathModeState {
+    case inactive           // Not in math mode - double tap to enter
+    case exploringReady     // In math mode, instructions announced - double tap to read
+    case reading            // Currently reading equation
+    case navigating         // User is navigating with swipes
+}
+
+// MARK: - MathCAT Accessibility Container (FIXED)
+
+class MathCATAccessibilityContainer: UIView {
+    
+    // The full equation spoken text
+    var fullEquationText: String = "equation" {
+        didSet {
+            parseEquationForNavigation()
+        }
+    }
+    
+    // MathML for reference
+    var mathML: String = ""
+    
     // Kept for compatibility
     var mathParts: [MathPart] = []
-    
-    // Haptic
-    private let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
     
     // Callbacks
     var onEnterMathMode: (() -> Void)?
     var onExitMathMode: (() -> Void)?
     
-    // Track state
-    private var hasBeenActivated = false
+    // MARK: - State Machine
+    private var state: MathModeState = .inactive
+    
+    // MARK: - Navigation State
+    private var currentLevel: MathNavigationLevel = .term
+    private var navigationParts: [[String]] = [[], [], [], []] // character, symbol, term, structure
+    private var currentIndex: Int = 0
+    
+    // MARK: - Haptics
+    private let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
+    private let selectionGenerator = UISelectionFeedbackGenerator()
+    
+    // MARK: - Announcement Queue (prevents overlap)
+    private var isAnnouncing = false
+    private var announcementQueue: [String] = []
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -74,64 +115,334 @@ class MathCATAccessibilityContainer: UIView {
         isAccessibilityElement = true
         accessibilityTraits = [.button, .staticText]
         impactGenerator.prepare()
+        selectionGenerator.prepare()
     }
     
-    // MARK: - Accessibility Properties
+    // MARK: - Accessibility Label (changes based on state)
     
     override var accessibilityLabel: String? {
-        get { return "Math equation" }
+        get {
+            switch state {
+            case .inactive:
+                return "Math equation"
+            case .exploringReady:
+                return "Math mode active"
+            case .reading:
+                return "Reading equation"
+            case .navigating:
+                let levelName = currentLevel.rawValue
+                return "Navigating by \(levelName)"
+            }
+        }
         set { }
     }
     
     override var accessibilityHint: String? {
-        get { return "Double tap to read" }
+        get {
+            switch state {
+            case .inactive:
+                return "Double tap to explore"
+            case .exploringReady:
+                return "Double tap to read equation. Swipe to navigate."
+            case .reading:
+                return "Reading"
+            case .navigating:
+                return "Swipe left or right to navigate. Double tap to read all."
+            }
+        }
         set { }
     }
     
     override var accessibilityValue: String? {
-        get { return nil }
+        get {
+            if state == .navigating {
+                let parts = getPartsForCurrentLevel()
+                if currentIndex < parts.count {
+                    return parts[currentIndex]
+                }
+            }
+            return nil
+        }
         set { }
     }
     
-    // MARK: - Double-tap Action
+    // MARK: - Double Tap Action (State Machine)
     
     override func accessibilityActivate() -> Bool {
-        print("MathCAT: accessibilityActivate called")
-        print("MathCAT: fullEquationText = '\(fullEquationText)'")
+        switch state {
+        case .inactive:
+            // Enter math mode - announce instructions ONLY
+            enterMathMode()
+            return true
+            
+        case .exploringReady, .navigating:
+            // Read the entire equation
+            readFullEquation()
+            return true
+            
+        case .reading:
+            // Already reading - do nothing or exit
+            return true
+        }
+    }
+    
+    // MARK: - Enter Math Mode (Instructions Only)
+    
+    private func enterMathMode() {
+        state = .exploringReady
+        currentIndex = 0
+        currentLevel = .term
         
-        // Haptic feedback
         impactGenerator.impactOccurred(intensity: 1.0)
         onEnterMathMode?()
         
-        // Clean and prepare the text
-        let textToRead = prepareTextForReading(fullEquationText)
+        // Announce instructions ONLY - no equation yet
+        let instructions = "Math mode. Swipe up or down to change level. Swipe left or right to navigate. Double tap to read equation."
         
-        print("MathCAT: textToRead = '\(textToRead)'")
-        
-        guard !textToRead.isEmpty else {
-            print("MathCAT: Text is empty, announcing 'Equation'")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                UIAccessibility.post(notification: .announcement, argument: "Equation")
-            }
-            return true
-        }
-        
-        // Announce with VoiceOver - use slight delay to let current speech finish
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            print("MathCAT: Announcing: '\(textToRead)'")
-            UIAccessibility.post(notification: .announcement, argument: textToRead)
-            
-            // Call exit after a delay based on text length
-            let readingTime = Double(textToRead.count) * 0.05 + 1.0
-            DispatchQueue.main.asyncAfter(deadline: .now() + readingTime) {
-                self?.onExitMathMode?()
-            }
-        }
-        
-        return true
+        queueAnnouncement(instructions)
     }
     
-    // MARK: - Text Preparation
+    // MARK: - Read Full Equation (No Interruptions)
+    
+    private func readFullEquation() {
+        state = .reading
+        
+        impactGenerator.impactOccurred(intensity: 0.8)
+        
+        // Get clean equation text
+        let equationText = prepareTextForReading(fullEquationText)
+        
+        if equationText.isEmpty {
+            queueAnnouncement("Equation")
+        } else {
+            queueAnnouncement(equationText)
+        }
+        
+        // After reading completes, go to navigating state
+        let readingDuration = Double(equationText.count) * 0.045 + 1.0
+        DispatchQueue.main.asyncAfter(deadline: .now() + readingDuration) { [weak self] in
+            guard let self = self else { return }
+            if self.state == .reading {
+                self.state = .navigating
+                // Don't announce anything - let user navigate
+            }
+        }
+    }
+    
+    // MARK: - Exit Math Mode
+    
+    private func exitMathMode() {
+        state = .inactive
+        currentIndex = 0
+        
+        impactGenerator.impactOccurred(intensity: 0.5)
+        onExitMathMode?()
+        
+        queueAnnouncement("Exited math mode")
+    }
+    
+    // MARK: - Announcement Queue (Prevents Overlap)
+    
+    private func queueAnnouncement(_ text: String) {
+        announcementQueue.append(text)
+        processAnnouncementQueue()
+    }
+    
+    private func processAnnouncementQueue() {
+        guard !isAnnouncing, let announcement = announcementQueue.first else { return }
+        
+        isAnnouncing = true
+        announcementQueue.removeFirst()
+        
+        // Small delay to ensure VoiceOver is ready
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            UIAccessibility.post(notification: .announcement, argument: announcement)
+            
+            // Estimate announcement duration and mark as complete
+            let duration = Double(announcement.count) * 0.045 + 0.3
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+                self?.isAnnouncing = false
+                self?.processAnnouncementQueue()
+            }
+        }
+    }
+    
+    // MARK: - Swipe Navigation (Accessibility Scroll)
+    
+    override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
+        // Only handle swipes in exploring/navigating states
+        guard state == .exploringReady || state == .navigating else {
+            return false
+        }
+        
+        state = .navigating
+        
+        switch direction {
+        case .up:
+            // Change to more detailed level
+            changeLevelUp()
+            return true
+            
+        case .down:
+            // Change to less detailed level
+            changeLevelDown()
+            return true
+            
+        case .right:
+            // Navigate to previous (swipe right = go back)
+            navigatePrevious()
+            return true
+            
+        case .left:
+            // Navigate to next (swipe left = go forward)
+            navigateNext()
+            return true
+            
+        default:
+            return false
+        }
+    }
+    
+    // MARK: - Level Navigation
+    
+    private func changeLevelUp() {
+        currentLevel = currentLevel.next
+        currentIndex = 0
+        
+        impactGenerator.impactOccurred(intensity: 0.7)
+        queueAnnouncement("\(currentLevel.rawValue) level")
+    }
+    
+    private func changeLevelDown() {
+        currentLevel = currentLevel.previous
+        currentIndex = 0
+        
+        impactGenerator.impactOccurred(intensity: 0.7)
+        queueAnnouncement("\(currentLevel.rawValue) level")
+    }
+    
+    // MARK: - Part Navigation
+    
+    private func navigateNext() {
+        let parts = getPartsForCurrentLevel()
+        
+        guard !parts.isEmpty else {
+            queueAnnouncement("No parts at this level")
+            return
+        }
+        
+        if currentIndex < parts.count - 1 {
+            currentIndex += 1
+            selectionGenerator.selectionChanged()
+            queueAnnouncement(parts[currentIndex])
+        } else {
+            impactGenerator.impactOccurred(intensity: 0.3)
+            queueAnnouncement("End")
+        }
+    }
+    
+    private func navigatePrevious() {
+        let parts = getPartsForCurrentLevel()
+        
+        guard !parts.isEmpty else {
+            queueAnnouncement("No parts at this level")
+            return
+        }
+        
+        if currentIndex > 0 {
+            currentIndex -= 1
+            selectionGenerator.selectionChanged()
+            queueAnnouncement(parts[currentIndex])
+        } else {
+            impactGenerator.impactOccurred(intensity: 0.3)
+            queueAnnouncement("Beginning")
+        }
+    }
+    
+    private func getPartsForCurrentLevel() -> [String] {
+        switch currentLevel {
+        case .character:
+            return navigationParts[0]
+        case .symbol:
+            return navigationParts[1]
+        case .term:
+            return navigationParts[2]
+        case .structure:
+            return navigationParts[3]
+        }
+    }
+    
+    // MARK: - Parse Equation for Navigation
+    
+    private func parseEquationForNavigation() {
+        let text = fullEquationText
+        guard !text.isEmpty && text != "equation" else {
+            navigationParts = [["equation"], ["equation"], ["equation"], ["equation"]]
+            return
+        }
+        
+        // Character level: each character
+        var characters: [String] = []
+        for char in text where !char.isWhitespace && char != "," {
+            characters.append(String(char))
+        }
+        
+        // Symbol level: split by spaces, keep operators
+        let symbolPattern = text.components(separatedBy: " ")
+            .flatMap { $0.components(separatedBy: ",") }
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        // Term level: split by commas (natural pauses)
+        let terms = text.components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        // Structure level: identify major structures
+        var structures: [String] = []
+        let structureKeywords = ["fraction", "square root", "integral", "sum", "product", "limit", "end"]
+        
+        var currentStructure = ""
+        var inStructure = false
+        
+        for term in terms {
+            let lower = term.lowercased()
+            
+            if structureKeywords.contains(where: { lower.contains($0) && !lower.contains("end") }) {
+                if !currentStructure.isEmpty && !inStructure {
+                    structures.append(currentStructure.trimmingCharacters(in: .whitespaces))
+                }
+                currentStructure = term
+                inStructure = true
+            } else if lower.contains("end") && inStructure {
+                currentStructure += ", " + term
+                structures.append(currentStructure.trimmingCharacters(in: .whitespaces))
+                currentStructure = ""
+                inStructure = false
+            } else if inStructure {
+                currentStructure += ", " + term
+            } else {
+                currentStructure += (currentStructure.isEmpty ? "" : ", ") + term
+            }
+        }
+        
+        if !currentStructure.isEmpty {
+            structures.append(currentStructure.trimmingCharacters(in: .whitespaces))
+        }
+        
+        if structures.isEmpty {
+            structures = [text]
+        }
+        
+        navigationParts = [
+            characters.isEmpty ? ["equation"] : characters,
+            symbolPattern.isEmpty ? ["equation"] : symbolPattern,
+            terms.isEmpty ? ["equation"] : terms,
+            structures
+        ]
+    }
+    
+    // MARK: - Prepare Text for Reading
     
     private func prepareTextForReading(_ text: String) -> String {
         var cleaned = text
@@ -148,10 +459,7 @@ class MathCATAccessibilityContainer: UIView {
         let answerPatterns = [
             #"[,.]?\s*(the\s+)?(sum|total|answer|result|area|volume|perimeter|value)\s+(is|are|=|equals)\s+[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?"#,
             #"\s+is\s+[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#,
-            #"\s*(=|equals)\s*[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#,
-            #"[,\.]\s*[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#,
-            #"\s*(which|that|this)\s+(is|are|equals)\s+[\d,\.]+.*$"#,
-            #"\.\s+\d+\.?\d*\s*$"#
+            #"\s*(=|equals)\s*[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#
         ]
         
         for pattern in answerPatterns {
@@ -164,23 +472,31 @@ class MathCATAccessibilityContainer: UIView {
             }
         }
         
-        // Clean up formatting
+        // Clean up
         cleaned = cleaned.replacingOccurrences(of: "  ", with: " ")
         cleaned = cleaned.replacingOccurrences(of: ", ,", with: ",")
         cleaned = cleaned.replacingOccurrences(of: ",,", with: ",")
         cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // Remove trailing punctuation
         while cleaned.hasSuffix(",") || cleaned.hasSuffix(";") {
             cleaned = String(cleaned.dropLast()).trimmingCharacters(in: .whitespaces)
         }
         
-        // If just "equation" or empty, return empty to trigger fallback
         if cleaned.lowercased() == "equation" || cleaned.isEmpty {
             return ""
         }
         
         return cleaned
+    }
+    
+    // MARK: - Escape Action (Exit Math Mode)
+    
+    override func accessibilityPerformEscape() -> Bool {
+        if state != .inactive {
+            exitMathMode()
+            return true
+        }
+        return false
     }
 }
 
@@ -214,6 +530,7 @@ struct MathCATView: UIViewRepresentable {
         
         // Set initial values
         container.fullEquationText = fullSpokenText
+        container.mathML = mathml ?? ""
         container.mathParts = mathParts
         container.onEnterMathMode = onEnterMathMode
         container.onExitMathMode = onExitMathMode
@@ -222,8 +539,8 @@ struct MathCATView: UIViewRepresentable {
     }
     
     func updateUIView(_ container: MathCATAccessibilityContainer, context: Context) {
-        // Update the spoken text
         container.fullEquationText = fullSpokenText
+        container.mathML = mathml ?? ""
         container.mathParts = mathParts
         container.onEnterMathMode = onEnterMathMode
         container.onExitMathMode = onExitMathMode
@@ -242,7 +559,7 @@ struct MathCATView: UIViewRepresentable {
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.backgroundColor = .clear
         
-        // CRITICAL: Hide from VoiceOver - container handles accessibility
+        // CRITICAL: Hide from VoiceOver
         webView.isAccessibilityElement = false
         webView.accessibilityElementsHidden = true
         
