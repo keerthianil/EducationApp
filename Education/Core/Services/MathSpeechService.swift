@@ -6,10 +6,10 @@
 //  Handles subscripts, superscripts, fractions, integrals, summations,
 //  Greek letters, matrices, roots, binomials, and more.
 //
-//
 
 import Foundation
 import Combine
+
 final class MathSpeechService: ObservableObject {
     
     enum Verbosity { case brief, verbose }
@@ -80,12 +80,10 @@ final class MathSpeechService: ObservableObject {
         ]
         
         for word in pauseAfter {
-            // Add comma after the word if not already followed by comma or period
             result = result.replacingOccurrences(
                 of: "\(word) ",
                 with: "\(word), "
             )
-            // Handle end of string
             if result.hasSuffix(word) {
                 result = result + ","
             }
@@ -142,43 +140,42 @@ final class MathSpeechService: ObservableObject {
         return nil
     }
     
-    // MARK: - Parse MathML Structure (COMPREHENSIVE)
+    // MARK: - Parse MathML Structure
     
     private func parseMathMLStructure(_ mathml: String) -> String {
         var parts: [String] = []
         
-        // 1. FRACTIONS: <mfrac>
+        // 1. FRACTIONS
         if let fractionText = parseMathMLFraction(mathml) {
             parts.append(fractionText)
         }
         
-        // 2. ROOTS: <msqrt>, <mroot>
+        // 2. ROOTS
         if let rootText = parseMathMLRoot(mathml) {
             parts.append(rootText)
         }
         
-        // 3. SUPERSCRIPTS: <msup>
+        // 3. SUPERSCRIPTS
         let supParts = parseMathMLSuperscripts(mathml)
         parts.append(contentsOf: supParts)
         
-        // 4. SUBSCRIPTS: <msub>
+        // 4. SUBSCRIPTS
         let subParts = parseMathMLSubscripts(mathml)
         parts.append(contentsOf: subParts)
         
-        // 5. SUBSUPERSCRIPTS: <msubsup>
+        // 5. SUBSUPERSCRIPTS
         let subSupParts = parseMathMLSubSup(mathml)
         parts.append(contentsOf: subSupParts)
         
-        // 6. UNDEROVER: <munderover> for sums, integrals with limits
+        // 6. UNDEROVER
         let underOverParts = parseMathMLUnderOver(mathml)
         parts.append(contentsOf: underOverParts)
         
-        // If we found structured elements, return them
         if !parts.isEmpty {
             return parts.joined(separator: " ")
         }
         
-        // 7. Fallback: extract all content in order
+        // Fallback: extract all content
         return extractAllMathMLContent(mathml)
     }
     
@@ -194,7 +191,6 @@ final class MathSpeechService: ObservableObject {
         
         let content = String(mathml[contentRange])
         
-        // Extract numerator and denominator
         let rowPattern = #"<mrow[^>]*>(.*?)</mrow>"#
         if let rowRegex = try? NSRegularExpression(pattern: rowPattern, options: [.dotMatchesLineSeparators]) {
             let matches = rowRegex.matches(in: content, range: NSRange(content.startIndex..., in: content))
@@ -207,7 +203,6 @@ final class MathSpeechService: ObservableObject {
             }
         }
         
-        // Simple fraction without mrow
         let parts = content.components(separatedBy: "</")
         if parts.count >= 2 {
             let num = extractPlainText(parts[0])
@@ -221,7 +216,6 @@ final class MathSpeechService: ObservableObject {
     // MARK: - MathML Root
     
     private func parseMathMLRoot(_ mathml: String) -> String? {
-        // Square root
         let sqrtPattern = #"<msqrt[^>]*>(.*?)</msqrt>"#
         if let regex = try? NSRegularExpression(pattern: sqrtPattern, options: [.dotMatchesLineSeparators]),
            let match = regex.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
@@ -230,7 +224,6 @@ final class MathSpeechService: ObservableObject {
             return "square root of, \(content), end root"
         }
         
-        // nth root
         let rootPattern = #"<mroot[^>]*>(.*?)</mroot>"#
         if let regex = try? NSRegularExpression(pattern: rootPattern, options: [.dotMatchesLineSeparators]),
            let match = regex.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
@@ -247,7 +240,6 @@ final class MathSpeechService: ObservableObject {
     private func parseMathMLSuperscripts(_ mathml: String) -> [String] {
         var results: [String] = []
         
-        // Pattern: <msup><mi>x</mi><mn>2</mn></msup>
         let supPattern = #"<msup[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msup>"#
         if let regex = try? NSRegularExpression(pattern: supPattern, options: [.dotMatchesLineSeparators]) {
             let matches = regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml))
@@ -270,7 +262,6 @@ final class MathSpeechService: ObservableObject {
     private func parseMathMLSubscripts(_ mathml: String) -> [String] {
         var results: [String] = []
         
-        // Pattern: <msub><mi>x</mi><mn>n</mn></msub>
         let subPattern = #"<msub[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msub>"#
         if let regex = try? NSRegularExpression(pattern: subPattern, options: [.dotMatchesLineSeparators]) {
             let matches = regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml))
@@ -287,12 +278,11 @@ final class MathSpeechService: ObservableObject {
         return results
     }
     
-    // MARK: - MathML SubSup (both subscript and superscript)
+    // MARK: - MathML SubSup
     
     private func parseMathMLSubSup(_ mathml: String) -> [String] {
         var results: [String] = []
         
-        // Pattern: <msubsup><mi>x</mi><mn>i</mn><mn>2</mn></msubsup>
         let subSupPattern = #"<msubsup[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msubsup>"#
         if let regex = try? NSRegularExpression(pattern: subSupPattern, options: [.dotMatchesLineSeparators]) {
             let matches = regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml))
@@ -312,14 +302,12 @@ final class MathSpeechService: ObservableObject {
         return results
     }
     
-    // MARK: - MathML UnderOver (sums, integrals with limits)
+    // MARK: - MathML UnderOver
     
     private func parseMathMLUnderOver(_ mathml: String) -> [String] {
         var results: [String] = []
         
-        // Check for sum symbol
         if mathml.contains("∑") || mathml.contains("&#x2211;") || mathml.contains("sum") {
-            // Try to extract limits
             let underOverPattern = #"<munderover[^>]*>(.*?)</munderover>"#
             if let regex = try? NSRegularExpression(pattern: underOverPattern, options: [.dotMatchesLineSeparators]),
                let match = regex.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
@@ -336,7 +324,6 @@ final class MathSpeechService: ObservableObject {
             }
         }
         
-        // Check for integral symbol
         if mathml.contains("∫") || mathml.contains("&#x222B;") || mathml.contains("int") {
             let underOverPattern = #"<munderover[^>]*>(.*?)</munderover>"#
             if let regex = try? NSRegularExpression(pattern: underOverPattern, options: [.dotMatchesLineSeparators]),
@@ -354,7 +341,6 @@ final class MathSpeechService: ObservableObject {
             }
         }
         
-        // Check for product symbol
         if mathml.contains("∏") || mathml.contains("&#x220F;") || mathml.contains("prod") {
             results.append("product")
         }
@@ -365,7 +351,6 @@ final class MathSpeechService: ObservableObject {
     private func extractUnderOverParts(_ content: String) -> [String] {
         var parts: [String] = []
         
-        // Extract <mrow> elements
         let rowPattern = #"<mrow[^>]*>(.*?)</mrow>"#
         if let regex = try? NSRegularExpression(pattern: rowPattern, options: [.dotMatchesLineSeparators]) {
             let matches = regex.matches(in: content, range: NSRange(content.startIndex..., in: content))
@@ -387,7 +372,6 @@ final class MathSpeechService: ObservableObject {
     private func extractAllMathMLContent(_ mathml: String) -> String {
         var parts: [String] = []
         
-        // Extract <mi> (identifiers)
         let miPattern = #"<mi[^>]*>([^<]+)</mi>"#
         if let regex = try? NSRegularExpression(pattern: miPattern, options: .caseInsensitive) {
             for match in regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)) {
@@ -400,7 +384,6 @@ final class MathSpeechService: ObservableObject {
             }
         }
         
-        // Extract <mn> (numbers)
         let mnPattern = #"<mn[^>]*>([^<]+)</mn>"#
         if let regex = try? NSRegularExpression(pattern: mnPattern, options: .caseInsensitive) {
             for match in regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)) {
@@ -413,7 +396,6 @@ final class MathSpeechService: ObservableObject {
             }
         }
         
-        // Extract <mo> (operators)
         let moPattern = #"<mo[^>]*>([^<]+)</mo>"#
         if let regex = try? NSRegularExpression(pattern: moPattern, options: .caseInsensitive) {
             for match in regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)) {
@@ -432,7 +414,6 @@ final class MathSpeechService: ObservableObject {
     private func extractPlainText(_ mathml: String) -> String {
         var text = mathml
         
-        // Remove tags
         let tagPattern = #"<[^>]+>"#
         if let regex = try? NSRegularExpression(pattern: tagPattern, options: []) {
             text = regex.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: " ")
@@ -442,70 +423,31 @@ final class MathSpeechService: ObservableObject {
         return convertLaTeXToSpeech(text.trimmingCharacters(in: .whitespaces))
     }
     
-    // MARK: - LaTeX to Speech (COMPREHENSIVE MATHCAT-LIKE)
+    // MARK: - LaTeX to Speech
     
     private func convertLaTeXToSpeech(_ text: String) -> String {
         var result = text
         
-        // ==================== COMPLEX STRUCTURES ====================
+        // Complex structures
+        let complexPatterns: [(String, String)] = [
+            (#"\\binom\s*\{([^}]*)\}\s*\{([^}]*)\}"#, "$1, choose, $2"),
+            (#"\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}"#, "fraction, $1, over, $2, end fraction"),
+            (#"\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "integral, from, $1, to, $2, of"),
+            (#"\\int\s*_\s*(\w)\s*\^\s*(\w)"#, "integral, from, $1, to, $2, of"),
+            (#"\\sum\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "sum, from, $1, to, $2, of"),
+            (#"\\prod\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "product, from, $1, to, $2, of"),
+            (#"\\lim\s*_\s*\{([^}]*?)\\to\s*([^}]*)\}"#, "limit, as, $1, approaches, $2, of"),
+            (#"\\sqrt\s*\[([^\]]+)\]\s*\{([^}]+)\}"#, "$1 th root of, $2, end root"),
+            (#"\\sqrt\s*\{([^}]+)\}"#, "square root of, $1, end root")
+        ]
         
-        // BINOMIAL: \binom{n}{k} → "n choose k"
-        let binomPattern = #"\\binom\s*\{([^}]*)\}\s*\{([^}]*)\}"#
-        if let regex = try? NSRegularExpression(pattern: binomPattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "$1, choose, $2")
+        for (pattern, replacement) in complexPatterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: replacement)
+            }
         }
         
-        // FRACTION: \frac{a}{b} → "a over b"
-        let fracPattern = #"\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}"#
-        if let regex = try? NSRegularExpression(pattern: fracPattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "fraction, $1, over, $2, end fraction")
-        }
-        
-        // INTEGRAL WITH LIMITS: \int_{a}^{b} → "integral from a to b of"
-        let intLimitPattern = #"\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#
-        if let regex = try? NSRegularExpression(pattern: intLimitPattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "integral, from, $1, to, $2, of")
-        }
-        
-        // INTEGRAL WITH SIMPLE LIMITS: \int_a^b
-        let intSimplePattern = #"\\int\s*_\s*(\w)\s*\^\s*(\w)"#
-        if let regex = try? NSRegularExpression(pattern: intSimplePattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "integral, from, $1, to, $2, of")
-        }
-        
-        // SUM WITH LIMITS: \sum_{k=0}^{n} → "sum from k equals 0 to n of"
-        let sumLimitPattern = #"\\sum\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#
-        if let regex = try? NSRegularExpression(pattern: sumLimitPattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "sum, from, $1, to, $2, of")
-        }
-        
-        // PRODUCT WITH LIMITS: \prod_{k=1}^{n}
-        let prodLimitPattern = #"\\prod\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#
-        if let regex = try? NSRegularExpression(pattern: prodLimitPattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "product, from, $1, to, $2, of")
-        }
-        
-        // LIMIT: \lim_{x \to a} → "limit as x approaches a of"
-        let limPattern = #"\\lim\s*_\s*\{([^}]*?)\\to\s*([^}]*)\}"#
-        if let regex = try? NSRegularExpression(pattern: limPattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "limit, as, $1, approaches, $2, of")
-        }
-        
-        // NTH ROOT: \sqrt[n]{x} → "nth root of x"
-        let nthRootPattern = #"\\sqrt\s*\[([^\]]+)\]\s*\{([^}]+)\}"#
-        if let regex = try? NSRegularExpression(pattern: nthRootPattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "$1 th root of, $2, end root")
-        }
-        
-        // SQUARE ROOT: \sqrt{x} → "square root of x"
-        let sqrtPattern = #"\\sqrt\s*\{([^}]+)\}"#
-        if let regex = try? NSRegularExpression(pattern: sqrtPattern, options: []) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "square root of, $1, end root")
-        }
-        
-        // ==================== SUPERSCRIPTS ====================
-        
-        // Complex superscript: x^{n+1} → "x to the power of n plus 1"
+        // Superscripts
         let supComplexPattern = #"([a-zA-Z0-9])\s*\^\s*\{([^}]+)\}"#
         if let regex = try? NSRegularExpression(pattern: supComplexPattern, options: []) {
             var tempResult = result
@@ -523,218 +465,43 @@ final class MathSpeechService: ObservableObject {
             result = tempResult
         }
         
-        // Simple superscripts
+        // Simple replacements
         result = result.replacingOccurrences(of: "^2", with: ", squared")
         result = result.replacingOccurrences(of: "^3", with: ", cubed")
-        result = result.replacingOccurrences(of: "^4", with: ", to the fourth")
-        result = result.replacingOccurrences(of: "^5", with: ", to the fifth")
-        result = result.replacingOccurrences(of: "^n", with: ", to the n")
-        result = result.replacingOccurrences(of: "^k", with: ", to the k")
-        result = result.replacingOccurrences(of: "^x", with: ", to the x")
         result = result.replacingOccurrences(of: "^{-1}", with: ", to the negative one")
-        result = result.replacingOccurrences(of: "^{-2}", with: ", to the negative two")
+        result = result.replacingOccurrences(of: "_0", with: ", sub zero")
+        result = result.replacingOccurrences(of: "_1", with: ", sub one")
+        result = result.replacingOccurrences(of: "_2", with: ", sub two")
+        result = result.replacingOccurrences(of: "_n", with: ", sub n")
+        result = result.replacingOccurrences(of: "_i", with: ", sub i")
         
-        // ==================== SUBSCRIPTS ====================
-        
-        // Complex subscript: x_{i+1} → "x sub i plus 1"
+        // Subscript complex
         let subComplexPattern = #"([a-zA-Z])\s*_\s*\{([^}]+)\}"#
         if let regex = try? NSRegularExpression(pattern: subComplexPattern, options: []) {
             result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "$1, sub, $2")
         }
         
-        // Simple subscripts
-        result = result.replacingOccurrences(of: "_0", with: ", sub zero")
-        result = result.replacingOccurrences(of: "_1", with: ", sub one")
-        result = result.replacingOccurrences(of: "_2", with: ", sub two")
-        result = result.replacingOccurrences(of: "_3", with: ", sub three")
-        result = result.replacingOccurrences(of: "_n", with: ", sub n")
-        result = result.replacingOccurrences(of: "_k", with: ", sub k")
-        result = result.replacingOccurrences(of: "_i", with: ", sub i")
-        result = result.replacingOccurrences(of: "_j", with: ", sub j")
-        result = result.replacingOccurrences(of: "_x", with: ", sub x")
-        result = result.replacingOccurrences(of: "_y", with: ", sub y")
-        
-        // ==================== SIMPLE REPLACEMENTS ====================
-        
+        // Simple replacements dictionary
         let replacements: [(String, String)] = [
-            // Calculus
-            ("\\int", ", integral, "),
-            ("\\iint", ", double integral, "),
-            ("\\iiint", ", triple integral, "),
-            ("\\oint", ", contour integral, "),
-            ("\\partial", ", partial, "),
-            ("\\nabla", ", del, "),
-            ("\\sum", ", sum, "),
-            ("\\prod", ", product, "),
-            ("\\lim", ", limit, "),
-            ("\\to", ", approaches, "),
-            ("\\rightarrow", ", approaches, "),
-            ("\\infty", ", infinity, "),
-            ("d/dx", ", d d x of, "),
-            ("dy/dx", ", d y d x, "),
-            
-            // Operations
-            ("\\cdot", ", times, "),
-            ("\\times", ", times, "),
-            ("\\div", ", divided by, "),
-            ("\\pm", ", plus or minus, "),
-            ("\\mp", ", minus or plus, "),
-            ("\\ast", ", asterisk, "),
-            
-            // Comparisons
-            ("\\leq", ", less than or equal to, "),
-            ("\\geq", ", greater than or equal to, "),
-            ("\\neq", ", not equal to, "),
-            ("\\approx", ", approximately, "),
-            ("\\equiv", ", equivalent to, "),
-            ("\\sim", ", similar to, "),
-            ("\\propto", ", proportional to, "),
-            ("\\ll", ", much less than, "),
-            ("\\gg", ", much greater than, "),
-            
-            // Trig functions
-            ("\\sin", ", sine of, "),
-            ("\\cos", ", cosine of, "),
-            ("\\tan", ", tangent of, "),
-            ("\\cot", ", cotangent of, "),
-            ("\\sec", ", secant of, "),
-            ("\\csc", ", cosecant of, "),
-            ("\\arcsin", ", arc sine of, "),
-            ("\\arccos", ", arc cosine of, "),
-            ("\\arctan", ", arc tangent of, "),
-            ("\\sinh", ", hyperbolic sine of, "),
-            ("\\cosh", ", hyperbolic cosine of, "),
-            ("\\tanh", ", hyperbolic tangent of, "),
-            
-            // Logarithms
-            ("\\log", ", log, "),
-            ("\\ln", ", natural log of, "),
-            ("\\exp", ", e to the, "),
-            
-            // Greek lowercase
-            ("\\alpha", ", alpha, "),
-            ("\\beta", ", beta, "),
-            ("\\gamma", ", gamma, "),
-            ("\\delta", ", delta, "),
-            ("\\epsilon", ", epsilon, "),
-            ("\\varepsilon", ", epsilon, "),
-            ("\\zeta", ", zeta, "),
-            ("\\eta", ", eta, "),
-            ("\\theta", ", theta, "),
-            ("\\vartheta", ", theta, "),
-            ("\\iota", ", iota, "),
-            ("\\kappa", ", kappa, "),
-            ("\\lambda", ", lambda, "),
-            ("\\mu", ", mu, "),
-            ("\\nu", ", nu, "),
-            ("\\xi", ", xi, "),
-            ("\\pi", ", pi, "),
-            ("\\rho", ", rho, "),
-            ("\\sigma", ", sigma, "),
-            ("\\tau", ", tau, "),
-            ("\\upsilon", ", upsilon, "),
-            ("\\phi", ", phi, "),
-            ("\\varphi", ", phi, "),
-            ("\\chi", ", chi, "),
-            ("\\psi", ", psi, "),
-            ("\\omega", ", omega, "),
-            
-            // Greek uppercase
-            ("\\Gamma", ", Gamma, "),
-            ("\\Delta", ", Delta, "),
-            ("\\Theta", ", Theta, "),
-            ("\\Lambda", ", Lambda, "),
-            ("\\Xi", ", Xi, "),
-            ("\\Pi", ", Pi, "),
-            ("\\Sigma", ", Sigma, "),
-            ("\\Phi", ", Phi, "),
-            ("\\Psi", ", Psi, "),
-            ("\\Omega", ", Omega, "),
-            
-            // Set theory
-            ("\\in", ", in, "),
-            ("\\notin", ", not in, "),
-            ("\\subset", ", subset of, "),
-            ("\\supset", ", superset of, "),
-            ("\\subseteq", ", subset or equal to, "),
-            ("\\supseteq", ", superset or equal to, "),
-            ("\\cup", ", union, "),
-            ("\\cap", ", intersection, "),
-            ("\\emptyset", ", empty set, "),
-            ("\\forall", ", for all, "),
-            ("\\exists", ", there exists, "),
-            
-            // Brackets
-            ("\\left(", ", open paren, "),
-            ("\\right)", ", close paren, "),
-            ("\\left[", ", open bracket, "),
-            ("\\right]", ", close bracket, "),
-            ("\\left\\{", ", open brace, "),
-            ("\\right\\}", ", close brace, "),
-            ("\\langle", ", open angle, "),
-            ("\\rangle", ", close angle, "),
-            
-            // Basic operators
-            ("=", ", equals, "),
-            ("+", ", plus, "),
-            ("-", ", minus, "),
-            ("(", ", open paren, "),
-            (")", ", close paren, "),
-            ("[", ", open bracket, "),
-            ("]", ", close bracket, "),
-            
-            // Unicode symbols
-            ("∑", ", sum, "),
-            ("∏", ", product, "),
-            ("∫", ", integral, "),
-            ("∬", ", double integral, "),
-            ("∭", ", triple integral, "),
-            ("∞", ", infinity, "),
-            ("∂", ", partial, "),
-            ("∇", ", del, "),
-            ("π", ", pi, "),
-            ("θ", ", theta, "),
-            ("α", ", alpha, "),
-            ("β", ", beta, "),
-            ("γ", ", gamma, "),
-            ("δ", ", delta, "),
-            ("ε", ", epsilon, "),
-            ("σ", ", sigma, "),
-            ("λ", ", lambda, "),
-            ("μ", ", mu, "),
-            ("ω", ", omega, "),
-            ("φ", ", phi, "),
-            ("ψ", ", psi, "),
-            ("Σ", ", Sigma, "),
-            ("Δ", ", Delta, "),
-            ("Ω", ", Omega, "),
-            ("Π", ", Pi, "),
-            ("−", ", minus, "),
-            ("×", ", times, "),
-            ("÷", ", divided by, "),
-            ("±", ", plus or minus, "),
-            ("≠", ", not equal to, "),
-            ("≤", ", less than or equal to, "),
-            ("≥", ", greater than or equal to, "),
-            ("≈", ", approximately, "),
-            ("√", ", square root of, "),
-            ("∈", ", in, "),
-            ("∉", ", not in, "),
-            ("⊂", ", subset of, "),
-            ("⊃", ", superset of, "),
-            ("∪", ", union, "),
-            ("∩", ", intersection, "),
-            ("∅", ", empty set, "),
-            ("∀", ", for all, "),
-            ("∃", ", there exists, "),
-            ("→", ", approaches, "),
-            ("←", ", from, "),
-            ("↔", ", if and only if, "),
-            
-            // Invisible operators
-            ("\u{2062}", " "),
-            ("\u{2061}", " "),
-            ("\u{2063}", " "),
+            ("\\int", ", integral, "), ("\\sum", ", sum, "), ("\\prod", ", product, "),
+            ("\\cdot", ", times, "), ("\\times", ", times, "), ("\\div", ", divided by, "),
+            ("\\pm", ", plus or minus, "), ("\\leq", ", less than or equal to, "),
+            ("\\geq", ", greater than or equal to, "), ("\\neq", ", not equal to, "),
+            ("\\approx", ", approximately, "), ("\\infty", ", infinity, "),
+            ("\\sin", ", sine of, "), ("\\cos", ", cosine of, "), ("\\tan", ", tangent of, "),
+            ("\\log", ", log, "), ("\\ln", ", natural log of, "),
+            ("\\alpha", ", alpha, "), ("\\beta", ", beta, "), ("\\gamma", ", gamma, "),
+            ("\\delta", ", delta, "), ("\\theta", ", theta, "), ("\\pi", ", pi, "),
+            ("\\sigma", ", sigma, "), ("\\lambda", ", lambda, "), ("\\omega", ", omega, "),
+            ("\\Sigma", ", Sigma, "), ("\\Delta", ", Delta, "), ("\\Omega", ", Omega, "),
+            ("=", ", equals, "), ("+", ", plus, "), ("-", ", minus, "),
+            ("(", ", open paren, "), (")", ", close paren, "),
+            ("∑", ", sum, "), ("∏", ", product, "), ("∫", ", integral, "),
+            ("∞", ", infinity, "), ("π", ", pi, "), ("θ", ", theta, "),
+            ("α", ", alpha, "), ("β", ", beta, "), ("γ", ", gamma, "),
+            ("≤", ", less than or equal to, "), ("≥", ", greater than or equal to, "),
+            ("≠", ", not equal to, "), ("≈", ", approximately, "),
+            ("√", ", square root of, "), ("×", ", times, "), ("÷", ", divided by, ")
         ]
         
         for (pattern, replacement) in replacements {
@@ -762,26 +529,14 @@ final class MathSpeechService: ObservableObject {
         case "3": return "cubed"
         case "4": return "to the fourth"
         case "5": return "to the fifth"
-        case "6": return "to the sixth"
-        case "7": return "to the seventh"
-        case "8": return "to the eighth"
-        case "9": return "to the ninth"
-        case "10": return "to the tenth"
         case "n": return "to the n"
         case "k": return "to the k"
-        case "m": return "to the m"
-        case "x": return "to the x"
-        case "y": return "to the y"
         case "-1": return "to the negative one"
         case "-2": return "to the negative two"
-        case "n+1": return "to the n plus one"
-        case "n-1": return "to the n minus one"
-        case "2n": return "to the two n"
         default:
             if let _ = Int(trimmed) {
                 return "to the power of, \(trimmed)"
             }
-            // Complex expression
             let converted = convertLaTeXToSpeech(trimmed)
             return "to the power of, \(converted)"
         }
@@ -792,14 +547,11 @@ final class MathSpeechService: ObservableObject {
     private func convertSymbol(_ symbol: String) -> String {
         let greek: [String: String] = [
             "α": "alpha", "β": "beta", "γ": "gamma", "δ": "delta",
-            "ε": "epsilon", "ζ": "zeta", "η": "eta", "θ": "theta",
-            "ι": "iota", "κ": "kappa", "λ": "lambda", "μ": "mu",
-            "ν": "nu", "ξ": "xi", "π": "pi", "ρ": "rho",
-            "σ": "sigma", "τ": "tau", "υ": "upsilon", "φ": "phi",
-            "χ": "chi", "ψ": "psi", "ω": "omega",
+            "ε": "epsilon", "θ": "theta", "λ": "lambda", "μ": "mu",
+            "π": "pi", "σ": "sigma", "τ": "tau", "φ": "phi",
+            "ψ": "psi", "ω": "omega",
             "Γ": "Gamma", "Δ": "Delta", "Θ": "Theta", "Λ": "Lambda",
-            "Ξ": "Xi", "Π": "Pi", "Σ": "Sigma", "Φ": "Phi",
-            "Ψ": "Psi", "Ω": "Omega"
+            "Σ": "Sigma", "Φ": "Phi", "Ψ": "Psi", "Ω": "Omega"
         ]
         return greek[symbol] ?? symbol
     }
@@ -811,10 +563,7 @@ final class MathSpeechService: ObservableObject {
             "÷": "divided by", "<": "less than", ">": "greater than",
             "≤": "less than or equal to", "≥": "greater than or equal to",
             "≠": "not equal to", "≈": "approximately",
-            "∑": "sum", "∏": "product", "∫": "integral",
-            "(": "open paren", ")": "close paren",
-            "[": "open bracket", "]": "close bracket",
-            "{": "open brace", "}": "close brace"
+            "∑": "sum", "∏": "product", "∫": "integral"
         ]
         return operators[op] ?? op
     }
