@@ -25,71 +25,81 @@ struct UploadSheetView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                switch uploadManager.state {
-                case .idle, .done:
-                    idleStateView
-                    
-                case .confirming:
-                    idleStateView
+            sheetContent
+        }
+        // Apply gesture to entire sheet
+        .onThreeFingerSwipeBack {
+            haptics.tapSelection()
+            uploadManager.reset()
+            dismiss()
+        }
+    }
+    
+    private var sheetContent: some View {
+        VStack(spacing: 20) {
+            switch uploadManager.state {
+            case .idle, .done:
+                idleStateView
+                
+            case .confirming:
+                idleStateView
 
-                case .uploading:
-                    uploadingStateView
+            case .uploading:
+                uploadingStateView
 
-                case .processing:
-                    processingStateView
+            case .processing:
+                processingStateView
 
-                case .error(let msg):
-                    errorStateView(message: msg)
-                }
-
-                Spacer()
+            case .error(let msg):
+                errorStateView(message: msg)
             }
-            .padding(.horizontal, horizontalPadding)
-            .padding(.top, 24)
-            .frame(maxWidth: maxSheetWidth)
-            .frame(maxWidth: .infinity)
-            .background(Color(hex: "#F6F7F8"))
-            .navigationTitle("Upload")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+
+            Spacer()
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.top, 24)
+        .frame(maxWidth: maxSheetWidth)
+        .frame(maxWidth: .infinity)
+        .background(Color(hex: "#F6F7F8"))
+        .navigationTitle("Upload")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    haptics.tapSelection()
+                    uploadManager.reset()
+                    dismiss()
+                }
+                .font(.custom("Arial", size: 17))
+                .foregroundColor(ColorTokens.primary)
+                .accessibilityLabel("Cancel")
+            }
+        }
+        .sheet(isPresented: $showPicker) {
+            DocumentPicker { url in
+                uploadManager.beginConfirm(fileURL: url)
+                showPicker = false
+            }
+        }
+        .overlay {
+            if case .confirming(let url) = uploadManager.state {
+                UploadConfirmationDialog(
+                    fileName: url.lastPathComponent,
+                    onConfirm: {
+                        haptics.tapSelection()
+                        uploadManager.uploadAndConvert(fileURL: url)
+                        dismiss()
+                    },
+                    onCancel: {
                         haptics.tapSelection()
                         uploadManager.reset()
-                        dismiss()
                     }
-                    .font(.custom("Arial", size: 17))
-                    .foregroundColor(ColorTokens.primary)
-                    .accessibilityLabel("Cancel")
-                }
+                )
             }
-            .sheet(isPresented: $showPicker) {
-                DocumentPicker { url in
-                    uploadManager.beginConfirm(fileURL: url)
-                    showPicker = false
-                }
-            }
-            .overlay {
-                if case .confirming(let url) = uploadManager.state {
-                    UploadConfirmationDialog(
-                        fileName: url.lastPathComponent,
-                        onConfirm: {
-                            haptics.tapSelection()
-                            uploadManager.uploadAndConvert(fileURL: url)
-                            dismiss()
-                        },
-                        onCancel: {
-                            haptics.tapSelection()
-                            uploadManager.reset()
-                        }
-                    )
-                }
-            }
-            .onAppear {
-                if case .done = uploadManager.state {
-                    uploadManager.reset()
-                }
+        }
+        .onAppear {
+            if case .done = uploadManager.state {
+                uploadManager.reset()
             }
         }
     }
@@ -226,8 +236,12 @@ struct UploadConfirmationDialog: View {
                 .onTapGesture {
                     onCancel()
                 }
+                .accessibilityHidden(true)
             
             confirmationCard
+        }
+        .accessibilityAction(.escape) {
+            onCancel()
         }
     }
     
@@ -292,5 +306,6 @@ struct UploadConfirmationDialog: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
         .onTapGesture { }
+        .accessibilityAddTraits(.isModal)
     }
 }

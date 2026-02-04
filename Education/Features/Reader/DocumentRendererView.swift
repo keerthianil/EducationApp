@@ -23,6 +23,14 @@ struct DocumentRendererView: View {
     @AccessibilityFocusState private var isBackButtonFocused: Bool
 
     var body: some View {
+        documentContent
+            .onThreeFingerSwipeBack {
+                speech.stop(immediate: true)
+                dismiss()
+            }
+    }
+    
+    private var documentContent: some View {
         ZStack {
             Color(hex: "#F5F5F5")
                 .ignoresSafeArea()
@@ -51,7 +59,6 @@ struct DocumentRendererView: View {
             }
         }
         .onAppear {
-            // FIXED: Focus back button after toolbar renders
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isBackButtonFocused = true
             }
@@ -69,17 +76,11 @@ struct DocumentRendererView: View {
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.black)
                 }
-                // FIXED: Clear accessibility label
                 .accessibilityLabel("Back")
                 .accessibilityHint("Return to dashboard")
                 .accessibilityFocused($isBackButtonFocused)
                 .accessibilitySortPriority(1000)
             }
-        }
-        // FIXED: Support 3-finger swipe right to go back
-        .accessibilityAction(.escape) {
-            speech.stop(immediate: true)
-            dismiss()
         }
         .onDisappear {
             speech.stop(immediate: true)
@@ -156,7 +157,6 @@ private struct DocumentParagraphView: View {
                     .foregroundColor(Color(hex: "#121417"))
             }
             
-            // Use MathCAT behavior
             ForEach(mathParts, id: \.0) { _, mathInline in
                 if case .math(let latex, let mathml, let display) = mathInline {
                     DocumentMathCATView(latex: latex, mathml: mathml, display: display)
@@ -211,7 +211,7 @@ private struct DocumentMathCATView: View {
     }
 }
 
-// MARK: - Document Image View (Single Accessibility Element - NO JUMPING)
+// MARK: - Document Image View
 
 private struct DocumentImageView: View {
     let dataURI: String
@@ -232,7 +232,6 @@ private struct DocumentImageView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
-        // FIXED: Entire image is ONE element
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(alt ?? "Image")
         .accessibilityAddTraits(.isImage)
@@ -246,7 +245,7 @@ private struct DocumentImageView: View {
     }
 }
 
-// MARK: - Document SVG View (Single Accessibility Element - NO JUMPING)
+// MARK: - Document SVG View
 
 private struct DocumentSVGView: View {
     let svg: String
@@ -274,7 +273,6 @@ private struct DocumentSVGView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 200)
         }
-        // FIXED: Entire graphic is ONE element - NO JUMPING
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
         .accessibilityAddTraits(.isImage)
