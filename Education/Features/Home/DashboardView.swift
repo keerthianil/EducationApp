@@ -1196,7 +1196,6 @@ private struct HomeTabBar: View {
     }
 }
 
-// MARK: - Reader Container (FIXED: Escape Gesture)
 private struct ReaderContainer: View {
     @EnvironmentObject var lessonStore: LessonStore
     @EnvironmentObject var speech: SpeechService
@@ -1226,13 +1225,10 @@ private struct ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        // FIXED: 3-finger swipe right (escape gesture) to go back
-        .accessibilityAction(.escape) {
-            speech.stop(immediate: true)
-            dismiss()
-        }
+        // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
     }
 }
+
 
 // MARK: - Processing File Card
 private struct ProcessingFileCard: View {

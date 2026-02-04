@@ -55,6 +55,14 @@ struct WorksheetView: View {
     }
 
     var body: some View {
+        worksheetContent
+            .onThreeFingerSwipeBack {
+                speech.stop(immediate: true)
+                dismiss()
+            }
+    }
+    
+    private var worksheetContent: some View {
         ZStack {
             Color(hex: "#F5F5F5")
                 .ignoresSafeArea()
@@ -62,13 +70,10 @@ struct WorksheetView: View {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.medium) {
-                        // Invisible anchor for scroll-to-top
                         Color.clear
                             .frame(height: 1)
                             .id("topAnchor")
 
-                        // FIXED: Page indicator hidden from accessibility
-                        // This prevents it from being announced instead of Back button
                         if !pages.isEmpty {
                             Text("Page \(safePageIndex + 1) of \(pages.count)")
                                 .font(.custom("Arial", size: 13.5))
@@ -171,7 +176,6 @@ struct WorksheetView: View {
                     .padding(.bottom, Spacing.xLarge)
                 }
                 .onChange(of: currentPage) { _ in
-                    // FIXED: Scroll to top immediately on page change
                     withAnimation(.easeInOut(duration: 0.2)) {
                         scrollProxy.scrollTo("topAnchor", anchor: .top)
                     }
@@ -179,7 +183,6 @@ struct WorksheetView: View {
             }
         }
         .onAppear {
-            // FIXED: Focus back button after a short delay to ensure toolbar is rendered
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isBackButtonFocused = true
             }
@@ -202,17 +205,11 @@ struct WorksheetView: View {
                     }
                     .foregroundColor(.black)
                 }
-                // FIXED: Back button has clear, distinct accessibility label
                 .accessibilityLabel("Back")
                 .accessibilityHint("Return to dashboard")
                 .accessibilityFocused($isBackButtonFocused)
                 .accessibilitySortPriority(1000)
             }
-        }
-        // FIXED: Support 3-finger swipe right to go back (escape gesture)
-        .accessibilityAction(.escape) {
-            speech.stop(immediate: true)
-            dismiss()
         }
         .onDisappear {
             speech.stop(immediate: true)
@@ -236,7 +233,6 @@ struct WorksheetView: View {
         haptics.sectionChange()
         
         if UIAccessibility.isVoiceOverRunning {
-            // FIXED: Announce page change after scroll completes
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 UIAccessibility.post(
                     notification: .announcement,
@@ -364,7 +360,6 @@ private struct ParagraphBlockView: View {
                     .foregroundColor(Color(hex: "#121417"))
             }
             
-            // Use MathCAT behavior for equations
             ForEach(mathParts, id: \.0) { _, mathInline in
                 if case .math(let latex, let mathml, let display) = mathInline {
                     MathCATEquationView(latex: latex, mathml: mathml, display: display)
@@ -377,7 +372,7 @@ private struct ParagraphBlockView: View {
     }
 }
 
-// MARK: - MathCAT Equation View (EXACT MathCAT Behavior)
+// MARK: - MathCAT Equation View
 
 private struct MathCATEquationView: View {
     let latex: String?
@@ -420,7 +415,7 @@ private struct MathCATEquationView: View {
     }
 }
 
-// MARK: - Image Block (Single Accessibility Element - NO JUMPING)
+// MARK: - Image Block
 
 private struct ImageBlockView: View {
     let dataURI: String
@@ -446,7 +441,6 @@ private struct ImageBlockView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
-        // FIXED: Entire image is ONE accessibility element - VoiceOver won't jump inside
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(alt ?? "Image")
         .accessibilityAddTraits(.isImage)
@@ -460,7 +454,7 @@ private struct ImageBlockView: View {
     }
 }
 
-// MARK: - SVG Block (Single Accessibility Element - NO JUMPING)
+// MARK: - SVG Block
 
 private struct SVGBlockView: View {
     let svg: String
@@ -486,7 +480,6 @@ private struct SVGBlockView: View {
                 Text(t)
                     .font(.custom("Arial", size: 17).weight(.bold))
                     .foregroundColor(Color(hex: "#121417"))
-                    // FIXED: Title is part of the combined accessibility element
                     .accessibilityHidden(true)
             }
 
@@ -494,15 +487,13 @@ private struct SVGBlockView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: svgHeight)
         }
-        // FIXED: Entire graphic is ONE accessibility element
-        // VoiceOver will NOT jump between internal SVG elements
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
         .accessibilityAddTraits(.isImage)
     }
 }
 
-// MARK: - SVG WebView (Completely Hidden from Accessibility)
+// MARK: - SVG WebView
 
 private struct SVGWebView: UIViewRepresentable {
     let svg: String
@@ -515,7 +506,6 @@ private struct SVGWebView: UIViewRepresentable {
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.backgroundColor = .clear
         
-        // CRITICAL: Completely hide from VoiceOver
         webView.isAccessibilityElement = false
         webView.accessibilityElementsHidden = true
         webView.scrollView.isAccessibilityElement = false
@@ -525,43 +515,25 @@ private struct SVGWebView: UIViewRepresentable {
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // HTML with aria-hidden to completely hide from screen readers
         let html = """
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no"/>
             <style>
-                * {
-                    -webkit-user-select: none;
-                    user-select: none;
-                }
-                body {
-                    margin: 0;
-                    padding: 0;
-                    background: #fff;
-                }
-                svg {
-                    max-width: 100%;
-                    height: auto;
-                    display: block;
-                }
-                /* Hide all interactive elements from accessibility */
-                [tabindex], a, button, input, [role] {
-                    pointer-events: none;
-                }
+                * { -webkit-user-select: none; user-select: none; }
+                body { margin: 0; padding: 0; background: #fff; }
+                svg { max-width: 100%; height: auto; display: block; }
+                [tabindex], a, button, input, [role] { pointer-events: none; }
             </style>
         </head>
         <body aria-hidden="true" role="presentation" tabindex="-1">
-            <div aria-hidden="true" role="presentation">
-                \(svg)
-            </div>
+            <div aria-hidden="true" role="presentation">\(svg)</div>
         </body>
         </html>
         """
         webView.loadHTMLString(html, baseURL: nil)
         
-        // Ensure accessibility is completely disabled
         webView.isAccessibilityElement = false
         webView.accessibilityElementsHidden = true
         webView.scrollView.isAccessibilityElement = false

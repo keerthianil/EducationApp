@@ -706,7 +706,7 @@ private struct Flow3HistoryRow: View {
     }
 }
 
-// MARK: - Reader Container (FIXED: Proper Environment Object Passing + Escape Gesture)
+// MARK: - Reader Container
 private struct Flow3ReaderContainer: View {
     @EnvironmentObject var lessonStore: LessonStore
     @EnvironmentObject var speech: SpeechService
@@ -732,10 +732,6 @@ private struct Flow3ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        // FIXED: Support escape gesture (two-finger scrub / 3-finger swipe right) to go back
-        .accessibilityAction(.escape) {
-            speech.stop(immediate: true)
-            dismiss()
-        }
+        // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
     }
 }
