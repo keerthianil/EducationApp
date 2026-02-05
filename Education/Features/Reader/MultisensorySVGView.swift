@@ -331,7 +331,6 @@ class MultisensoryCanvasView: UIView {
     }
     
     private func drawLabels(context: CGContext, drawingRect: CGRect) {
-        // Use same contentBox scaling and effective padding as parseAndCalculateElements
         let padding: CGFloat = max(4, strokeWidth4mm / 2 + 2)
         let availableWidth = max(drawingRect.width, 100)
         let availableHeight = max(drawingRect.height, 100)
@@ -349,11 +348,6 @@ class MultisensoryCanvasView: UIView {
         let offsetX = padding + (drawableWidth - scaledWidth) / 2
         let offsetY = padding + (drawableHeight - scaledHeight) / 2
         
-        let maxOffsetX = max(padding, availableWidth - scaledWidth - padding)
-        let maxOffsetY = max(padding, availableHeight - scaledHeight - padding)
-        let clampedOffsetX = max(padding, min(offsetX, maxOffsetX))
-        let clampedOffsetY = max(padding, min(offsetY, maxOffsetY))
-        
         if let labelData = graphicData["labels"] as? [[String: Any]] {
             for label in labelData {
                 guard let x = Self._double(label["x"]), let y = Self._double(label["y"]),
@@ -363,8 +357,8 @@ class MultisensoryCanvasView: UIView {
                 let scaledFontSize = max(CGFloat(fontSize) * scale, 12)
                 
                 var point = CGPoint(
-                    x: clampedOffsetX + CGFloat((x - contentBox.minX) * scale),
-                    y: clampedOffsetY + CGFloat((y - contentBox.minY) * scale)
+                    x: offsetX + CGFloat((x - contentBox.minX) * scale),
+                    y: offsetY + CGFloat((y - contentBox.minY) * scale)
                 )
                 
                 let attributes: [NSAttributedString.Key: Any] = [
@@ -411,7 +405,7 @@ class MultisensoryCanvasView: UIView {
         return nil
     }
     
-    /// Computes tight bounding box from lines and vertices; optionally includes label positions (use false for scaling so figure fills screen).
+    /// Tight bounding box for scaling. Use includeLabels: false so only lines/vertices define bounds; labels do not affect scale (they are drawn separately within bounds).
     private func computeContentBox(includeLabels: Bool = true) {
         var xs: [Double] = []
         var ys: [Double] = []
@@ -470,9 +464,7 @@ class MultisensoryCanvasView: UIView {
         }
         computeContentBox(includeLabels: false)
         
-        // Use drawing rect if provided (from draw method), otherwise use bounds (for touch handling)
         var availableRect = drawingRect ?? bounds
-        // If rect is too small (e.g. before layout), use screen size so shape uses maximum possible area
         let screenBounds = UIScreen.main.bounds
         if availableRect.width < 200 || availableRect.height < 200 {
             availableRect = screenBounds
@@ -480,73 +472,53 @@ class MultisensoryCanvasView: UIView {
         let availableWidth = max(availableRect.width, 100)
         let availableHeight = max(availableRect.height, 100)
         
-        // Account for stroke width so we don't clip; minimal 4pt padding
         let effectivePadding: CGFloat = max(4, strokeWidth4mm / 2 + 2)
         let drawableWidth = availableWidth - (effectivePadding * 2)
         let drawableHeight = availableHeight - (effectivePadding * 2)
         
         guard contentBox.width > 0 && contentBox.height > 0, drawableWidth > 0, drawableHeight > 0 else { return }
         
-        // Scale to fill drawable area; optional slight zoom, clamped to avoid clipping
         let scaleX = drawableWidth / contentBox.width
         let scaleY = drawableHeight / contentBox.height
-        let zoom: CGFloat = 1.08
-        var scale = min(scaleX, scaleY) * zoom
+        let scale = min(scaleX, scaleY)
+        
         let scaledWidth = contentBox.width * scale
         let scaledHeight = contentBox.height * scale
-        if scaledWidth > drawableWidth || scaledHeight > drawableHeight {
-            scale = min(scaleX, scaleY)
-        }
+        let offsetX = effectivePadding + (drawableWidth - scaledWidth) / 2
+        let offsetY = effectivePadding + (drawableHeight - scaledHeight) / 2
         
-        // Center the scaled shape within bounds
-        let finalScaledWidth = contentBox.width * scale
-        let finalScaledHeight = contentBox.height * scale
-        let offsetX = effectivePadding + (drawableWidth - finalScaledWidth) / 2
-        let offsetY = effectivePadding + (drawableHeight - finalScaledHeight) / 2
-        
-        // Clamp offsets to ensure shape stays within bounds
-        let maxOffsetX = max(effectivePadding, availableWidth - finalScaledWidth - effectivePadding)
-        let maxOffsetY = max(effectivePadding, availableHeight - finalScaledHeight - effectivePadding)
-        let clampedOffsetX = max(effectivePadding, min(offsetX, maxOffsetX))
-        let clampedOffsetY = max(effectivePadding, min(offsetY, maxOffsetY))
-        
-        // Parse lines (map using contentBox so touch detection matches drawn figure)
         lines.removeAll()
         if let lineData = graphicData["lines"] as? [[String: Any]] {
             for line in lineData {
                 guard let x1 = Self._double(line["x1"]), let y1 = Self._double(line["y1"]),
                       let x2 = Self._double(line["x2"]), let y2 = Self._double(line["y2"]) else { continue }
                 
-                let maxX = availableWidth - effectivePadding
-                let maxY = availableHeight - effectivePadding
-                let startX = clampedOffsetX + CGFloat((x1 - contentBox.minX) * scale)
-                let startY = clampedOffsetY + CGFloat((y1 - contentBox.minY) * scale)
-                let endX = clampedOffsetX + CGFloat((x2 - contentBox.minX) * scale)
-                let endY = clampedOffsetY + CGFloat((y2 - contentBox.minY) * scale)
-                
-                let start = CGPoint(x: max(effectivePadding, min(startX, maxX)), y: max(effectivePadding, min(startY, maxY)))
-                let end = CGPoint(x: max(effectivePadding, min(endX, maxX)), y: max(effectivePadding, min(endY, maxY)))
+                let start = CGPoint(
+                    x: offsetX + CGFloat((x1 - contentBox.minX) * scale),
+                    y: offsetY + CGFloat((y1 - contentBox.minY) * scale)
+                )
+                let end = CGPoint(
+                    x: offsetX + CGFloat((x2 - contentBox.minX) * scale),
+                    y: offsetY + CGFloat((y2 - contentBox.minY) * scale)
+                )
                 let label = line["label"] as? String
                 lines.append((start: start, end: end, label: label))
             }
         }
         
-        // Parse vertices
         vertices.removeAll()
         if let vertexData = graphicData["vertices"] as? [[String: Any]] {
             for vertex in vertexData {
                 guard let x = Self._double(vertex["x"]), let y = Self._double(vertex["y"]) else { continue }
                 
-                let maxX = availableWidth - effectivePadding
-                let maxY = availableHeight - effectivePadding
-                let pointX = clampedOffsetX + CGFloat((x - contentBox.minX) * scale)
-                let pointY = clampedOffsetY + CGFloat((y - contentBox.minY) * scale)
-                let point = CGPoint(x: max(effectivePadding, min(pointX, maxX)), y: max(effectivePadding, min(pointY, maxY)))
+                let point = CGPoint(
+                    x: offsetX + CGFloat((x - contentBox.minX) * scale),
+                    y: offsetY + CGFloat((y - contentBox.minY) * scale)
+                )
                 vertices.append(point)
             }
         }
         
-        // Dimension dots: point at t=0.55 on each labeled line (avoids thick stroke corner at exact midpoint)
         dimensionDots.removeAll()
         for (index, line) in lines.enumerated() {
             guard let label = line.label, !label.isEmpty else { continue }
@@ -560,7 +532,6 @@ class MultisensoryCanvasView: UIView {
     // MARK: - Touch Handling
     
     private func handleTouchAt(_ point: CGPoint) {
-        // 1) Dimension dot: announce only when touching the dot (not when touching a vertex); once per entry
         let onVertex = findVertexAt(point) != nil
         if let dotIndex = findDimensionDotAt(point), !onVertex {
             let justEnteredDot = activeDimensionDotIndex != dotIndex
@@ -574,7 +545,6 @@ class MultisensoryCanvasView: UIView {
             activeDimensionDotIndex = nil
         }
         
-        // 2) Line: continuous haptics only; dimension is announced only when touching a dimension dot
         if let lineIndex = findLineAt(point) {
             if activeLineIndex != lineIndex {
                 stopContinuousHaptic()
@@ -636,8 +606,7 @@ class MultisensoryCanvasView: UIView {
     }
     
     private func findLineAt(_ point: CGPoint) -> Int? {
-        // Touch only on the drawn stroke width (no oversized hit area)
-        let touchRadius = max(strokeWidth4mm * 0.55, 12)
+        let touchRadius = max(strokeWidth4mm * 0.55, 10)
         
         var closestLineIndex: Int? = nil
         var closestDistance: CGFloat = touchRadius
