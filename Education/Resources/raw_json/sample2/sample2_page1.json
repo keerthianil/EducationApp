@@ -1,99 +1,80 @@
 {
     "type": "doc",
     "content": [
-        {
-            "type": "heading",
-            "attrs": {
-                "level": 1
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Area of Compound Figures"
-                }
+      {
+        "type": "heading",
+        "attrs": { "level": 1 },
+        "content": [{ "type": "text", "text": "Area of Compound Figures" }]
+      },
+      {
+        "type": "paragraph",
+        "attrs": { "contentType": "body_text" },
+        "content": [{ "type": "text", "text": "To find the area of a compound figure, you can follow these steps:" }]
+      },
+      {
+        "type": "paragraph",
+        "attrs": { "contentType": "body_text" },
+        "content": [{ "type": "text", "text": "1. Break the compound figure into basic shapes, such as rectangles and triangles." }]
+      },
+      {
+        "type": "paragraph",
+        "attrs": { "contentType": "body_text" },
+        "content": [{ "type": "text", "text": "2. Find the area of each basic shape." }]
+      },
+      {
+        "type": "paragraph",
+        "attrs": { "contentType": "body_text" },
+        "content": [{ "type": "text", "text": "3. Add the areas together." }]
+      },
+  
+      {
+        "type": "svgNode",
+        "attrs": {
+          "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 240 300\" preserveAspectRatio=\"xMidYMid meet\" style=\"width:100%;height:auto;display:block;\">\n  <g id=\"lines\" stroke=\"black\" stroke-width=\"2\" fill=\"none\">\n    <line x1=\"60\" y1=\"40\" x2=\"200\" y2=\"40\" />\n    <line x1=\"200\" y1=\"40\" x2=\"200\" y2=\"240\" />\n    <line x1=\"200\" y1=\"240\" x2=\"60\" y2=\"240\" />\n    <line x1=\"60\" y1=\"240\" x2=\"60\" y2=\"40\" />\n  </g>\n\n  <!-- Label backgrounds (white boxes so text is always visible) -->\n  <g id=\"label_backgrounds\" fill=\"white\" stroke=\"none\">\n    <rect x=\"94\" y=\"48\" width=\"72\" height=\"22\" rx=\"4\" ry=\"4\" />\n    <rect x=\"20\" y=\"128\" width=\"22\" height=\"72\" rx=\"4\" ry=\"4\" />\n  </g>\n\n  <g id=\"labels\" fill=\"black\" font-size=\"18\" font-weight=\"700\">\n    <!-- 35 in: moved INSIDE and centered -->\n    <text x=\"130\" y=\"65\" text-anchor=\"middle\">35 in</text>\n\n    <!-- 50 in: moved INSIDE left side, rotated around its center -->\n    <text x=\"31\" y=\"164\" text-anchor=\"middle\" transform=\"rotate(-90 31 164)\">50 in</text>\n  </g>\n</svg>",
+          "title": "Simple Rectangle",
+          "summary": [
+            "The image shows a simple rectangle with horizontal and vertical sides."
+          ],
+          "short_desc": [
+            "Rectangle with dimensions 35 in by 50 in."
+          ],
+          "long_desc": [
+            "The image shows a simple rectangle. The top edge is labeled 35 inches, and the left edge is labeled 50 inches. There are no diagonal or angled edges."
+          ],
+          "graphicData": {
+            "viewBox": { "x": 0, "y": 0, "width": 240, "height": 300 },
+            "lines": [
+              { "id": "line_top", "x1": 60, "y1": 40, "x2": 200, "y2": 40, "strokeWidth": 2, "label": "35 in" },
+              { "id": "line_right", "x1": 200, "y1": 40, "x2": 200, "y2": 240, "strokeWidth": 2, "label": "50 in" },
+              { "id": "line_bottom", "x1": 200, "y1": 240, "x2": 60, "y2": 240, "strokeWidth": 2, "label": null },
+              { "id": "line_left", "x1": 60, "y1": 240, "x2": 60, "y2": 40, "strokeWidth": 2, "label": null }
+            ],
+            "vertices": [
+              { "id": "point_1", "x": 60, "y": 40, "connectedLines": ["line_top", "line_left"] },
+              { "id": "point_2", "x": 200, "y": 40, "connectedLines": ["line_top", "line_right"] },
+              { "id": "point_3", "x": 200, "y": 240, "connectedLines": ["line_right", "line_bottom"] },
+              { "id": "point_4", "x": 60, "y": 240, "connectedLines": ["line_bottom", "line_left"] }
+            ],
+            "labels": [
+              { "id": "label_top", "x": 130, "y": 65, "text": "35 in", "fontSize": 15, "forLine": "line_top" },
+              { "id": "label_left", "x": 31, "y": 164, "text": "50 in", "fontSize": 15, "forLine": "line_right" }
             ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "contentType": "body_text"
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "To find the area of a compound figure, you can follow these steps:"
-                }
-            ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "contentType": "body_text"
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "1. Break the compound figure into basic shapes, such as rectangles and triangles."
-                }
-            ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "contentType": "body_text"
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "2. Find the area of each basic shape."
-                }
-            ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "contentType": "body_text"
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "3. Add the areas together."
-                }
-            ]
-        },
-        {
-            "type": "svgNode",
-            "attrs": {
-                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 448 380\" style=\"max-width:100%;height:auto;\">\n  <metadata>\n{\n  \"source\": \"UNAR AI v2\",\n  \"title\": \"Geometric Shape\",\n  \"summary\": [\n    \"The image shows a geometric shape with labeled dimensions.\"\n  ],\n  \"short_desc\": [\n    \"The image depicts a polygon shape with dimensions labeled as 35 in. and 50 in.\"\n  ],\n  \"long_desc\": [\n    \"The image shows a geometric shape that resembles a combination of a rectangle and a triangle. The dimensions are labeled as 35 inches on the top side and 50 inches on the right side.\"\n  ],\n  \"image_type\": \"geo\",\n  \"items\": {\n    \"shape\": {\n      \"text_annotations\": [\n        \"35 in.\",\n        \"50 in.\"\n      ]\n    }\n  }\n}\n</metadata>\n<defs/>\n  <g id=\"lines\">\n    <line id=\"line_1\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"332.0\" x2=\"334.0\" y1=\"332.0\" y2=\"43.0\"/>\n    <line id=\"line_2\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"73.0\" x2=\"334.0\" y1=\"329.0\" y2=\"330.0\"/>\n    <line id=\"line_3\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"73.0\" x2=\"277.0\" y1=\"159.0\" y2=\"156.0\"/>\n    <line id=\"line_4\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"74.0\" x2=\"73.0\" y1=\"332.0\" y2=\"159.0\"/>\n    <line id=\"line_5\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"275.0\" x2=\"334.0\" y1=\"158.0\" y2=\"43.0\"/>\n  </g>\n  <g id=\"points\">\n    <circle cx=\"334.0\" cy=\"43.0\" fill=\"rgb(0,0,0)\" id=\"point_1\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"73.98268072289156\" cy=\"329.00376506024094\" fill=\"rgb(0,0,0)\" id=\"point_2\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"332.01389349206556\" cy=\"329.99239039652133\" fill=\"rgb(0,0,0)\" id=\"point_3\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"73.0\" cy=\"159.0\" fill=\"rgb(0,0,0)\" id=\"point_4\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"276.0186831593867\" cy=\"156.01443113000903\" fill=\"rgb(0,0,0)\" id=\"point_5\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n  </g>\n  <g id=\"texts\">\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_1\" x=\"180.25\" y=\"136.5\">35</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_2\" x=\"204.75\" y=\"141.40000915527344\">0</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_3\" x=\"376.95001220703125\" y=\"197.39999389648438\">50n</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_4\" x=\"401.79998779296875\" y=\"202.64999389648438\">0</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_5\" x=\"43.400001525878906\" y=\"249.89999389648438\">IN</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_6\" x=\"54.60000228881836\" y=\"255.84999084472656\">0</text>\n  </g>\n</svg>",
-                "title": "Geometric Shape",
-                "summary": [
-                    "The image shows a geometric shape with labeled dimensions."
-                ],
-                "short_desc": [
-                    "The image depicts a polygon shape with dimensions labeled as 35 in. and 50 in."
-                ],
-                "long_desc": [
-                    "The image shows a geometric shape that resembles a combination of a rectangle and a triangle. The dimensions are labeled as 35 inches on the top side and 50 inches on the right side."
-                ]
-            }
-        },
-        {
-            "type": "image",
-            "attrs": {
-                "src": "data:image/png;base64,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",
-                "alt": [
-                    "The image shows a decorative illustration of butterflies."
-                ],
-                "short_desc": [
-                    "The image is a colorful illustration of butterflies with a line drawing style."
-                ],
-                "long_desc": [
-                    "The image is a decorative illustration of butterflies. The butterflies are drawn with black outlines and filled with purple color. The background is white."
-                ],
-                "title": "Butterfly Illustration"
-            }
+          }
         }
+      },
+  
+      {
+        "type": "image",
+        "attrs": {
+          "src": "data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQIBAQECAgICAgQDAgICAgUEBAMEBgUGBgYFBgYGBwkIBgcJBwYGCAsICQoKCgoKBggLDAsKDAkKCgr/2wBDAQICAgICAgUDAwUKBwYHCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgr/wAARCAEKAPoDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD97dM1TT9X0+HVtLvorm1uYg8FzFMHjkjwCHz0q/UcMUMEfkxRbEToB0qSgAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA//Z",
+          "alt": ["The image shows a decorative illustration of butterflies."],
+          "short_desc": ["The image is a colorful illustration of butterflies with a line drawing style."],
+          "long_desc": ["The image is a decorative illustration of butterflies. The butterflies are drawn with black outlines and filled with purple color. The background is white."],
+          "title": "Butterfly Illustration"
+        }
+      }
     ],
     "pageNumber": 1,
     "isEdited": false
-}
+  }
+  

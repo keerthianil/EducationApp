@@ -19,8 +19,6 @@ struct DocumentRendererView: View {
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var mathSpeech: MathSpeechService
     @Environment(\.dismiss) private var dismiss
-    
-    @AccessibilityFocusState private var isBackButtonFocused: Bool
 
     var body: some View {
         documentContent
@@ -58,11 +56,6 @@ struct DocumentRendererView: View {
                 .padding(.bottom, Spacing.xLarge)
             }
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                isBackButtonFocused = true
-            }
-        }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(title)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -78,8 +71,15 @@ struct DocumentRendererView: View {
                 }
                 .accessibilityLabel("Back")
                 .accessibilityHint("Return to dashboard")
-                .accessibilityFocused($isBackButtonFocused)
-                .accessibilitySortPriority(1000)
+                // Lower priority so VoiceOver focuses on main content first
+                .accessibilitySortPriority(-1)
+                .accessibilityScrollAction { edge in
+                    // When VoiceOver focus is on back button, three-finger swipe right triggers this
+                    if edge == .trailing {
+                        speech.stop(immediate: true)
+                        dismiss()
+                    }
+                }
             }
         }
         .onDisappear {
@@ -113,11 +113,15 @@ private struct DocumentNodeView: View {
                 .environmentObject(mathSpeech)
                 .environmentObject(speech)
 
-        case .image(let src, let alt):
-            DocumentImageView(dataURI: src, alt: alt)
+        case .image(let src, let alt, let shortDesc):
+            DocumentImageView(dataURI: src, alt: alt, shortDesc: shortDesc)
 
-        case .svgNode(let svg, let t, let d):
-            DocumentSVGView(svg: svg, title: t, summaries: d)
+        case .svgNode(let svg, let t, let d, let shortDesc, let graphicData):
+            DocumentSVGView(svg: svg, title: t, summaries: d, shortDesc: shortDesc, graphicData: graphicData)
+                .environmentObject(haptics)
+
+        case .mapNode(let json, let t, let d):
+            DocumentMapView(json: json, title: t, summaries: d)
 
         case .unknown:
             EmptyView()
@@ -216,14 +220,27 @@ private struct DocumentMathCATView: View {
 private struct DocumentImageView: View {
     let dataURI: String
     let alt: String?
+    let shortDesc: String?
+    
+    private var accessibilityDescription: String {
+        // Use shortDesc if available, otherwise fall back to alt
+        if let shortDesc = shortDesc, !shortDesc.isEmpty {
+            return shortDesc
+        }
+        return alt ?? "Image"
+    }
     
     var body: some View {
         Group {
             if let img = decodeImage(dataURI: dataURI) {
                 Image(uiImage: img)
                     .resizable()
-                    .aspectRatio(img.size, contentMode: .fit)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.clear)
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
                 Rectangle()
@@ -233,7 +250,7 @@ private struct DocumentImageView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(alt ?? "Image")
+        .accessibilityLabel(accessibilityDescription)
         .accessibilityAddTraits(.isImage)
     }
     
@@ -251,12 +268,24 @@ private struct DocumentSVGView: View {
     let svg: String
     let title: String?
     let summaries: [String]?
+    let shortDesc: [String]?
+    let graphicData: [String: Any]?
+    
+    @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var speech: SpeechService
+    @State private var showMultisensoryView = false
+    @State private var svgElementID = UUID()
     
     private var accessibilityDescription: String {
+        // Use shortDesc if available, otherwise fall back to title + summaries
+        if let shortDesc = shortDesc, !shortDesc.isEmpty {
+            return shortDesc.joined(separator: ". ") + ". Double tap to explore with touch and haptics"
+        }
         var description = title ?? "Graphic"
         if let summaries = summaries, !summaries.isEmpty {
             description += ". " + summaries.joined(separator: ". ")
         }
+        description += ". Double tap to explore with touch and haptics"
         return description
     }
     
@@ -269,13 +298,73 @@ private struct DocumentSVGView: View {
                     .accessibilityHidden(true)
             }
 
-            SVGView(svg: svg)
+            if graphicData != nil {
+                ZStack {
+                    SVGView(svg: svg, graphicData: graphicData)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 200)
+                        .clipped()
+                        .allowsHitTesting(false)
+                    
+                    // Transparent overlay to capture double tap
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 200)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) {
+                            haptics.tapSelection()
+                            showMultisensoryView = true
+                        }
+                }
+            } else {
+                // Show alt text if graphicData is missing
+                VStack(spacing: 8) {
+                    Image(systemName: "photo")
+                        .font(.system(size: 40))
+                        .foregroundColor(.gray)
+                    Text(accessibilityDescription)
+                        .font(.custom("Arial", size: 14))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                }
                 .frame(maxWidth: .infinity)
                 .frame(height: 200)
+                .background(Color(hex: "#F5F5F5"))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
-        .accessibilityAddTraits(.isImage)
+        .accessibilityHint("Double tap to explore this graphic with touch and haptic feedback")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("svg-element-\(svgElementID)")
+        .fullScreenCover(isPresented: $showMultisensoryView, onDismiss: {
+            // FIXED: Return VoiceOver focus to content after dismissing
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                UIAccessibility.post(notification: .screenChanged, argument: nil)
+            }
+        }) {
+            if let graphicData = graphicData {
+                MultisensorySVGView(graphicData: graphicData, title: title)
+                    .environmentObject(haptics)
+                    .environmentObject(speech)
+                    .onAppear {
+                        #if DEBUG
+                        print("🔵 MultisensorySVGView appeared")
+                        if let lines = graphicData["lines"] as? [[String: Any]] {
+                            print("  Lines: \(lines.count)")
+                        }
+                        if let vertices = graphicData["vertices"] as? [[String: Any]] {
+                            print("  Vertices: \(vertices.count)")
+                        }
+                        #endif
+                    }
+            } else {
+                Text("Graphic data not available")
+                    .padding()
+            }
+        }
     }
 }
 

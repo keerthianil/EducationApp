@@ -70,7 +70,7 @@ class AccessibleSwipeBackView: UIView {
 
 class ThreeFingerSwipeHostingController: UIViewController, UIGestureRecognizerDelegate {
     var onSwipeBack: () -> Void
-    private var hostingController: UIViewController?
+    private var hostingController: UIHostingController<AnyView>?
     private var accessibleOverlay: AccessibleSwipeBackView?
     private let hapticGenerator = UIImpactFeedbackGenerator(style: .medium)
     
@@ -84,26 +84,26 @@ class ThreeFingerSwipeHostingController: UIViewController, UIGestureRecognizerDe
     }
     
     func setContent<Content: View>(_ content: Content) {
-        // Remove old hosting controller
-        if let old = hostingController {
-            old.willMove(toParent: nil)
-            old.view.removeFromSuperview()
-            old.removeFromParent()
-        }
+        let newRootView = AnyView(content)
         
-        // Add new hosting controller
-        let hc = UIHostingController(rootView: AnyView(content))
-        hc.view.backgroundColor = .clear
-        addChild(hc)
-        hc.view.frame = view.bounds
-        hc.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        view.addSubview(hc.view)
-        hc.didMove(toParent: self)
-        hostingController = hc
-        
-        // Make sure accessible overlay is on top
-        if let overlay = accessibleOverlay {
-            view.bringSubviewToFront(overlay)
+        if let hc = hostingController {
+            // Update rootView only — do NOT replace the hosting controller
+            // Replacing it on every SwiftUI update caused teardown/rebuild loop (document ↔ dashboard flicker)
+            hc.rootView = newRootView
+        } else {
+            // First time: add hosting controller
+            let hc = UIHostingController(rootView: newRootView)
+            hc.view.backgroundColor = .clear
+            addChild(hc)
+            hc.view.frame = view.bounds
+            hc.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            view.addSubview(hc.view)
+            hc.didMove(toParent: self)
+            hostingController = hc
+            
+            if let overlay = accessibleOverlay {
+                view.bringSubviewToFront(overlay)
+            }
         }
     }
     
@@ -130,19 +130,12 @@ class ThreeFingerSwipeHostingController: UIViewController, UIGestureRecognizerDe
     }
     
     private func setupGestures() {
-        // 3-finger swipe RIGHT for normal mode
+        // 3-finger swipe RIGHT only — no 2-finger backup to avoid conflict with Next/Prev taps and two-finger scroll
         let threeFingerSwipe = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeBack))
         threeFingerSwipe.direction = .right
         threeFingerSwipe.numberOfTouchesRequired = 3
         threeFingerSwipe.delegate = self
         view.addGestureRecognizer(threeFingerSwipe)
-        
-        // 2-finger swipe RIGHT as backup
-        let twoFingerSwipe = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeBack))
-        twoFingerSwipe.direction = .right
-        twoFingerSwipe.numberOfTouchesRequired = 2
-        twoFingerSwipe.delegate = self
-        view.addGestureRecognizer(twoFingerSwipe)
     }
     
     @objc private func handleSwipeBack(_ gesture: UISwipeGestureRecognizer) {
@@ -183,6 +176,12 @@ class ThreeFingerSwipeHostingController: UIViewController, UIGestureRecognizerDe
     }
     
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        // Don't capture touches that start on buttons/controls — avoids accidental dismiss when tapping Next/Prev
+        var v: UIView? = touch.view
+        while let view = v {
+            if view is UIControl { return false }
+            v = view.superview
+        }
         return true
     }
 }

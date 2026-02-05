@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// One logical “block” in the worksheet UI.
+/// One logical "block" in the worksheet UI.
 /// - `index` is the 1-based position within its page.
 /// - `nodes` is the set of Node objects that belong to this block
 struct WorksheetItem: Identifiable, Hashable {
@@ -25,7 +25,7 @@ struct WorksheetItem: Identifiable, Hashable {
         self.searchableText = WorksheetItem.buildSearchText(from: nodes)
     }
 
-    // Manual Hashable so Node doesn’t need to be Hashable
+    // Manual Hashable so Node doesn't need to be Hashable
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
@@ -41,7 +41,7 @@ extension WorksheetItem {
 
     /// Build items from ONE flat node list.
     /// Heuristic: headings whose text contains "question" start a new item.
-    /// NOTE: This is used as a fallback when a document doesn’t have
+    /// NOTE: This is used as a fallback when a document doesn't have
     /// pre-split pages; we keep it as-is.
     static func makeItems(from nodes: [Node]) -> [WorksheetItem] {
         var items: [WorksheetItem] = []
@@ -110,14 +110,28 @@ private extension WorksheetItem {
                 }.joined(separator: " ")
                 pieces.append(s)
 
-            case .image(_, let alt):
-                if let alt = alt { pieces.append(alt) }
+            case .image(_, let alt, let shortDesc):
+                // Use shortDesc if available, otherwise alt
+                if let shortDesc = shortDesc {
+                    pieces.append(shortDesc)
+                } else if let alt = alt {
+                    pieces.append(alt)
+                }
 
-            case .svgNode(_, let t, let desc):
+            case .svgNode(_, let t, let summaries, let shortDesc, _):
                 if let t = t { pieces.append(t) }
-                if let first = desc?.first { pieces.append(first) }
+                // Use shortDesc if available, otherwise summaries
+                if let first = shortDesc?.first {
+                    pieces.append(first)
+                } else if let first = summaries?.first {
+                    pieces.append(first)
+                }
 
-            default:
+            case .mapNode(_, let t, let summaries):
+                if let t = t { pieces.append(t) }
+                if let first = summaries?.first { pieces.append(first) }
+
+            case .unknown:
                 break
             }
         }
@@ -129,7 +143,7 @@ private extension WorksheetItem {
 
 struct WorksheetLoader {
 
-    /// Build worksheet pages from the lesson’s JSON files.
+    /// Build worksheet pages from the lesson's JSON files.
     ///
     /// - Each filename (JSON) is treated as **one page**.
     /// - Inside that page, we keep every Node (heading, paragraph, image, equation)
@@ -149,7 +163,7 @@ struct WorksheetLoader {
             let nodesForPage = lessonStore.loadNodes(forFilenames: [filename])
             guard !nodesForPage.isEmpty else { continue }
 
-            // Try to use the first NON “Question …” heading as the page title.
+            // Try to use the first NON "Question …" heading as the page title.
             var pageTitle: String? = nil
             for node in nodesForPage {
                 if case let .heading(_, text) = node {

@@ -24,6 +24,7 @@ struct DashboardFlow2View: View {
     @State private var previousCompletedCount = 0
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dismiss) private var dismiss
     
     enum Flow2Tab: CaseIterable {
         case home, allFiles
@@ -115,6 +116,9 @@ struct DashboardFlow2View: View {
         }
         .onChange(of: lessonStore.downloaded.count) { _, newCount in
             previousCompletedCount = newCount
+        }
+        .onThreeFingerSwipeBack {
+            dismiss()
         }
         .toolbar(.hidden, for: .navigationBar)
     }
@@ -624,6 +628,6 @@ private struct Flow2ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
+        // Gesture applied once inside WorksheetView/DocumentRendererView to avoid double wrapper and duplicate back button
     }
 }
