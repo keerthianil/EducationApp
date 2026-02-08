@@ -96,6 +96,13 @@ struct DashboardFlow2View: View {
             previousProcessingCount = lessonStore.processing.count
             previousCompletedCount = lessonStore.downloaded.count
             InteractionLogger.shared.setCurrentScreen("DashboardFlow2View")
+            
+            // --- CHANGED: Announce title for VoiceOver ---
+            if UIAccessibility.isVoiceOverRunning {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 2")
+                }
+            }
         }
         .fullScreenCover(item: $selectedLesson) { lesson in
             NavigationStack {
@@ -119,7 +126,6 @@ struct DashboardFlow2View: View {
         .onChange(of: lessonStore.downloaded.count) { _, newCount in
             previousCompletedCount = newCount
         }
-<<<<<<< HEAD
         .onChange(of: selectedTab) { oldTab, newTab in
             InteractionLogger.shared.log(
                 event: .tabChange,
@@ -128,10 +134,9 @@ struct DashboardFlow2View: View {
                 location: .zero,
                 additionalInfo: "Flow 2 tab changed"
             )
-=======
+        }
         .onThreeFingerSwipeBack {
             dismiss()
->>>>>>> feature/map-style-svg-rendering
         }
         .toolbar(.hidden, for: .navigationBar)
         .background(
@@ -145,7 +150,6 @@ struct DashboardFlow2View: View {
     // MARK: - Header (with back button)
     private var flow2Header: some View {
         HStack {
-            // Back to Flows button
             Button {
                 haptics.tapSelection()
                 InteractionLogger.shared.log(
@@ -166,23 +170,6 @@ struct DashboardFlow2View: View {
             
             Spacer()
             
-            // Hamburger menu - temporarily hidden for user testing
-            /*
-            Button {
-                haptics.tapSelection()
-            } label: {
-                VStack(spacing: 4) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Rectangle()
-                            .fill(Color(hex: "#121417"))
-                            .frame(width: 18, height: 2)
-                    }
-                }
-                .frame(width: 48, height: 48)
-            }
-            .accessibilityLabel("Menu")
-            */
-            
             Spacer()
                 .frame(width: 48)
         }
@@ -195,7 +182,7 @@ struct DashboardFlow2View: View {
         )
     }
     
-    // MARK: - Top Tabs (FIXED: Proper VoiceOver tab announcement)
+    // MARK: - Top Tabs
     private var flow2TopTabs: some View {
         let allTabs = Flow2Tab.allCases
         let tabCount = allTabs.count
@@ -226,7 +213,6 @@ struct DashboardFlow2View: View {
                 }
                 .frame(maxWidth: .infinity)
                 .background(isSelected ? Color.white : Color.clear)
-                // FIXED: Proper VoiceOver tab announcement format
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(tab.title)
                 .accessibilityValue(isSelected ? "selected" : "")
@@ -257,6 +243,7 @@ struct DashboardFlow2View: View {
                 .foregroundColor(Color(hex: "#4E5055"))
             
             VStack(spacing: 12) {
+                // --- CHANGED: Browse files disabled ---
                 Button("Browse files") {
                     haptics.tapSelection()
                     InteractionLogger.shared.logTap(
@@ -266,58 +253,11 @@ struct DashboardFlow2View: View {
                     showUpload = true
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                
-                // Scan files button - temporarily commented out for user testing
-                /*
-                Button("Scan files") {}
-                    .buttonStyle(TertiaryButtonStyle(isDisabled: true))
-                    .disabled(true)
-                    .accessibilityHidden(true)
-                */
+                .disabled(true)
+                .opacity(0.5)
+                .accessibilityLabel("Browse files")
+                .accessibilityHint("Currently disabled")
             }
-            
-            // "or upload from" text and cloud buttons - temporarily commented out for user testing
-            /*
-            Text("or upload from")
-                .font(.custom("Arial", size: 15.9))
-                .foregroundColor(Color(hex: "#989CA6"))
-                .accessibilityHidden(true)
-            
-            HStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    Image("GoogleDrive")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                    
-                    Text("Google Drive")
-                        .font(.custom("Arial", size: 16.7).weight(.bold))
-                        .foregroundColor(.black)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(hex: "#FEFEFE"))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#DADDE2"), lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                
-                HStack(spacing: 8) {
-                    Image("Dropbox")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                    
-                    Text("Dropbox")
-                        .font(.custom("Arial", size: 16.7).weight(.bold))
-                        .foregroundColor(.black)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(hex: "#FEFEFE"))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#DADDE2"), lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .accessibilityHidden(true)
-            */
         }
         .padding(.vertical, 32)
         .padding(.horizontal, 25)
@@ -687,13 +627,6 @@ private struct Flow2ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-<<<<<<< HEAD
-        .onAppear {
-            InteractionLogger.shared.setCurrentScreen("Flow2Reader: \(item.title)")
-        }
-        // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
-=======
-        // Gesture applied once inside WorksheetView/DocumentRendererView to avoid double wrapper and duplicate back button
->>>>>>> feature/map-style-svg-rendering
+        // NO document logging here
     }
 }

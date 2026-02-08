@@ -7,11 +7,6 @@
 
 import Foundation
 
-/// A strict "document" shape some converters output: { "content": [nodes...] }
-struct LessonDocument: Codable {
-    let content: [Node]
-}
-
 /// High-level blocks in the lesson – these are what the UI renders into
 /// separate items: headings, paragraphs, images, SVGs, maps, etc.
 enum Node: Codable, Identifiable {

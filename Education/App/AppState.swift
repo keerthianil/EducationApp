@@ -22,7 +22,6 @@ final class AppState: ObservableObject {
     
     @Published var route: Route = .about
     @Published var name: String = ""
-    @Published var age: AgeBucket? = nil
     @Published var selectedFlow: Int = 1
     
     // Persist onboarding completion

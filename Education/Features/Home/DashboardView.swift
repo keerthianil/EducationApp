@@ -28,10 +28,8 @@ struct DashboardView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dismiss) private var dismiss
 
-    // Removed accessibility tab for user testing
     enum HomeTab {
         case home, allFiles
-        // case accessibility - temporarily removed for user testing
     }
     
     enum SidebarItem: String, CaseIterable {
@@ -39,7 +37,6 @@ struct DashboardView: View {
         case uploads = "Uploads"
         case teacherFiles = "Teacher Files"
         case recent = "Recent"
-        // case accessibility = "Accessibility" - temporarily removed for user testing
         case allFiles = "All Files"
         case settings = "Settings"
         
@@ -49,7 +46,6 @@ struct DashboardView: View {
             case .uploads: return "icloud.and.arrow.up"
             case .teacherFiles: return "folder"
             case .recent: return "clock"
-            // case .accessibility: return "accessibility"
             case .allFiles: return "doc.on.doc"
             case .settings: return "gearshape"
             }
@@ -89,15 +85,6 @@ struct DashboardView: View {
             .onChange(of: lessonStore.downloaded.count) { oldCount, newCount in
                 previousCompletedCount = newCount
             }
-            .onChange(of: selectedTab) { oldTab, newTab in
-                InteractionLogger.shared.log(
-                    event: .tabChange,
-                    objectType: .tab,
-                    label: newTab == .home ? "Home" : "All Files",
-                    location: .zero,
-                    additionalInfo: "Tab changed from \(oldTab)"
-                )
-            }
     }
     
     // Second half of modifiers, separated from body
@@ -113,6 +100,13 @@ struct DashboardView: View {
                 previousProcessingCount = lessonStore.processing.count
                 previousCompletedCount = lessonStore.downloaded.count
                 InteractionLogger.shared.setCurrentScreen("DashboardView_Flow1")
+                
+                // --- CHANGED: Announce title for VoiceOver ---
+                if UIAccessibility.isVoiceOverRunning {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 1")
+                    }
+                }
             }
             .fullScreenCover(item: $selectedLesson) { lesson in
                 NavigationStack {
@@ -141,45 +135,9 @@ struct DashboardView: View {
                 iPhoneLayout
             }
         }
-<<<<<<< HEAD
-=======
-        .sheet(isPresented: $showUpload) {
-            UploadSheetView(uploadManager: uploadManager)
-                .environmentObject(lessonStore)
-                .environmentObject(haptics)
-        }
-        .onAppear {
-            uploadManager.lessonStore = lessonStore
-            previousProcessingCount = lessonStore.processing.count
-            previousCompletedCount = lessonStore.downloaded.count
-        }
-        .fullScreenCover(item: $selectedLesson) { lesson in
-            NavigationStack {
-                ReaderContainer(item: lesson)
-                    .environmentObject(lessonStore)
-                    .environmentObject(speech)
-                    .environmentObject(haptics)
-                    .environmentObject(mathSpeech)
-            }
-        }
-        .onChange(of: notificationDelegate.selectedLessonId) { oldLessonId, newLessonId in
-            if let lessonId = newLessonId,
-               let lesson = lessonStore.recent.first(where: { $0.id == lessonId }) {
-                selectedLesson = lesson
-                notificationDelegate.selectedLessonId = nil
-            }
-        }
-        .onChange(of: lessonStore.processing.count) { oldCount, newCount in
-            previousProcessingCount = newCount
-        }
-        .onChange(of: lessonStore.downloaded.count) { oldCount, newCount in
-            previousCompletedCount = newCount
-        }
         .onThreeFingerSwipeBack {
             dismiss()
         }
-        .toolbar(.hidden, for: .navigationBar)
->>>>>>> feature/map-style-svg-rendering
     }
     
     // MARK: - iPad Layout
@@ -261,7 +219,6 @@ struct DashboardView: View {
        
     private var iPadSidebarHeader: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Back to Flow Selection button
             Button {
                 haptics.tapSelection()
                 InteractionLogger.shared.log(
@@ -438,6 +395,7 @@ struct DashboardView: View {
                     .accessibilityHidden(true)
                 
                 HStack(spacing: 12) {
+                    // --- CHANGED: Browse Files disabled ---
                     Button("Browse Files") {
                         haptics.tapSelection()
                         InteractionLogger.shared.logTap(
@@ -447,89 +405,18 @@ struct DashboardView: View {
                         showUpload = true
                     }
                     .font(.custom("Arial", size: 14).weight(.bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.white.opacity(0.5))
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
-                    .background(ColorTokens.primary)
+                    .background(ColorTokens.primary.opacity(0.5))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    
-                    // Scan Files button - temporarily commented out for user testing
-                    /*
-                    Button("Scan Files") { }
-                        .font(.custom("Arial", size: 14).weight(.bold))
-                        .foregroundColor(Color(hex: "#121417"))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .disabled(true)
-                        .opacity(0.5)
-                        .accessibilityHidden(true)
-                    */
+                    .disabled(true)
+                    .accessibilityLabel("Browse files")
+                    .accessibilityHint("Currently disabled")
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 24)
-            
-            // "Or upload from" text and cloud buttons - temporarily commented out for user testing
-            /*
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Or upload from")
-                    .font(.custom("Arial", size: 16).weight(.medium))
-                    .foregroundColor(Color(hex: "#6F6F6F"))
-                    .accessibilityHidden(true)
-                
-                Button { } label: {
-                    HStack {
-                        Image("GoogleDrive")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                        Text("Drive")
-                            .font(.custom("Arial", size: 14))
-                            .foregroundColor(Color(hex: "#121417"))
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .accessibilityHidden(true)
-                
-                Button { } label: {
-                    HStack {
-                        Image("Dropbox")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                        Text("Dropbox")
-                            .font(.custom("Arial", size: 14))
-                            .foregroundColor(Color(hex: "#121417"))
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .accessibilityHidden(true)
-            }
-            .frame(width: 200)
-            .padding(.vertical, 24)
-            */
         }
         .padding(.horizontal, 24)
         .background(Color.white)
@@ -854,7 +741,6 @@ struct DashboardView: View {
     // MARK: - Header Section
     private func headerSection() -> some View {
         HStack {
-            // Back to Flows button
             Button {
                 haptics.tapSelection()
                 InteractionLogger.shared.log(
@@ -874,24 +760,6 @@ struct DashboardView: View {
             .accessibilityLabel("Back to flow selection")
             
             Spacer()
-            
-            // Three dot menu - temporarily hidden for user testing
-            /*
-            Button {
-                haptics.tapSelection()
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#47494F"))
-                    .rotationEffect(.degrees(90))
-                    .frame(width: 40, height: 40)
-                    .background(
-                        Circle()
-                            .fill(Color(hex: "#F5F5F5"))
-                    )
-            }
-            .accessibilityLabel("More options")
-            */
             
             Spacer()
                 .frame(width: 40)
@@ -937,14 +805,8 @@ struct DashboardView: View {
                 .fontWeight(.bold)
                 .foregroundColor(Color(hex: "#4E5055"))
 
-            // "Browse files or scan" text - temporarily commented out for user testing
-            /*
-            Text("Browse files or scan")
-                .font(.custom("Arial", size: 15.9))
-                .foregroundColor(Color(hex: "#989CA6"))
-            */
-
             VStack(spacing: 12) {
+                // --- CHANGED: Browse files disabled ---
                 Button("Browse files") {
                     haptics.tapSelection()
                     InteractionLogger.shared.logTap(
@@ -954,66 +816,11 @@ struct DashboardView: View {
                     showUpload = true
                 }
                 .buttonStyle(PrimaryButtonStyle())
-
-                // Scan files button - temporarily commented out for user testing
-                /*
-                Button("Scan files") { }
-                    .buttonStyle(TertiaryButtonStyle(isDisabled: true))
-                    .disabled(true)
-                    .accessibilityHidden(true)
-                */
+                .disabled(true)
+                .opacity(0.5)
+                .accessibilityLabel("Browse files")
+                .accessibilityHint("Currently disabled")
             }
-
-            // "or upload from" text and cloud buttons - temporarily commented out for user testing
-            /*
-            Text("or upload from")
-                .font(.custom("Arial", size: 15.9))
-                .foregroundColor(Color(hex: "#989CA6"))
-                .accessibilityHidden(true)
-
-            HStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    Image("GoogleDrive")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-
-                    Text("Google Drive")
-                        .font(.custom("Arial", size: 16.7))
-                        .fontWeight(.bold)
-                        .foregroundColor(.black)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(hex: "#FEFEFE"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                HStack(spacing: 8) {
-                    Image("Dropbox")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-
-                    Text("Dropbox")
-                        .font(.custom("Arial", size: 16.7))
-                        .fontWeight(.bold)
-                        .foregroundColor(.black)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(hex: "#FEFEFE"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#DADDE2"), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .accessibilityHidden(true)
-            */
         }
         .padding(.vertical, 32)
         .padding(.horizontal, 25)
@@ -1441,13 +1248,7 @@ private struct ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-<<<<<<< HEAD
-        .onAppear {
-            InteractionLogger.shared.setCurrentScreen("ReaderView: \(item.title)")
-        }
-=======
-        // Gesture applied once inside WorksheetView/DocumentRendererView to avoid double wrapper and duplicate back button
->>>>>>> feature/map-style-svg-rendering
+        // NO document logging here — WorksheetView/DocumentRendererView handle it
     }
 }
 

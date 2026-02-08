@@ -94,22 +94,19 @@ struct DashboardFlow3View: View {
                 
                 bottomTabBar
             }
-            
-            // Hamburger menu - temporarily disabled for user testing
-            /*
-            if showHamburgerMenu {
-                HamburgerMenuView(isShowing: $showHamburgerMenu)
-                    .environmentObject(haptics)
-                    .transition(.move(edge: .trailing))
-                    .zIndex(100)
-            }
-            */
         }
         .onAppear {
             uploadManager.lessonStore = lessonStore
             previousProcessingCount = lessonStore.processing.count
             previousCompletedCount = lessonStore.downloaded.count
             InteractionLogger.shared.setCurrentScreen("DashboardFlow3View")
+            
+            // --- CHANGED: Announce title for VoiceOver ---
+            if UIAccessibility.isVoiceOverRunning {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 3")
+                }
+            }
         }
         .sheet(isPresented: $showUpload) {
             UploadSheetView(uploadManager: uploadManager)
@@ -138,7 +135,6 @@ struct DashboardFlow3View: View {
         .onChange(of: lessonStore.downloaded.count) { _, newCount in
             previousCompletedCount = newCount
         }
-<<<<<<< HEAD
         .onChange(of: selectedTab) { oldTab, newTab in
             InteractionLogger.shared.log(
                 event: .tabChange,
@@ -156,10 +152,9 @@ struct DashboardFlow3View: View {
                 location: .zero,
                 additionalInfo: "Flow 3 bottom tab changed"
             )
-=======
+        }
         .onThreeFingerSwipeBack {
             dismiss()
->>>>>>> feature/map-style-svg-rendering
         }
         .toolbar(.hidden, for: .navigationBar)
         .background(
@@ -173,7 +168,6 @@ struct DashboardFlow3View: View {
     // MARK: - Top Bar (with back button)
     private var topBar: some View {
         HStack {
-            // Back to Flows button
             Button {
                 haptics.tapSelection()
                 InteractionLogger.shared.log(
@@ -194,26 +188,6 @@ struct DashboardFlow3View: View {
             
             Spacer()
             
-            // Hamburger menu - temporarily hidden for user testing
-            /*
-            Button {
-                haptics.tapSelection()
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showHamburgerMenu = true
-                }
-            } label: {
-                VStack(spacing: 4) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Rectangle()
-                            .fill(Color(hex: "#121417"))
-                            .frame(width: 18, height: 2)
-                    }
-                }
-                .frame(width: 48, height: 48)
-            }
-            .accessibilityLabel("Menu")
-            */
-            
             Spacer()
                 .frame(width: 48)
         }
@@ -230,7 +204,7 @@ struct DashboardFlow3View: View {
         .background(Color(hex: "#F7FAFC"))
     }
     
-    // MARK: - Tab Bar (VoiceOver: Label → Value → Traits → Hint)
+    // MARK: - Tab Bar
     private var tabBar: some View {
         let allTabs = Flow3Tab.allCases
         let tabCount = allTabs.count
@@ -262,8 +236,6 @@ struct DashboardFlow3View: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                // VoiceOver announces: Label → Value → Traits → Hint
-                // Result: "Upload, selected, button, Tab 1 of 2"
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(tab.rawValue)
                 .accessibilityValue(isSelected ? "selected" : "")
@@ -282,7 +254,7 @@ struct DashboardFlow3View: View {
         .accessibilityElement(children: .contain)
     }
     
-    // MARK: - Upload Tab Content (Changed "Drag and drop" to "Upload your files")
+    // MARK: - Upload Tab Content
     private var uploadTabContent: some View {
         VStack(spacing: 16) {
             Text("Upload from Device")
@@ -295,7 +267,6 @@ struct DashboardFlow3View: View {
             
             VStack(spacing: 10) {
                 VStack(spacing: 8) {
-                    // Changed from "Drag and drop files here" to "Upload your files"
                     Text("Upload your files")
                         .font(.custom("Arial", size: 18).weight(.bold))
                         .foregroundColor(Color(hex: "#0D141C"))
@@ -304,6 +275,7 @@ struct DashboardFlow3View: View {
                         .font(.custom("Arial", size: 14))
                         .foregroundColor(Color(hex: "#0D141C"))
                     
+                    // --- CHANGED: Browse Files disabled ---
                     Button("Browse Files") {
                         haptics.tapSelection()
                         InteractionLogger.shared.logTap(
@@ -313,11 +285,13 @@ struct DashboardFlow3View: View {
                         showUpload = true
                     }
                     .font(.custom("Arial", size: 14).weight(.bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.white.opacity(0.5))
                     .frame(width: 210, height: 48)
-                    .background(ColorTokens.primary)
+                    .background(ColorTokens.primary.opacity(0.5))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .disabled(true)
                     .accessibilityLabel("Browse Files")
+                    .accessibilityHint("Currently disabled")
                 }
                 .frame(maxWidth: 480)
                 .padding(.vertical, 56)
@@ -326,50 +300,6 @@ struct DashboardFlow3View: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color(hex: "#ACD7DF"), style: StrokeStyle(lineWidth: 2, dash: [5]))
                 )
-                
-                // "Upload from Cloud" text and cloud buttons - temporarily commented out for user testing
-                /*
-                Text("Upload from Cloud")
-                    .font(.custom("Arial", size: 16).weight(.medium))
-                    .foregroundColor(Color(hex: "#6F6F6F"))
-                    .padding(.top, 8)
-                    .accessibilityHidden(true)
-                
-                HStack(spacing: 12) {
-                    Button { } label: {
-                        HStack(spacing: 4) {
-                            Image("GoogleDrive")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 24, height: 24)
-                            
-                            Text("Google Drive")
-                                .font(.custom("Arial", size: 14).weight(.bold))
-                                .foregroundColor(Color(hex: "#0D141C"))
-                        }
-                        .frame(width: 149, height: 48)
-                        .background(Color(hex: "#E8EDF2"))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    
-                    Button { } label: {
-                        HStack(spacing: 4) {
-                            Image("Dropbox")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 24, height: 24)
-                            
-                            Text("Dropbox")
-                                .font(.custom("Arial", size: 14).weight(.bold))
-                                .foregroundColor(Color(hex: "#0D141C"))
-                        }
-                        .frame(width: 149, height: 48)
-                        .background(Color(hex: "#E8EDF2"))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                }
-                .accessibilityHidden(true)
-                */
             }
             .padding(16)
             
@@ -431,22 +361,10 @@ struct DashboardFlow3View: View {
         }
     }
     
-    // MARK: - Uploaded by Teacher Tab (UPDATED: Shows actual teacher files as cards)
+    // MARK: - Uploaded by Teacher Tab
     private var uploadedByTeacherTabContent: some View {
         VStack(spacing: 16) {
-            // Filter chips - temporarily commented out for user testing
-            /*
-            HStack(spacing: 12) {
-                filterChip(title: "Subject")
-                filterChip(title: "Date")
-                filterChip(title: "Teacher")
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            */
-            
             if teacherFiles.isEmpty {
-                // Empty state
                 VStack(spacing: 16) {
                     Image(systemName: "folder")
                         .font(.system(size: 48))
@@ -460,7 +378,6 @@ struct DashboardFlow3View: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 60)
             } else {
-                // Teacher file cards - similar to Flow 1/2
                 LazyVGrid(columns: [
                     GridItem(.flexible(), spacing: 12),
                     GridItem(.flexible(), spacing: 12)
@@ -482,26 +399,7 @@ struct DashboardFlow3View: View {
         }
     }
     
-    // Filter chip - temporarily commented out for user testing
-    /*
-    private func filterChip(title: String) -> some View {
-        HStack(spacing: 8) {
-            Text(title)
-                .font(.custom("Inter", size: 14).weight(.medium))
-                .foregroundColor(Color(hex: "#0D141C"))
-            
-            Image(systemName: "chevron.down")
-                .font(.system(size: 12))
-                .foregroundColor(Color(hex: "#0D141C"))
-        }
-        .frame(width: 114, height: 40)
-        .background(Color(hex: "#E8EDF2"))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .accessibilityLabel("\(title) filter")
-    }
-    */
-    
-    // MARK: - Bottom Tab Bar (VoiceOver: Label → Value → Traits → Hint)
+    // MARK: - Bottom Tab Bar
     private var bottomTabBar: some View {
         let allTabs = Flow3BottomTab.allCases
         let tabCount = allTabs.count
@@ -532,8 +430,6 @@ struct DashboardFlow3View: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                // VoiceOver announces: Label → Value → Traits → Hint
-                // Result: "Home, selected, button, Tab 1 of 2"
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(tab.title)
                 .accessibilityValue(isSelected ? "selected" : "")
@@ -554,7 +450,7 @@ struct DashboardFlow3View: View {
     }
 }
 
-// MARK: - Flow 3 Teacher File Card (NEW - replaces subject cards)
+// MARK: - Flow 3 Teacher File Card
 private struct Flow3TeacherFileCard: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -568,7 +464,6 @@ private struct Flow3TeacherFileCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 12) {
-                // File preview/thumbnail area
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(hex: "#DEECF8"))
@@ -587,7 +482,6 @@ private struct Flow3TeacherFileCard: View {
                 }
                 .accessibilityHidden(true)
                 
-                // File info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.title)
                         .font(.custom("Inter", size: 16).weight(.medium))
@@ -803,13 +697,6 @@ private struct Flow3ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-<<<<<<< HEAD
-        .onAppear {
-            InteractionLogger.shared.setCurrentScreen("Flow3Reader: \(item.title)")
-        }
-        // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
-=======
-        // Gesture applied once inside WorksheetView/DocumentRendererView to avoid double wrapper and duplicate back button
->>>>>>> feature/map-style-svg-rendering
+        // NO document logging here
     }
 }

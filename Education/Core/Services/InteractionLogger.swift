@@ -53,6 +53,10 @@ enum TouchEventType: String {
     case menuClose = "Menu Close"
     case documentOpen = "Document Open"
     case documentClose = "Document Close"
+    case sessionStart = "Session Start"
+    case sessionEnd = "Session End"
+    case screenDurationSummary = "Screen Duration"
+    case idleTime = "Idle Time"
 }
 
 enum ObjectType: String {
@@ -77,6 +81,8 @@ enum ObjectType: String {
     case dialog = "Dialog"
     case scrollView = "Scroll View"
     case webView = "Web View"
+    case document = "Document"
+    case session = "Session"
     case unknown = "Unknown"
 }
 
@@ -109,7 +115,6 @@ struct InteractionLogEntry: Codable {
     let additionalInfo: String      // Extra context
     
     var csvRow: String {
-        // Escape quotes in strings for CSV
         let escapedLabel = objectLabel.replacingOccurrences(of: "\"", with: "\"\"")
         let escapedInfo = additionalInfo.replacingOccurrences(of: "\"", with: "\"\"")
         return "\(timeStamp),\(trialTime),\(touchEvent),\(objectType),\"\(escapedLabel)\",\(touchX),\(touchY),\(condition),\(screenName),\(rotorFunction),\"\(escapedInfo)\""
@@ -133,6 +138,19 @@ final class InteractionLogger: ObservableObject {
     private var entries: [Int: [InteractionLogEntry]] = [1: [], 2: [], 3: []]
     private var currentRotorFunction: RotorFunction = .none
     private var currentScreenName: String = "Unknown"
+    
+    // Screen duration tracking
+    private var screenEntryTimes: [String: Date] = [:]
+    private var screenDurations: [Int: [String: TimeInterval]] = [1: [:], 2: [:], 3: [:]]
+    private var currentScreenEntryTime: Date?
+    
+    // Idle time tracking
+    private var lastInteractionTime: Date?
+    private let idleThreshold: TimeInterval = 5.0
+    
+    // Currently open document
+    private var currentDocumentTitle: String?
+    private var documentOpenTime: Date?
     
     private let dateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -158,14 +176,21 @@ final class InteractionLogger: ObservableObject {
                 self.sessionStartTime = Date()
                 self.isLogging = true
                 self.entryCount = self.entries[flow]?.count ?? 0
+                self.lastInteractionTime = Date()
+                self.currentScreenEntryTime = Date()
             }
             
+            let voStatus = UIAccessibility.isVoiceOverRunning ? "ON" : "OFF"
+            let deviceModel = UIDevice.current.model
+            let systemVersion = UIDevice.current.systemVersion
+            let screenSize = "\(Int(UIScreen.main.bounds.width))x\(Int(UIScreen.main.bounds.height))"
+            
             self.logInternal(
-                event: .screenTransition,
-                objectType: .background,
+                event: .sessionStart,
+                objectType: .session,
                 label: "Session Started",
                 location: .zero,
-                additionalInfo: "Flow \(flow) session began at \(Date())"
+                additionalInfo: "Flow \(flow) | VoiceOver: \(voStatus) | Device: \(deviceModel) | iOS \(systemVersion) | Screen: \(screenSize)"
             )
         }
         
@@ -175,12 +200,40 @@ final class InteractionLogger: ObservableObject {
     func endSession() {
         guard isLogging else { return }
         
+        recordCurrentScreenDuration()
+        
+        if let docTitle = currentDocumentTitle {
+            logDocumentClose(title: docTitle)
+        }
+        
+        if let durations = screenDurations[currentFlow] {
+            for (screen, duration) in durations.sorted(by: { $0.key < $1.key }) {
+                log(
+                    event: .screenDurationSummary,
+                    objectType: .session,
+                    label: screen,
+                    location: .zero,
+                    additionalInfo: "Total duration: \(String(format: "%.1f", duration))s"
+                )
+            }
+        }
+        
+        let totalDuration: String
+        if let start = sessionStartTime {
+            let seconds = Date().timeIntervalSince(start)
+            let mins = Int(seconds) / 60
+            let secs = Int(seconds) % 60
+            totalDuration = "\(mins)m \(secs)s"
+        } else {
+            totalDuration = "unknown"
+        }
+        
         log(
-            event: .screenTransition,
-            objectType: .background,
+            event: .sessionEnd,
+            objectType: .session,
             label: "Session Ended",
             location: .zero,
-            additionalInfo: "Flow \(currentFlow) session ended"
+            additionalInfo: "Flow \(currentFlow) | Total duration: \(totalDuration) | Entries: \(entryCount)"
         )
         
         isLogging = false
@@ -189,7 +242,13 @@ final class InteractionLogger: ObservableObject {
     
     func setCurrentScreen(_ screenName: String) {
         let previousScreen = currentScreenName
+        
+        if previousScreen != screenName {
+            recordCurrentScreenDuration()
+        }
+        
         currentScreenName = screenName
+        currentScreenEntryTime = Date()
         
         if previousScreen != screenName && isLogging {
             log(
@@ -201,6 +260,65 @@ final class InteractionLogger: ObservableObject {
             )
         }
     }
+    
+    private func recordCurrentScreenDuration() {
+        guard let entryTime = currentScreenEntryTime else { return }
+        let duration = Date().timeIntervalSince(entryTime)
+        let screen = currentScreenName
+        let flow = currentFlow
+        
+        if screenDurations[flow] == nil {
+            screenDurations[flow] = [:]
+        }
+        screenDurations[flow]?[screen, default: 0] += duration
+    }
+    
+    // MARK: - Document Open/Close
+    
+    func logDocumentClose(title: String) {
+            guard currentDocumentTitle != nil else { return }
+            
+            let duration: String
+            if let openTime = documentOpenTime {
+                let seconds = Date().timeIntervalSince(openTime)
+                duration = String(format: "%.1f", seconds) + "s"
+            } else {
+                duration = "unknown"
+            }
+            
+            log(
+                event: .documentClose,
+                objectType: .document,
+                label: title,
+                location: .zero,
+                additionalInfo: "Document closed | Duration: \(duration)"
+            )
+            
+            // Clear immediately so second call is no-op
+            currentDocumentTitle = nil
+            documentOpenTime = nil
+        }
+
+
+        func logDocumentOpen(title: String) {
+            // If same document already open, don't log again
+            if currentDocumentTitle == title { return }
+            
+            // If different document was open, close it first
+            if let prevTitle = currentDocumentTitle {
+                logDocumentClose(title: prevTitle)
+            }
+            
+            currentDocumentTitle = title
+            documentOpenTime = Date()
+            log(
+                event: .documentOpen,
+                objectType: .document,
+                label: title,
+                location: .zero,
+                additionalInfo: "Document opened"
+            )
+        }
     
     // MARK: - Logging Methods
     
@@ -239,6 +357,31 @@ final class InteractionLogger: ObservableObject {
         let trialTime = formatTrialTime(from: startTime, to: now)
         let rotor = rotorFunction ?? currentRotorFunction
         
+        // Check for idle time gap
+        if let lastTime = lastInteractionTime {
+            let gap = now.timeIntervalSince(lastTime)
+            if gap >= idleThreshold {
+                let idleEntry = InteractionLogEntry(
+                    timeStamp: timeStamp,
+                    trialTime: trialTime,
+                    touchEvent: TouchEventType.idleTime.rawValue,
+                    objectType: ObjectType.background.rawValue,
+                    objectLabel: "Idle",
+                    touchX: 0,
+                    touchY: 0,
+                    condition: "Flow \(currentFlow)",
+                    screenName: currentScreenName,
+                    rotorFunction: RotorFunction.none.rawValue,
+                    additionalInfo: "Idle for \(String(format: "%.1f", gap))s"
+                )
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.entries[self.currentFlow, default: []].append(idleEntry)
+                }
+            }
+        }
+        lastInteractionTime = now
+        
         let entry = InteractionLogEntry(
             timeStamp: timeStamp,
             trialTime: trialTime,
@@ -266,77 +409,24 @@ final class InteractionLogger: ObservableObject {
     
     // MARK: - Convenience Methods
     
-    func logTap(
-        objectType: ObjectType,
-        label: String,
-        location: CGPoint = .zero,
-        additionalInfo: String = ""
-    ) {
-        log(
-            event: .tap,
-            objectType: objectType,
-            label: label,
-            location: location,
-            additionalInfo: additionalInfo
-        )
+    func logTap(objectType: ObjectType, label: String, location: CGPoint = .zero, additionalInfo: String = "") {
+        log(event: .tap, objectType: objectType, label: label, location: location, additionalInfo: additionalInfo)
     }
     
-    func logDoubleTap(
-        objectType: ObjectType,
-        label: String,
-        location: CGPoint = .zero,
-        additionalInfo: String = ""
-    ) {
-        log(
-            event: .doubleTap,
-            objectType: objectType,
-            label: label,
-            location: location,
-            additionalInfo: additionalInfo
-        )
+    func logDoubleTap(objectType: ObjectType, label: String, location: CGPoint = .zero, additionalInfo: String = "") {
+        log(event: .doubleTap, objectType: objectType, label: label, location: location, additionalInfo: additionalInfo)
     }
     
-    func logVoiceOverFocus(
-        objectType: ObjectType,
-        label: String,
-        additionalInfo: String = ""
-    ) {
-        log(
-            event: .voFocus,
-            objectType: objectType,
-            label: label,
-            location: .zero,
-            additionalInfo: additionalInfo
-        )
+    func logVoiceOverFocus(objectType: ObjectType, label: String, additionalInfo: String = "") {
+        log(event: .voFocus, objectType: objectType, label: label, location: .zero, additionalInfo: additionalInfo)
     }
     
-    func logVoiceOverActivate(
-        objectType: ObjectType,
-        label: String,
-        additionalInfo: String = ""
-    ) {
-        log(
-            event: .voActivate,
-            objectType: objectType,
-            label: label,
-            location: .zero,
-            additionalInfo: additionalInfo
-        )
+    func logVoiceOverActivate(objectType: ObjectType, label: String, additionalInfo: String = "") {
+        log(event: .voActivate, objectType: objectType, label: label, location: .zero, additionalInfo: additionalInfo)
     }
     
-    func logSwipe(
-        direction: TouchEventType,
-        objectType: ObjectType = .background,
-        label: String = "",
-        additionalInfo: String = ""
-    ) {
-        log(
-            event: direction,
-            objectType: objectType,
-            label: label,
-            location: .zero,
-            additionalInfo: additionalInfo
-        )
+    func logSwipe(direction: TouchEventType, objectType: ObjectType = .background, label: String = "", additionalInfo: String = "") {
+        log(event: direction, objectType: objectType, label: label, location: .zero, additionalInfo: additionalInfo)
     }
     
     // MARK: - Rotor Tracking
@@ -355,7 +445,10 @@ final class InteractionLogger: ObservableObject {
         }
     }
     
+    // MARK: - Accessibility Observers
+    
     private func setupAccessibilityObservers() {
+        // VoiceOver on/off status change
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleVoiceOverStatusChanged),
@@ -363,10 +456,19 @@ final class InteractionLogger: ObservableObject {
             object: nil
         )
         
+        // VoiceOver announcement finished
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAnnouncementFinished),
             name: UIAccessibility.announcementDidFinishNotification,
+            object: nil
+        )
+        
+        // Real per-element VoiceOver focus tracking
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleElementFocused),
+            name: UIAccessibility.elementFocusedNotification,
             object: nil
         )
     }
@@ -394,6 +496,95 @@ final class InteractionLogger: ObservableObject {
             )
         }
     }
+    
+    // Real VoiceOver focus: fires each time VO cursor moves to an element
+    @objc private func handleElementFocused(_ notification: Notification) {
+            guard let userInfo = notification.userInfo,
+                  let focusedElement = userInfo[UIAccessibility.focusedElementUserInfoKey] else {
+                return
+            }
+            
+            var label = "Unknown"
+            var objectType: ObjectType = .unknown
+            
+            if let obj = focusedElement as? NSObject {
+                // 1. Direct accessibilityLabel (works for UIKit and some SwiftUI)
+                if let accessLabel = obj.accessibilityLabel, !accessLabel.isEmpty {
+                    label = accessLabel
+                }
+                // 2. Try accessibilityValue as fallback
+                else if let accessValue = obj.accessibilityValue, !accessValue.isEmpty {
+                    label = accessValue
+                }
+                // 3. Try accessibilityIdentifier on UIView
+                else if let view = obj as? UIView,
+                        let ident = view.accessibilityIdentifier, !ident.isEmpty {
+                    label = ident
+                }
+                // 4. For SwiftUI hosting views, walk up to find labeled parent
+                else if let view = obj as? UIView {
+                    label = findAccessibilityLabelInHierarchy(view) ?? "Unlabeled"
+                }
+                
+                // Get traits from the element
+                let traits = obj.accessibilityTraits
+                objectType = mapTraitsToObjectType(traits)
+            }
+            
+            let truncatedLabel = String(label.prefix(100))
+            
+            log(
+                event: .voFocus,
+                objectType: objectType,
+                label: truncatedLabel,
+                location: .zero,
+                additionalInfo: "VoiceOver focused"
+            )
+        }
+        
+        /// Walk up the view hierarchy to find the nearest accessibility label.
+        /// SwiftUI wraps views in private hosting views; the label is often
+        /// on a parent or sibling rather than the directly-focused view.
+        private func findAccessibilityLabelInHierarchy(_ view: UIView) -> String? {
+            // Check accessibility elements of the view first
+            if view.isAccessibilityElement, let lbl = view.accessibilityLabel, !lbl.isEmpty {
+                return lbl
+            }
+            
+            // Check immediate children
+            for subview in view.subviews {
+                if subview.isAccessibilityElement,
+                   let lbl = subview.accessibilityLabel, !lbl.isEmpty {
+                    return lbl
+                }
+            }
+            
+            // Walk up to parent (max 3 levels)
+            var parent = view.superview
+            var depth = 0
+            while let p = parent, depth < 3 {
+                if p.isAccessibilityElement, let lbl = p.accessibilityLabel, !lbl.isEmpty {
+                    return lbl
+                }
+                parent = p.superview
+                depth += 1
+            }
+            
+            return nil
+        }
+        
+    
+    // Map UIAccessibilityTraits → ObjectType
+    private func mapTraitsToObjectType(_ traits: UIAccessibilityTraits) -> ObjectType {
+            if traits.contains(.header)       { return .heading }
+            if traits.contains(.button)       { return .button }
+            if traits.contains(.image)        { return .image }
+            if traits.contains(.staticText)   { return .paragraph }
+            if traits.contains(.link)         { return .button }
+            if traits.contains(.searchField)  { return .textField }
+            if traits.contains(.adjustable)   { return .pageControl }
+            return .unknown
+        }
     
     // MARK: - Export to CSV
     
@@ -433,22 +624,29 @@ final class InteractionLogger: ObservableObject {
         return content
     }
     
+    // Short but meaningful: SA_F1_0208_1430.csv
     private func generateFileName(flow: Int) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-        let timestamp = dateFormatter.string(from: Date())
-        return "StemAlly_Flow\(flow)_\(timestamp).csv"
+        let df = DateFormatter()
+        df.dateFormat = "MMdd_HHmm"
+        let ts = df.string(from: sessionStartTime ?? Date())
+        return "SA_F\(flow)_\(ts).csv"
     }
     
     private func saveToFile(content: String, fileName: String) -> URL? {
-        guard let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return nil
-        }
+        guard let documentsDirectory = fileManager.urls(
+            for: .documentDirectory, in: .userDomainMask
+        ).first else { return nil }
         
-        let logsDirectory = documentsDirectory.appendingPathComponent("InteractionLogs", isDirectory: true)
+        let logsDirectory = documentsDirectory.appendingPathComponent(
+            "InteractionLogs", isDirectory: true
+        )
         
         do {
-            try fileManager.createDirectory(at: logsDirectory, withIntermediateDirectories: true, attributes: nil)
+            try fileManager.createDirectory(
+                at: logsDirectory,
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
         } catch {
             print("[InteractionLogger] Failed to create logs directory: \(error)")
             return nil
@@ -469,13 +667,13 @@ final class InteractionLogger: ObservableObject {
     
     func clearData(for flow: Int) {
         entries[flow] = []
-        if flow == currentFlow {
-            entryCount = 0
-        }
+        screenDurations[flow] = [:]
+        if flow == currentFlow { entryCount = 0 }
     }
     
     func clearAllData() {
         entries = [1: [], 2: [], 3: []]
+        screenDurations = [1: [:], 2: [:], 3: [:]]
         entryCount = 0
     }
     
@@ -508,9 +706,7 @@ extension View {
         location: CGPoint = .zero,
         additionalInfo: String = ""
     ) -> some View {
-        self.onAppear {
-            // Can be used for automatic logging on appear if needed
-        }
+        self.onAppear { }
     }
     
     func trackScreen(_ screenName: String) -> some View {
@@ -553,7 +749,10 @@ struct InteractionLoggingModifier: ViewModifier {
                         }
                     }
                     .onEnded { value in
-                        let distance = sqrt(pow(value.translation.width, 2) + pow(value.translation.height, 2))
+                        let distance = sqrt(
+                            pow(value.translation.width, 2) +
+                            pow(value.translation.height, 2)
+                        )
                         let duration = Date().timeIntervalSince(touchStartTime)
                         
                         InteractionLogger.shared.log(
@@ -578,7 +777,6 @@ struct InteractionLoggingModifier: ViewModifier {
                                 location: value.location
                             )
                         } else if distance >= 50 {
-                            // Determine swipe direction
                             let horizontal = abs(value.translation.width) > abs(value.translation.height)
                             let event: TouchEventType
                             if horizontal {

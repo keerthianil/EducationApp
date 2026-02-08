@@ -73,27 +73,27 @@ struct ChooseFlowView: View {
                 
                 Spacer()
                     .frame(height: 20)
-                
-                // Export Data Button
-                Button {
-                    showExportSheet = true
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 16))
-                        Text("Export Interaction Data")
-                            .font(.custom("Arial", size: 15))
-                    }
-                    .foregroundColor(ColorTokens.primary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(ColorTokens.primary, lineWidth: 1)
-                    )
-                }
-                .accessibilityLabel("Export interaction data")
-                .accessibilityHint("Export CSV files for all flows")
+            
+                // Export Data Button - hidden from VoiceOver during sessions
+                               Button {
+                                   showExportSheet = true
+                               } label: {
+                                   HStack(spacing: 8) {
+                                       Image(systemName: "square.and.arrow.up")
+                                           .font(.system(size: 16))
+                                       Text("Export Interaction Data")
+                                           .font(.custom("Arial", size: 15))
+                                   }
+                                   .foregroundColor(ColorTokens.primary)
+                                   .padding(.horizontal, 20)
+                                   .padding(.vertical, 12)
+                                   .background(
+                                       RoundedRectangle(cornerRadius: 8)
+                                           .stroke(ColorTokens.primary, lineWidth: 1)
+                                   )
+                               }
+                               // Skip during VoiceOver interaction ---
+                               .accessibilityHidden(UIAccessibility.isVoiceOverRunning)
                 
                 // Entry counts
                 VStack(spacing: 4) {
@@ -214,7 +214,6 @@ private struct FlowSelectionButton: View {
 }
 
 // MARK: - Export Data Sheet
-
 private struct ExportDataSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var exportedURLs: [URL] = []

@@ -4,6 +4,12 @@
 //
 //  Created for blind and low-vision users to explore graphics through touch and haptics
 //
+//  Touch feedback:
+//  - Lines/edges: continuous vibration while tracing
+//  - Vertices/corners: pulsing haptic + looping ding sound (loops while touching)
+//  - Labels: red square touch targets positioned OUTSIDE figure, pulsing haptic + speech
+//  - Three-finger swipe to go back
+//
 
 import SwiftUI
 import UIKit
@@ -12,11 +18,6 @@ import AudioToolbox
 import CoreHaptics
 
 /// Multisensory view: figure only. User touches and feels the shape.
-/// - VoiceOver on enter: "You are in the multisensory view. You can touch and feel the figure."
-/// - Lines: continuous haptics while tracing; dimension announced with pause (only if label exists)
-/// - Vertices: ding sound when touched
-/// - Line width: 4 mm
-/// - Three-finger swipe to go back
 struct MultisensorySVGView: View {
     let graphicData: [String: Any]
     let title: String?
@@ -30,18 +31,17 @@ struct MultisensorySVGView: View {
             MultisensorySVGViewRepresentable(graphicData: graphicData, haptics: haptics, speech: speech, onDismiss: { dismiss() })
                 .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)  // Fill fullScreenCover so geometry is full screen
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
-            .accessibilityAction(.escape) {
-                dismiss()
+        .accessibilityAction(.escape) {
+            dismiss()
+        }
+        .onAppear {
+            let message = "You are in the multisensory view. You can touch and feel the figure."
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                UIAccessibility.post(notification: .announcement, argument: message)
             }
-            .onAppear {
-                // Delay so VoiceOver finishes the view's accessibility label first and announcements don't overlap
-                let message = "You are in the multisensory view. You can touch and feel the figure."
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
-                    UIAccessibility.post(notification: .announcement, argument: message)
-                }
-            }
+        }
     }
 }
 
@@ -73,20 +73,13 @@ struct MultisensorySVGViewRepresentable: UIViewRepresentable {
     }
 }
 
-// Line width: 4 mm using device-specific PPI for accurate physical measurement
+// Line width: 4 mm using device-specific PPI
 private var strokeWidth4mm: CGFloat {
     PhysicalDimensions.mmToPoints(4.0)
 }
 
-// MARK: - JSON validation (measurement / label mapping)
-//
-// Height line in svgContent: To show height as dashed in the SVG but still have tactile line detection,
-// add the height segment in graphicData.lines[] with id "line_height" and the measurement as label.
-// In svgContent you can draw the same segment with stroke-dasharray (e.g. stroke-dasharray="6,4") so it
-// appears dashed visually; the app uses only graphicData.lines[] for drawing and touch, so the dashed
-// style is purely visual if you also render from graphicData in the reader.
-//
-/// Logs warnings if measurement labels in labels[] don't map to lines with non-empty label, or if doc claims "base and height" but only one line has label.
+// MARK: - JSON validation
+
 func validateGraphicDataMeasurements(_ graphicData: [String: Any], figureSummary: String? = nil) {
     guard let labels = graphicData["labels"] as? [[String: Any]],
           let lineData = graphicData["lines"] as? [[String: Any]] else { return }
@@ -108,7 +101,7 @@ func validateGraphicDataMeasurements(_ graphicData: [String: Any], figureSummary
         let line = lineData[lineIndex]
         let lineLabel = line["label"] as? String
         if lineLabel == nil || lineLabel?.isEmpty == true {
-            print("⚠️ [graphicData] Measurement label \"\(text)\" has forLine=\"\(forLineId)\", but that line has no label. Touch-announce will not work. Add label to lines[] for \"\(forLineId)\".")
+            print("⚠️ [graphicData] Measurement label \"\(text)\" has forLine=\"\(forLineId)\", but that line has no label.")
         }
     }
     
@@ -118,16 +111,16 @@ func validateGraphicDataMeasurements(_ graphicData: [String: Any], figureSummary
             return !l.isEmpty
         }.count
         if labeledCount < 2 {
-            print("⚠️ [graphicData] Summary says base and height are labeled, but only \(labeledCount) line(s) have non-empty label. Add a line_height (and label) for height.")
+            print("⚠️ [graphicData] Summary says base and height are labeled, but only \(labeledCount) line(s) have non-empty label.")
         }
     }
 }
 
-/// A dot on a labeled line (at midpoint) that announces the dimension when touched; repeatable with cooldown.
-struct DimensionDot {
-    let point: CGPoint
-    let lineIndex: Int
-    let label: String
+/// Touch target for a label: a square area that pulses and speaks
+struct LabelTouchTarget {
+    let center: CGPoint
+    let text: String
+    let halfSize: CGFloat
 }
 
 // MARK: - Canvas View
@@ -140,43 +133,43 @@ class MultisensoryCanvasView: UIView {
     
     private var lines: [(start: CGPoint, end: CGPoint, label: String?)] = []
     private var vertices: [CGPoint] = []
-    private var dimensionDots: [DimensionDot] = []
+    private var labelTargets: [LabelTouchTarget] = []
     private var viewBox: (x: Double, y: Double, width: Double, height: Double) = (0, 0, 448, 380)
-    /// Tight bounding box of actual content (lines + vertices + labels); used for scaling so figure fills screen
     private var contentBox: (minX: Double, minY: Double, width: Double, height: Double) = (0, 0, 1, 1)
     
+    // Active touch state
     private var activeLineIndex: Int? = nil
-    private var lastAnnouncedLineIndex: Int? = nil
-    private var continuousHapticTimer: Timer?
-    private var dimensionAnnounceTimer: Timer?
+    private var activeVertexIndex: Int? = nil
+    private var activeLabelIndex: Int? = nil
     
-    // Core Haptics for VoiceOver compatibility
+    // Haptic timers
+    private var continuousHapticTimer: Timer?
+    private var vertexDingTimer: Timer?
+    private var vertexPulseTimer: Timer?
+    private var labelPulseTimer: Timer?
+    
+    // Core Haptics
     private var hapticEngine: CHHapticEngine?
     private var continuousPlayer: CHHapticAdvancedPatternPlayer?
     
-    // Track if we already played ding for current vertex touch
-    private var lastVertexIndex: Int? = nil
+    // Announcement dedup
+    private var lastAnnouncedLabelIndex: Int? = nil
     
-    /// When user is touching a dimension dot, we suppress the delayed line announcement to avoid double-speak.
-    private var activeDimensionDotIndex: Int? = nil
-    
-    /// When true, draw a thin red outline around dot hit areas for debugging.
-    private let debugDrawDotOutlines = false
-    
-    /// Dot radii (used for drawing and hit testing). Min 10pt so visibly large.
+    // Sizing
     private var vertexDotRadius: CGFloat { max(PhysicalDimensions.mmToPoints(6.0) / 2, 10) }
-    private var dimensionDotRadius: CGFloat { max(PhysicalDimensions.mmToPoints(6.0) / 2, 10) }
+    private var labelSquareHalfSize: CGFloat { max(PhysicalDimensions.mmToPoints(6.0) / 2, 14) }
     
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .white
-        
-        // CRITICAL FOR VOICEOVER: Make this view allow direct touch interaction
         isAccessibilityElement = true
         accessibilityTraits = [.allowsDirectInteraction]
         accessibilityLabel = "Tactile figure. Explore by touch."
-        
         setupHapticEngine()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
     
     override func layoutSubviews() {
@@ -184,11 +177,7 @@ class MultisensoryCanvasView: UIView {
         setNeedsDisplay()
     }
     
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    // MARK: - Core Haptics Setup (Works with VoiceOver)
+    // MARK: - Core Haptics Setup
     
     private func setupHapticEngine() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
@@ -198,23 +187,11 @@ class MultisensoryCanvasView: UIView {
             hapticEngine?.isAutoShutdownEnabled = false
             hapticEngine?.playsHapticsOnly = true
             
-            // Handle engine reset
             hapticEngine?.resetHandler = { [weak self] in
-                do {
-                    try self?.hapticEngine?.start()
-                } catch {
-                    print("Failed to restart haptic engine: \(error)")
-                }
+                do { try self?.hapticEngine?.start() } catch { }
             }
-            
-            // Handle engine stop
-            hapticEngine?.stoppedHandler = { [weak self] reason in
-                print("Haptic engine stopped: \(reason.rawValue)")
-                do {
-                    try self?.hapticEngine?.start()
-                } catch {
-                    print("Failed to restart haptic engine: \(error)")
-                }
+            hapticEngine?.stoppedHandler = { [weak self] _ in
+                do { try self?.hapticEngine?.start() } catch { }
             }
             
             try hapticEngine?.start()
@@ -225,18 +202,15 @@ class MultisensoryCanvasView: UIView {
     
     private func ensureHapticEngineRunning() {
         guard let engine = hapticEngine else { return }
-        do {
-            try engine.start()
-        } catch {
-            print("Failed to start haptic engine: \(error)")
-        }
+        do { try engine.start() } catch { }
     }
+    
+    // MARK: - Gestures
     
     func setupGestures() {
         isMultipleTouchEnabled = true
         isUserInteractionEnabled = true
         
-        // Three-finger swipe to go back
         let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleThreeFingerSwipe(_:)))
         swipeRight.direction = .right
         swipeRight.numberOfTouchesRequired = 3
@@ -255,22 +229,17 @@ class MultisensoryCanvasView: UIView {
         }
     }
     
-    // MARK: - Direct Touch Handling (Works with VoiceOver due to allowsDirectInteraction)
+    // MARK: - Touch Handling
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        let point = touch.location(in: self)
-        
-        // Ensure haptic engine is running
         ensureHapticEngineRunning()
-        
-        handleTouchAt(point)
+        handleTouchAt(touch.location(in: self))
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        let point = touch.location(in: self)
-        handleTouchAt(point)
+        handleTouchAt(touch.location(in: self))
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -281,15 +250,276 @@ class MultisensoryCanvasView: UIView {
         stopAllFeedback()
     }
     
+    private func handleTouchAt(_ point: CGPoint) {
+        // Priority 1: Vertex (corner/intersection) — pulsing + looping ding
+        if let vIdx = findVertexAt(point) {
+            if activeVertexIndex != vIdx {
+                stopLineFeedback()
+                stopLabelFeedback()
+                activeVertexIndex = vIdx
+                startVertexFeedback()
+            }
+            activeLineIndex = nil
+            activeLabelIndex = nil
+            return
+        } else if activeVertexIndex != nil {
+            stopVertexFeedback()
+            activeVertexIndex = nil
+        }
+        
+        // Priority 2: Label square — pulsing + speech
+        if let lIdx = findLabelAt(point) {
+            if activeLabelIndex != lIdx {
+                stopLineFeedback()
+                stopVertexFeedback()
+                activeLabelIndex = lIdx
+                startLabelFeedback(index: lIdx)
+            }
+            activeLineIndex = nil
+            activeVertexIndex = nil
+            return
+        } else if activeLabelIndex != nil {
+            stopLabelFeedback()
+            activeLabelIndex = nil
+            lastAnnouncedLabelIndex = nil
+        }
+        
+        // Priority 3: Line (edge) — continuous vibration
+        if let lineIdx = findLineAt(point) {
+            if activeLineIndex != lineIdx {
+                stopVertexFeedback()
+                stopLabelFeedback()
+                activeLineIndex = lineIdx
+                startLineContinuousHaptic()
+            }
+        } else {
+            if activeLineIndex != nil {
+                stopLineFeedback()
+                activeLineIndex = nil
+            }
+        }
+    }
+    
+    // MARK: - Element Detection
+    
+    private func findVertexAt(_ point: CGPoint) -> Int? {
+        let touchRadius = max(vertexDotRadius * 1.3, 20)
+        for (index, vertex) in vertices.enumerated() {
+            if hypot(point.x - vertex.x, point.y - vertex.y) < touchRadius {
+                return index
+            }
+        }
+        return nil
+    }
+    
+    private func findLabelAt(_ point: CGPoint) -> Int? {
+        for (index, target) in labelTargets.enumerated() {
+            let dx = abs(point.x - target.center.x)
+            let dy = abs(point.y - target.center.y)
+            if dx < target.halfSize + 10 && dy < target.halfSize + 10 {
+                return index
+            }
+        }
+        return nil
+    }
+    
+    private func findLineAt(_ point: CGPoint) -> Int? {
+        let touchRadius = max(strokeWidth4mm * 0.55, 10)
+        var closestIdx: Int? = nil
+        var closestDist: CGFloat = touchRadius
+        
+        for (index, line) in lines.enumerated() {
+            let d = distanceFromPoint(point, toLineFrom: line.start, to: line.end)
+            if d < closestDist {
+                closestDist = d
+                closestIdx = index
+            }
+        }
+        return closestIdx
+    }
+    
+    private func distanceFromPoint(_ point: CGPoint, toLineFrom start: CGPoint, to end: CGPoint) -> CGFloat {
+        let lineLength = hypot(end.x - start.x, end.y - start.y)
+        if lineLength == 0 { return hypot(point.x - start.x, point.y - start.y) }
+        let t = max(0, min(1, ((point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y)) / (lineLength * lineLength)))
+        let px = start.x + t * (end.x - start.x)
+        let py = start.y + t * (end.y - start.y)
+        return hypot(point.x - px, point.y - py)
+    }
+    
+    // MARK: - LINE Feedback (continuous vibration)
+    
+    private func startLineContinuousHaptic() {
+        ensureHapticEngineRunning()
+        guard let engine = hapticEngine else { startUIKitLineFallback(); return }
+        
+        do {
+            try continuousPlayer?.stop(atTime: CHHapticTimeImmediate)
+            continuousPlayer = nil
+            
+            let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7)
+            let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+            let event = CHHapticEvent(eventType: .hapticContinuous, parameters: [intensity, sharpness], relativeTime: 0, duration: 100)
+            let pattern = try CHHapticPattern(events: [event], parameters: [])
+            continuousPlayer = try engine.makeAdvancedPlayer(with: pattern)
+            try continuousPlayer?.start(atTime: CHHapticTimeImmediate)
+        } catch {
+            startUIKitLineFallback()
+        }
+    }
+    
+    private func startUIKitLineFallback() {
+        continuousHapticTimer?.invalidate()
+        continuousHapticTimer = Timer.scheduledTimer(withTimeInterval: 0.04, repeats: true) { [weak self] _ in
+            guard self?.activeLineIndex != nil else { return }
+            let gen = UIImpactFeedbackGenerator(style: .medium)
+            gen.prepare()
+            gen.impactOccurred(intensity: 0.6)
+        }
+        if let t = continuousHapticTimer { RunLoop.current.add(t, forMode: .common) }
+    }
+    
+    private func stopLineFeedback() {
+        if let p = continuousPlayer { do { try p.stop(atTime: CHHapticTimeImmediate) } catch { } }
+        continuousPlayer = nil
+        continuousHapticTimer?.invalidate()
+        continuousHapticTimer = nil
+    }
+    
+    // MARK: - VERTEX Feedback (pulsing haptic + looping ding)
+    
+    private func startVertexFeedback() {
+        // Start pulsing haptic
+        startVertexPulsingHaptic()
+        // Play ding immediately
+        playVertexDing()
+        // Start looping ding every 0.4s
+        vertexDingTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
+            guard self?.activeVertexIndex != nil else { return }
+            self?.playVertexDing()
+        }
+        if let t = vertexDingTimer { RunLoop.current.add(t, forMode: .common) }
+    }
+    
+    private func startVertexPulsingHaptic() {
+        ensureHapticEngineRunning()
+        guard let engine = hapticEngine else { startUIKitVertexPulseFallback(); return }
+        
+        do {
+            var events: [CHHapticEvent] = []
+            for i in 0..<250 {
+                let time = Double(i) * 0.15  // pulse every 150ms
+                let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0)
+                let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
+                events.append(CHHapticEvent(eventType: .hapticTransient, parameters: [intensity, sharpness], relativeTime: time))
+            }
+            let pattern = try CHHapticPattern(events: events, parameters: [])
+            let player = try engine.makeAdvancedPlayer(with: pattern)
+            try player.start(atTime: CHHapticTimeImmediate)
+            continuousPlayer = player
+        } catch {
+            startUIKitVertexPulseFallback()
+        }
+    }
+    
+    private func startUIKitVertexPulseFallback() {
+        vertexPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
+            guard self?.activeVertexIndex != nil else { return }
+            let gen = UIImpactFeedbackGenerator(style: .heavy)
+            gen.prepare()
+            gen.impactOccurred(intensity: 1.0)
+        }
+        if let t = vertexPulseTimer { RunLoop.current.add(t, forMode: .common) }
+    }
+    
+    private func stopVertexFeedback() {
+        if let p = continuousPlayer { do { try p.stop(atTime: CHHapticTimeImmediate) } catch { } }
+        continuousPlayer = nil
+        vertexPulseTimer?.invalidate()
+        vertexPulseTimer = nil
+        vertexDingTimer?.invalidate()
+        vertexDingTimer = nil
+    }
+    
+    private func playVertexDing() {
+        AudioServicesPlaySystemSound(1057)
+    }
+    
+    // MARK: - LABEL Feedback (pulsing haptic + speak)
+    
+    private func startLabelFeedback(index: Int) {
+        // Announce text
+        if lastAnnouncedLabelIndex != index {
+            lastAnnouncedLabelIndex = index
+            let text = labelTargets[index].text
+            UIAccessibility.post(notification: .announcement, argument: text)
+        }
+        // Pulsing haptic
+        startLabelPulsingHaptic()
+    }
+    
+    private func startLabelPulsingHaptic() {
+        ensureHapticEngineRunning()
+        guard let engine = hapticEngine else { startUIKitLabelPulseFallback(); return }
+        
+        do {
+            var events: [CHHapticEvent] = []
+            for i in 0..<200 {
+                let time = Double(i) * 0.2  // pulse every 200ms
+                let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.8)
+                let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
+                events.append(CHHapticEvent(eventType: .hapticTransient, parameters: [intensity, sharpness], relativeTime: time))
+            }
+            let pattern = try CHHapticPattern(events: events, parameters: [])
+            let player = try engine.makeAdvancedPlayer(with: pattern)
+            try player.start(atTime: CHHapticTimeImmediate)
+            continuousPlayer = player
+        } catch {
+            startUIKitLabelPulseFallback()
+        }
+    }
+    
+    private func startUIKitLabelPulseFallback() {
+        labelPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            guard self?.activeLabelIndex != nil else { return }
+            let gen = UIImpactFeedbackGenerator(style: .medium)
+            gen.prepare()
+            gen.impactOccurred(intensity: 0.8)
+        }
+        if let t = labelPulseTimer { RunLoop.current.add(t, forMode: .common) }
+    }
+    
+    private func stopLabelFeedback() {
+        if let p = continuousPlayer { do { try p.stop(atTime: CHHapticTimeImmediate) } catch { } }
+        continuousPlayer = nil
+        labelPulseTimer?.invalidate()
+        labelPulseTimer = nil
+    }
+    
+    // MARK: - Cleanup
+    
+    private func stopAllFeedback() {
+        stopLineFeedback()
+        stopVertexFeedback()
+        stopLabelFeedback()
+        activeLineIndex = nil
+        activeVertexIndex = nil
+        activeLabelIndex = nil
+        lastAnnouncedLabelIndex = nil
+    }
+    
+    deinit {
+        stopAllFeedback()
+        hapticEngine?.stop()
+    }
+    
     // MARK: - Drawing
     
     override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
-        
-        // Use the actual drawing rect (not bounds) to ensure accurate scaling
         parseAndCalculateElements(drawingRect: rect)
         
-        // Draw lines with 4mm stroke width
+        // 1. Draw lines (black, 4mm stroke)
         context.setStrokeColor(UIColor.black.cgColor)
         context.setLineCap(.round)
         context.setLineJoin(.round)
@@ -301,103 +531,87 @@ class MultisensoryCanvasView: UIView {
             context.strokePath()
         }
         
-        // Draw dots AFTER lines so they appear on top. Red, visibly large.
-        // Vertex dots (red)
+        // 2. Draw vertex dots (red circles)
         context.setFillColor(UIColor.systemRed.cgColor)
         for vertex in vertices {
             let r = vertexDotRadius
             context.fillEllipse(in: CGRect(x: vertex.x - r, y: vertex.y - r, width: r * 2, height: r * 2))
-            if debugDrawDotOutlines {
-                context.setStrokeColor(UIColor.systemRed.cgColor)
-                context.setLineWidth(1)
-                context.strokeEllipse(in: CGRect(x: vertex.x - r, y: vertex.y - r, width: r * 2, height: r * 2))
-            }
         }
         
-        // Dimension dots (red) on labeled sides
-        context.setFillColor(UIColor.systemRed.cgColor)
-        for dot in dimensionDots {
-            let r = dimensionDotRadius
-            context.fillEllipse(in: CGRect(x: dot.point.x - r, y: dot.point.y - r, width: r * 2, height: r * 2))
-            if debugDrawDotOutlines {
-                context.setStrokeColor(UIColor.systemRed.cgColor)
-                context.setLineWidth(1)
-                context.strokeEllipse(in: CGRect(x: dot.point.x - r, y: dot.point.y - r, width: r * 2, height: r * 2))
+        // 3. Draw label touch targets (RED squares on line) + text AWAY from line
+        for (index, target) in labelTargets.enumerated() {
+            let s = labelSquareHalfSize
+            let squareRect = CGRect(x: target.center.x - s, y: target.center.y - s, width: s * 2, height: s * 2)
+            
+            // Solid red square ON the line
+            context.setFillColor(UIColor.systemRed.cgColor)
+            context.fill(squareRect)
+            
+            // Find the line direction to compute perpendicular offset for text
+            let textOffset: CGFloat = 30
+            var textCenter = CGPoint(x: target.center.x, y: target.center.y + textOffset) // default: below
+            
+            // Find which line this label belongs to
+            if index < lines.count || true {
+                // Find the closest line to this label's center
+                var bestLine: (start: CGPoint, end: CGPoint, label: String?)? = nil
+                var bestDist: CGFloat = .greatestFiniteMagnitude
+                for line in lines {
+                    let mid = CGPoint(x: (line.start.x + line.end.x) / 2, y: (line.start.y + line.end.y) / 2)
+                    let d = hypot(mid.x - target.center.x, mid.y - target.center.y)
+                    if d < bestDist { bestDist = d; bestLine = line }
+                }
+                
+                if let line = bestLine {
+                    // Perpendicular to the line
+                    let dx = line.end.x - line.start.x
+                    let dy = line.end.y - line.start.y
+                    let len = hypot(dx, dy)
+                    if len > 0 {
+                        // Normal direction (perpendicular)
+                        let nx = -dy / len
+                        let ny = dx / len
+                        
+                        // Pick direction away from figure center
+                        let figCenterX = vertices.isEmpty ? bounds.midX : vertices.reduce(0.0) { $0 + $1.x } / CGFloat(vertices.count)
+                        let figCenterY = vertices.isEmpty ? bounds.midY : vertices.reduce(0.0) { $0 + $1.y } / CGFloat(vertices.count)
+                        
+                        let c1 = CGPoint(x: target.center.x + nx * textOffset, y: target.center.y + ny * textOffset)
+                        let c2 = CGPoint(x: target.center.x - nx * textOffset, y: target.center.y - ny * textOffset)
+                        
+                        let d1 = hypot(c1.x - figCenterX, c1.y - figCenterY)
+                        let d2 = hypot(c2.x - figCenterX, c2.y - figCenterY)
+                        
+                        textCenter = d1 >= d2 ? c1 : c2
+                    }
+                }
             }
-        }
-        
-        // Draw dimension labels (use same rect as drawing)
-        drawLabels(context: context, drawingRect: rect)
-    }
-    
-    private func drawLabels(context: CGContext, drawingRect: CGRect) {
-        let padding: CGFloat = max(4, strokeWidth4mm / 2 + 2)
-        let availableWidth = max(drawingRect.width, 100)
-        let availableHeight = max(drawingRect.height, 100)
-        let drawableWidth = availableWidth - (padding * 2)
-        let drawableHeight = availableHeight - (padding * 2)
-        
-        guard contentBox.width > 0 && contentBox.height > 0, drawableWidth > 0, drawableHeight > 0 else { return }
-        
-        let scaleX = drawableWidth / contentBox.width
-        let scaleY = drawableHeight / contentBox.height
-        let scale = min(scaleX, scaleY)
-        
-        let scaledWidth = contentBox.width * scale
-        let scaledHeight = contentBox.height * scale
-        let offsetX = padding + (drawableWidth - scaledWidth) / 2
-        let offsetY = padding + (drawableHeight - scaledHeight) / 2
-        
-        if let labelData = graphicData["labels"] as? [[String: Any]] {
-            for label in labelData {
-                guard let x = Self._double(label["x"]), let y = Self._double(label["y"]),
-                      let text = label["text"] as? String else { continue }
-                
-                let fontSize = (label["fontSize"] as? Int) ?? 15
-                let scaledFontSize = max(CGFloat(fontSize) * scale, 12)
-                
-                var point = CGPoint(
-                    x: offsetX + CGFloat((x - contentBox.minX) * scale),
-                    y: offsetY + CGFloat((y - contentBox.minY) * scale)
-                )
-                
-                let attributes: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.boldSystemFont(ofSize: scaledFontSize),
-                    .foregroundColor: UIColor.black
-                ]
-                
-                // Calculate text size for centering and bounds checking
-                let textSize = (text as NSString).size(withAttributes: attributes)
-                
-                // Adjust position to keep text within bounds
-                let minX = padding
-                let maxX = drawingRect.width - padding - textSize.width
-                let minY = padding
-                let maxY = drawingRect.height - padding - textSize.height
-                
-                point.x = max(minX, min(maxX, point.x - textSize.width / 2))
-                point.y = max(minY, min(maxY, point.y - textSize.height / 2))
-                
-                // Draw white background for better readability
-                let bgRect = CGRect(
-                    x: point.x - 2,
-                    y: point.y - 1,
-                    width: textSize.width + 4,
-                    height: textSize.height + 2
-                )
-                context.setFillColor(UIColor.white.cgColor)
-                context.fill(bgRect)
-                
-                // Draw the text
-                let attributedString = NSAttributedString(string: text, attributes: attributes)
-                attributedString.draw(at: point)
-            }
+            
+            // Draw text at offset position
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: 15),
+                .foregroundColor: UIColor.black
+            ]
+            let textSize = (target.text as NSString).size(withAttributes: attributes)
+            
+            var textX = textCenter.x - textSize.width / 2
+            var textY = textCenter.y - textSize.height / 2
+            
+            // Clamp to screen bounds
+            textX = max(4, min(bounds.width - textSize.width - 4, textX))
+            textY = max(4, min(bounds.height - textSize.height - 4, textY))
+            
+            // White background
+            let bgRect = CGRect(x: textX - 3, y: textY - 2, width: textSize.width + 6, height: textSize.height + 4)
+            context.setFillColor(UIColor.white.cgColor)
+            context.fill(bgRect)
+            
+            (target.text as NSString).draw(at: CGPoint(x: textX, y: textY), withAttributes: attributes)
         }
     }
     
     // MARK: - Parsing
     
-    /// Extracts a numeric value as Double from JSON (NSNumber or Double).
     private static func _double(_ value: Any?) -> Double? {
         guard let v = value else { return nil }
         if let n = v as? NSNumber { return n.doubleValue }
@@ -405,8 +619,7 @@ class MultisensoryCanvasView: UIView {
         return nil
     }
     
-    /// Tight bounding box for scaling. Use includeLabels: false so only lines/vertices define bounds; labels do not affect scale (they are drawn separately within bounds).
-    private func computeContentBox(includeLabels: Bool = true) {
+    private func computeContentBox() {
         var xs: [Double] = []
         var ys: [Double] = []
         
@@ -414,25 +627,13 @@ class MultisensoryCanvasView: UIView {
             for line in lineData {
                 if let x1 = Self._double(line["x1"]), let y1 = Self._double(line["y1"]),
                    let x2 = Self._double(line["x2"]), let y2 = Self._double(line["y2"]) {
-                    xs.append(contentsOf: [x1, x2])
-                    ys.append(contentsOf: [y1, y2])
+                    xs.append(contentsOf: [x1, x2]); ys.append(contentsOf: [y1, y2])
                 }
             }
         }
         if let vertexData = graphicData["vertices"] as? [[String: Any]] {
-            for vertex in vertexData {
-                if let x = Self._double(vertex["x"]), let y = Self._double(vertex["y"]) {
-                    xs.append(x)
-                    ys.append(y)
-                }
-            }
-        }
-        if includeLabels, let labelData = graphicData["labels"] as? [[String: Any]] {
-            for label in labelData {
-                if let x = Self._double(label["x"]), let y = Self._double(label["y"]) {
-                    xs.append(x)
-                    ys.append(y)
-                }
+            for v in vertexData {
+                if let x = Self._double(v["x"]), let y = Self._double(v["y"]) { xs.append(x); ys.append(y) }
             }
         }
         
@@ -441,360 +642,114 @@ class MultisensoryCanvasView: UIView {
             return
         }
         
-        let minX = xs.min()!, maxX = xs.max()!
-        let minY = ys.min()!, maxY = ys.max()!
+        let minX = xs.min()!, maxX = xs.max()!, minY = ys.min()!, maxY = ys.max()!
         let w = maxX - minX, h = maxY - minY
-        let marginPct = 0.04
-        let margin = max(marginPct * max(w, h), 1)
-        
-        contentBox = (
-            minX - margin,
-            minY - margin,
-            (maxX - minX) + 2 * margin,
-            (maxY - minY) + 2 * margin
-        )
+        let margin = max(0.08 * max(w, h), 5)
+        contentBox = (minX - margin, minY - margin, w + 2 * margin, h + 2 * margin)
     }
     
     private func parseAndCalculateElements(drawingRect: CGRect? = nil) {
-        // Parse viewBox
         if let vb = graphicData["viewBox"] as? [String: Any],
            let x = Self._double(vb["x"]), let y = Self._double(vb["y"]),
            let width = Self._double(vb["width"]), let height = Self._double(vb["height"]) {
             viewBox = (x, y, width, height)
         }
-        computeContentBox(includeLabels: false)
+        computeContentBox()
         
         var availableRect = drawingRect ?? bounds
         let screenBounds = UIScreen.main.bounds
-        if availableRect.width < 200 || availableRect.height < 200 {
-            availableRect = screenBounds
+        if availableRect.width < 200 || availableRect.height < 200 { availableRect = screenBounds }
+        
+        let pad: CGFloat = max(4, strokeWidth4mm / 2 + 2)
+        let dw = max(availableRect.width, 100) - pad * 2
+        let dh = max(availableRect.height, 100) - pad * 2
+        guard contentBox.width > 0 && contentBox.height > 0, dw > 0, dh > 0 else { return }
+        
+        let scale = min(dw / contentBox.width, dh / contentBox.height)
+        let sw = contentBox.width * scale, sh = contentBox.height * scale
+        let ox = pad + (dw - sw) / 2, oy = pad + (dh - sh) / 2
+        
+        func mapPoint(_ x: Double, _ y: Double) -> CGPoint {
+            CGPoint(x: ox + CGFloat((x - contentBox.minX) * scale),
+                    y: oy + CGFloat((y - contentBox.minY) * scale))
         }
-        let availableWidth = max(availableRect.width, 100)
-        let availableHeight = max(availableRect.height, 100)
         
-        let effectivePadding: CGFloat = max(4, strokeWidth4mm / 2 + 2)
-        let drawableWidth = availableWidth - (effectivePadding * 2)
-        let drawableHeight = availableHeight - (effectivePadding * 2)
-        
-        guard contentBox.width > 0 && contentBox.height > 0, drawableWidth > 0, drawableHeight > 0 else { return }
-        
-        let scaleX = drawableWidth / contentBox.width
-        let scaleY = drawableHeight / contentBox.height
-        let scale = min(scaleX, scaleY)
-        
-        let scaledWidth = contentBox.width * scale
-        let scaledHeight = contentBox.height * scale
-        let offsetX = effectivePadding + (drawableWidth - scaledWidth) / 2
-        let offsetY = effectivePadding + (drawableHeight - scaledHeight) / 2
-        
+        // Parse lines
         lines.removeAll()
         if let lineData = graphicData["lines"] as? [[String: Any]] {
             for line in lineData {
                 guard let x1 = Self._double(line["x1"]), let y1 = Self._double(line["y1"]),
                       let x2 = Self._double(line["x2"]), let y2 = Self._double(line["y2"]) else { continue }
-                
-                let start = CGPoint(
-                    x: offsetX + CGFloat((x1 - contentBox.minX) * scale),
-                    y: offsetY + CGFloat((y1 - contentBox.minY) * scale)
-                )
-                let end = CGPoint(
-                    x: offsetX + CGFloat((x2 - contentBox.minX) * scale),
-                    y: offsetY + CGFloat((y2 - contentBox.minY) * scale)
-                )
                 let label = line["label"] as? String
-                lines.append((start: start, end: end, label: label))
+                lines.append((start: mapPoint(x1, y1), end: mapPoint(x2, y2), label: label))
             }
         }
         
+        // Parse vertices
         vertices.removeAll()
         if let vertexData = graphicData["vertices"] as? [[String: Any]] {
-            for vertex in vertexData {
-                guard let x = Self._double(vertex["x"]), let y = Self._double(vertex["y"]) else { continue }
+            for v in vertexData {
+                guard let x = Self._double(v["x"]), let y = Self._double(v["y"]) else { continue }
+                vertices.append(mapPoint(x, y))
+            }
+        }
+        
+        // Parse labels → red square ON the line at midpoint
+        labelTargets.removeAll()
+        
+        // From explicit graphicData["labels"]
+        if let labelData = graphicData["labels"] as? [[String: Any]] {
+            for label in labelData {
+                guard let text = label["text"] as? String, !text.isEmpty else { continue }
                 
-                let point = CGPoint(
-                    x: offsetX + CGFloat((x - contentBox.minX) * scale),
-                    y: offsetY + CGFloat((y - contentBox.minY) * scale)
-                )
-                vertices.append(point)
-            }
-        }
-        
-        dimensionDots.removeAll()
-        for (index, line) in lines.enumerated() {
-            guard let label = line.label, !label.isEmpty else { continue }
-            let t: CGFloat = 0.55
-            let px = line.start.x + (line.end.x - line.start.x) * t
-            let py = line.start.y + (line.end.y - line.start.y) * t
-            dimensionDots.append(DimensionDot(point: CGPoint(x: px, y: py), lineIndex: index, label: label))
-        }
-    }
-    
-    // MARK: - Touch Handling
-    
-    private func handleTouchAt(_ point: CGPoint) {
-        let onVertex = findVertexAt(point) != nil
-        if let dotIndex = findDimensionDotAt(point), !onVertex {
-            let justEnteredDot = activeDimensionDotIndex != dotIndex
-            if justEnteredDot {
-                cancelDimensionAnnouncement()
-                lastAnnouncedLineIndex = dimensionDots[dotIndex].lineIndex
-                UIAccessibility.post(notification: .announcement, argument: dimensionDots[dotIndex].label)
-            }
-            activeDimensionDotIndex = dotIndex
-        } else {
-            activeDimensionDotIndex = nil
-        }
-        
-        if let lineIndex = findLineAt(point) {
-            if activeLineIndex != lineIndex {
-                stopContinuousHaptic()
-                activeLineIndex = lineIndex
-                startContinuousHaptic()
-            }
-            if let vertexIndex = findVertexAt(point) {
-                if lastVertexIndex != vertexIndex {
-                    lastVertexIndex = vertexIndex
-                    playVertexDing()
+                var center: CGPoint? = nil
+                
+                // Find the line this label belongs to and place square at midpoint
+                if let forLineId = label["forLine"] as? String,
+                   let lineArr = graphicData["lines"] as? [[String: Any]],
+                   let matchLine = lineArr.first(where: { ($0["id"] as? String) == forLineId }) {
+                    if let lx1 = Self._double(matchLine["x1"]), let ly1 = Self._double(matchLine["y1"]),
+                       let lx2 = Self._double(matchLine["x2"]), let ly2 = Self._double(matchLine["y2"]) {
+                        let p1 = mapPoint(lx1, ly1), p2 = mapPoint(lx2, ly2)
+                        center = CGPoint(x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2)
+                    }
                 }
-            } else {
-                lastVertexIndex = nil
-            }
-        }
-        // 3) Vertex only (not on a line)
-        else if let vertexIndex = findVertexAt(point) {
-            if activeLineIndex != nil {
-                stopContinuousHaptic()
-                activeLineIndex = nil
-            }
-            if lastVertexIndex != vertexIndex {
-                lastVertexIndex = vertexIndex
-                playVertexDing()
-            }
-        }
-        // 4) Not on any element — stop feedback
-        else {
-            if activeLineIndex != nil {
-                stopContinuousHaptic()
-                activeLineIndex = nil
-            }
-            lastVertexIndex = nil
-            cancelDimensionAnnouncement()
-        }
-    }
-    
-    // MARK: - Element Detection
-    
-    private func findDimensionDotAt(_ point: CGPoint) -> Int? {
-        let touchRadius = max(dimensionDotRadius * 1.2, 18)
-        for (index, dot) in dimensionDots.enumerated() {
-            if hypot(point.x - dot.point.x, point.y - dot.point.y) < touchRadius {
-                return index
-            }
-        }
-        return nil
-    }
-    
-    private func findVertexAt(_ point: CGPoint) -> Int? {
-        let touchRadius = max(vertexDotRadius * 1.2, 18)
-        for (index, vertex) in vertices.enumerated() {
-            let distance = hypot(point.x - vertex.x, point.y - vertex.y)
-            if distance < touchRadius {
-                return index
-            }
-        }
-        return nil
-    }
-    
-    private func findLineAt(_ point: CGPoint) -> Int? {
-        let touchRadius = max(strokeWidth4mm * 0.55, 10)
-        
-        var closestLineIndex: Int? = nil
-        var closestDistance: CGFloat = touchRadius
-        
-        for (index, line) in lines.enumerated() {
-            let distance = distanceFromPoint(point, toLineFrom: line.start, to: line.end)
-            if distance < closestDistance {
-                closestDistance = distance
-                closestLineIndex = index
-            }
-        }
-        
-        return closestLineIndex
-    }
-    
-    private func distanceFromPoint(_ point: CGPoint, toLineFrom start: CGPoint, to end: CGPoint) -> CGFloat {
-        let lineLength = hypot(end.x - start.x, end.y - start.y)
-        if lineLength == 0 {
-            return hypot(point.x - start.x, point.y - start.y)
-        }
-        
-        let t = max(0, min(1, ((point.x - start.x) * (end.x - start.x) +
-                              (point.y - start.y) * (end.y - start.y)) /
-                              (lineLength * lineLength)))
-        
-        let projectionX = start.x + t * (end.x - start.x)
-        let projectionY = start.y + t * (end.y - start.y)
-        
-        return hypot(point.x - projectionX, point.y - projectionY)
-    }
-    
-    // MARK: - Core Haptics (Works with VoiceOver)
-    
-    private func startContinuousHaptic() {
-        // Always ensure engine is running first
-        ensureHapticEngineRunning()
-        
-        guard let engine = hapticEngine else {
-            startUIKitHaptic()
-            return
-        }
-        
-        do {
-            // Stop any existing player
-            try continuousPlayer?.stop(atTime: CHHapticTimeImmediate)
-            continuousPlayer = nil
-            
-            // Create continuous haptic pattern
-            let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7)
-            let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
-            
-            let event = CHHapticEvent(
-                eventType: .hapticContinuous,
-                parameters: [intensity, sharpness],
-                relativeTime: 0,
-                duration: 100
-            )
-            
-            let pattern = try CHHapticPattern(events: [event], parameters: [])
-            continuousPlayer = try engine.makeAdvancedPlayer(with: pattern)
-            try continuousPlayer?.start(atTime: CHHapticTimeImmediate)
-            
-        } catch {
-            print("Core Haptics error: \(error)")
-            startUIKitHaptic()
-        }
-    }
-    
-    private func stopContinuousHaptic() {
-        // Stop Core Haptics
-        if let player = continuousPlayer {
-            do {
-                try player.stop(atTime: CHHapticTimeImmediate)
-            } catch {
-                // Ignore errors when stopping
-            }
-            continuousPlayer = nil
-        }
-        
-        // Stop UIKit fallback
-        continuousHapticTimer?.invalidate()
-        continuousHapticTimer = nil
-    }
-    
-    // Fallback for devices without Core Haptics or when Core Haptics fails
-    private func startUIKitHaptic() {
-        stopContinuousHaptic()
-        
-        continuousHapticTimer = Timer.scheduledTimer(withTimeInterval: 0.04, repeats: true) { [weak self] _ in
-            guard let self = self, self.activeLineIndex != nil else { return }
-            let gen = UIImpactFeedbackGenerator(style: .medium)
-            gen.prepare()
-            gen.impactOccurred(intensity: 0.6)
-        }
-        
-        if let timer = continuousHapticTimer {
-            RunLoop.current.add(timer, forMode: .common)
-        }
-        
-        // Trigger first haptic immediately
-        let gen = UIImpactFeedbackGenerator(style: .medium)
-        gen.prepare()
-        gen.impactOccurred()
-    }
-    
-    // MARK: - Dimension Announcement (with pause)
-    
-    private func scheduleDimensionAnnouncement(lineIndex: Int) {
-        // Cancel any pending announcement
-        cancelDimensionAnnouncement()
-        
-        // Don't re-announce same line
-        guard lineIndex != lastAnnouncedLineIndex else { return }
-        
-        // Schedule announcement after 0.5 second pause
-        dimensionAnnounceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
-            self?.announceLineDimension(lineIndex: lineIndex)
-        }
-    }
-    
-    private func cancelDimensionAnnouncement() {
-        dimensionAnnounceTimer?.invalidate()
-        dimensionAnnounceTimer = nil
-    }
-    
-    private func announceLineDimension(lineIndex: Int) {
-        guard lineIndex < lines.count else { return }
-        let line = lines[lineIndex]
-        
-        // Only announce if there's a dimension label
-        if let label = line.label, !label.isEmpty {
-            lastAnnouncedLineIndex = lineIndex
-            UIAccessibility.post(notification: .announcement, argument: label)
-        }
-    }
-    
-    // MARK: - Vertex Ding Sound
-    
-    private func playVertexDing() {
-        // Play system ding sound
-        AudioServicesPlaySystemSound(1057)
-        
-        // Strong haptic pulse for vertex
-        ensureHapticEngineRunning()
-        
-        if let engine = hapticEngine {
-            do {
-                let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0)
-                let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
                 
-                let event = CHHapticEvent(
-                    eventType: .hapticTransient,
-                    parameters: [intensity, sharpness],
-                    relativeTime: 0
-                )
+                // Fall back to label's own coordinates
+                if center == nil, let lx = Self._double(label["x"]), let ly = Self._double(label["y"]) {
+                    center = mapPoint(lx, ly)
+                }
                 
-                let pattern = try CHHapticPattern(events: [event], parameters: [])
-                let player = try engine.makePlayer(with: pattern)
-                try player.start(atTime: CHHapticTimeImmediate)
-                
-            } catch {
-                // Fallback to UIKit
-                playUIKitVertexHaptic()
+                guard let c = center else { continue }
+                labelTargets.append(LabelTouchTarget(center: c, text: text, halfSize: labelSquareHalfSize))
             }
-        } else {
-            playUIKitVertexHaptic()
+        }
+        
+        // Also from labeled lines not already covered — square at midpoint
+        for line in lines {
+            guard let lineLabel = line.label, !lineLabel.isEmpty else { continue }
+            let alreadyHasTarget = labelTargets.contains { $0.text == lineLabel }
+            if !alreadyHasTarget {
+                let mid = CGPoint(x: (line.start.x + line.end.x) / 2, y: (line.start.y + line.end.y) / 2)
+                labelTargets.append(LabelTouchTarget(center: mid, text: lineLabel, halfSize: labelSquareHalfSize))
+            }
         }
     }
     
-    private func playUIKitVertexHaptic() {
-        let generator = UIImpactFeedbackGenerator(style: .heavy)
-        generator.prepare()
-        generator.impactOccurred(intensity: 1.0)
+    // MARK: - VoiceOver 3-finger swipe
+    
+    override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
+        if direction == .right || direction == .left {
+            stopAllFeedback()
+            onDismiss?()
+            return true
+        }
+        return false
     }
     
-    // MARK: - Cleanup
-    
-    private func stopAllFeedback() {
-        stopContinuousHaptic()
-        cancelDimensionAnnouncement()
-        activeLineIndex = nil
-        lastVertexIndex = nil
-        lastAnnouncedLineIndex = nil
-        activeDimensionDotIndex = nil
-    }
-    
-    deinit {
+    override func accessibilityPerformEscape() -> Bool {
         stopAllFeedback()
-        hapticEngine?.stop()
+        onDismiss?()
+        return true
     }
 }

@@ -22,11 +22,8 @@ struct WorksheetView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var currentPage: Int = 0
-<<<<<<< HEAD
     @State private var isNavigating: Bool = false
     @AccessibilityFocusState private var isBackButtonFocused: Bool
-=======
->>>>>>> feature/map-style-svg-rendering
     
     private var contentMaxWidth: CGFloat {
         horizontalSizeClass == .regular ? 800 : .infinity
@@ -94,7 +91,7 @@ struct WorksheetView: View {
                                 .accessibilityHidden(true)
                         }
 
-                        // FIX: .id(currentPage) forces SwiftUI to rebuild content on page change
+                        // .id(currentPage) forces SwiftUI to rebuild content on page change
                         VStack(alignment: .leading, spacing: Spacing.medium) {
                             ForEach(currentItems) { item in
                                 ForEach(Array(item.nodes.enumerated()), id: \.offset) { _, node in
@@ -107,7 +104,7 @@ struct WorksheetView: View {
                                 }
                             }
                         }
-                        .id(currentPage) // <-- KEY FIX: forces fresh render on page change
+                        .id(currentPage)
                         .padding(.horizontal, horizontalPadding)
 
                         if pages.count > 1 {
@@ -120,17 +117,24 @@ struct WorksheetView: View {
                 }
             }
         }
-<<<<<<< HEAD
         .onAppear {
-            InteractionLogger.shared.setCurrentScreen("WorksheetView: \(title)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                isBackButtonFocused = true
-            }
-=======
-        .onChange(of: currentPage) { _ in
-            announcePageChange()
->>>>>>> feature/map-style-svg-rendering
-        }
+                  InteractionLogger.shared.setCurrentScreen("WorksheetView: \(title)")
+                  InteractionLogger.shared.logDocumentOpen(title: title)
+                  
+                  // Announce title for VoiceOver
+                  if UIAccessibility.isVoiceOverRunning {
+                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                          UIAccessibility.post(
+                              notification: .announcement,
+                              argument: "\(title). Page \(safePageIndex + 1) of \(pages.count)"
+                          )
+                      }
+                  }
+                  
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                      isBackButtonFocused = true
+                  }
+              }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(title)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -150,12 +154,10 @@ struct WorksheetView: View {
                     }
                     .foregroundColor(.black)
                 }
-                // Back demoted so VoiceOver focuses main content first; back via three-finger swipe or later in order
                 .accessibilityLabel("Back")
                 .accessibilityHint("Return to dashboard")
                 .accessibilitySortPriority(-1)
                 .accessibilityScrollAction { edge in
-                    // When VoiceOver focus is on back button, three-finger swipe right triggers this
                     if edge == .trailing {
                         speech.stop(immediate: true)
                         dismiss()
@@ -164,8 +166,9 @@ struct WorksheetView: View {
             }
         }
         .onDisappear {
-            speech.stop(immediate: true)
-        }
+                   speech.stop(immediate: true)
+                   InteractionLogger.shared.logDocumentClose(title: title)
+               }
     }
     
     // MARK: - Navigation Buttons
@@ -220,61 +223,69 @@ struct WorksheetView: View {
     // MARK: - Page Navigation
 
     private func moveToNextPage(scrollProxy: ScrollViewProxy) {
-        guard !isNavigating, canGoNext else { return }
-        
-        isNavigating = true
-        haptics.pageChange()
-        
-        InteractionLogger.shared.log(
-            event: .pageChange,
-            objectType: .pageControl,
-            label: "Next Page",
-            location: .zero,
-            additionalInfo: "From page \(safePageIndex + 1) to \(safePageIndex + 2)"
-        )
-        
-        currentPage = safePageIndex + 1
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                scrollProxy.scrollTo("topAnchor", anchor: .top)
-            }
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            isNavigating = false
-            announcePageChange()
-        }
-    }
-
+           guard !isNavigating, canGoNext else { return }
+           
+           isNavigating = true
+           haptics.pageChange()
+           
+           InteractionLogger.shared.log(
+               event: .pageChange,
+               objectType: .pageControl,
+               label: "Next Page",
+               location: .zero,
+               additionalInfo: "From page \(safePageIndex + 1) to \(safePageIndex + 2)"
+           )
+           
+           currentPage = safePageIndex + 1
+           
+           DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+               withAnimation(.easeInOut(duration: 0.2)) {
+                   scrollProxy.scrollTo("topAnchor", anchor: .top)
+               }
+           }
+           
+           DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+               isNavigating = false
+               announcePageChange()
+               if UIAccessibility.isVoiceOverRunning {
+                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                       UIAccessibility.post(notification: .screenChanged, argument: nil)
+                   }
+               }
+           }
+       }
     private func moveToPreviousPage(scrollProxy: ScrollViewProxy) {
-        guard !isNavigating, canGoPrevious else { return }
-        
-        isNavigating = true
-        haptics.pageChange()
-        
-        InteractionLogger.shared.log(
-            event: .pageChange,
-            objectType: .pageControl,
-            label: "Previous Page",
-            location: .zero,
-            additionalInfo: "From page \(safePageIndex + 1) to \(safePageIndex)"
-        )
-        
-        currentPage = safePageIndex - 1
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                scrollProxy.scrollTo("topAnchor", anchor: .top)
-            }
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            isNavigating = false
-            announcePageChange()
-        }
-    }
-
+           guard !isNavigating, canGoPrevious else { return }
+           
+           isNavigating = true
+           haptics.pageChange()
+           
+           InteractionLogger.shared.log(
+               event: .pageChange,
+               objectType: .pageControl,
+               label: "Previous Page",
+               location: .zero,
+               additionalInfo: "From page \(safePageIndex + 1) to \(safePageIndex)"
+           )
+           
+           currentPage = safePageIndex - 1
+           
+           DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+               withAnimation(.easeInOut(duration: 0.2)) {
+                   scrollProxy.scrollTo("topAnchor", anchor: .top)
+               }
+           }
+           
+           DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+               isNavigating = false
+               announcePageChange()
+               if UIAccessibility.isVoiceOverRunning {
+                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                       UIAccessibility.post(notification: .screenChanged, argument: nil)
+                   }
+               }
+           }
+       }
     private func announcePageChange() {
         guard !pages.isEmpty else { return }
         haptics.sectionChange()
@@ -293,11 +304,9 @@ struct WorksheetView: View {
     
     private func shouldSkipHeading(_ node: Node) -> Bool {
         if case .heading(let level, let text) = node {
-            // Skip question headings (e.g., "Question 1", "Q.", "Q ")
             if isQuestionHeading(text) {
                 return true
             }
-            // Skip if H1 heading matches the navigation title (avoid duplication)
             if level == 1 && text.trimmingCharacters(in: .whitespaces).lowercased() == title.trimmingCharacters(in: .whitespaces).lowercased() {
                 return true
             }
@@ -358,12 +367,6 @@ private struct NodeBlockView: View {
                 .foregroundColor(Color(hex: "#121417"))
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityHeading(level == 1 ? .h1 : level == 2 ? .h2 : .h3)
-                .onAppear {
-                    InteractionLogger.shared.logVoiceOverFocus(
-                        objectType: .heading,
-                        label: text
-                    )
-                }
 
         case .paragraph(let items):
             ParagraphBlockView(items: items)
@@ -372,12 +375,12 @@ private struct NodeBlockView: View {
                 .environmentObject(speech)
 
         case .image(let src, let alt, let shortDesc):
-            // This case won't be reached due to the if-else in body
             ImageBlockView(dataURI: src, alt: alt, shortDesc: shortDesc)
 
         case .svgNode(let svg, let title, let summaries, let shortDesc, let graphicData):
             SVGBlockView(svg: svg, title: title, summaries: summaries, shortDesc: shortDesc, graphicData: graphicData)
                 .environmentObject(haptics)
+                .environmentObject(speech)
 
         case .mapNode(let json, let title, let summaries):
             DocumentMapView(json: json, title: title, summaries: summaries)
@@ -432,12 +435,7 @@ private struct ParagraphBlockView: View {
                 Text(combinedText)
                     .font(.custom("Arial", size: bodyFontSize))
                     .foregroundColor(Color(hex: "#121417"))
-                    .onAppear {
-                        InteractionLogger.shared.logVoiceOverFocus(
-                            objectType: .paragraph,
-                            label: String(combinedText.prefix(50))
-                        )
-                    }
+
             }
             
             ForEach(mathParts, id: \.0) { _, mathInline in
@@ -516,7 +514,6 @@ private struct ImageBlockView: View {
     let shortDesc: String?
     
     private var accessibilityDescription: String {
-        // Use short_desc if available, otherwise fall back to alt
         if let shortDesc = shortDesc, !shortDesc.isEmpty {
             return shortDesc
         }
@@ -545,12 +542,6 @@ private struct ImageBlockView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
         .accessibilityAddTraits(.isImage)
-        .onAppear {
-            InteractionLogger.shared.logVoiceOverFocus(
-                objectType: .image,
-                label: alt ?? "Image"
-            )
-        }
     }
     
     private func loadImage() -> UIImage? {
@@ -563,8 +554,7 @@ private struct ImageBlockView: View {
     }
 }
 
-// MARK: - SVG Block
-
+// MARK: - SVG Block (Feature branch: graphicData + MultisensorySVGView + InteractionLogger)
 private struct SVGBlockView: View {
     let svg: String
     let title: String?
@@ -582,16 +572,23 @@ private struct SVGBlockView: View {
     }
     
     private var accessibilityDescription: String {
-        // Use short_desc if available, otherwise fall back to title + summaries
         if let shortDesc = shortDesc, !shortDesc.isEmpty {
-            return shortDesc.joined(separator: ". ") + ". Double tap to explore with touch and haptics"
+            return shortDesc.joined(separator: ". ")
         }
         var description = title ?? "Graphic"
         if let summaries = summaries, !summaries.isEmpty {
             description += ". " + summaries.joined(separator: ". ")
         }
-        description += ". Double tap to explore with touch and haptics"
         return description
+    }
+    
+    private func openMultisensory() {
+        haptics.tapSelection()
+        InteractionLogger.shared.logTap(
+            objectType: .svg,
+            label: "Open Multisensory: \(title ?? "Graphic")"
+        )
+        showMultisensoryView = true
     }
     
     var body: some View {
@@ -603,30 +600,23 @@ private struct SVGBlockView: View {
                     .accessibilityHidden(true)
             }
 
-<<<<<<< HEAD
-            SVGView(svg: svg)
-=======
             if graphicData != nil {
-                ZStack {
+                // Button wrapping SVGView — same pattern as DocumentRendererView
+                Button(action: openMultisensory) {
                     SVGView(svg: svg, graphicData: graphicData)
                         .frame(maxWidth: .infinity)
                         .frame(height: svgHeight)
                         .clipped()
-                        .allowsHitTesting(false)
-                    
-                    // Transparent overlay to capture double tap
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: svgHeight)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) {
-                            haptics.tapSelection()
-                            showMultisensoryView = true
-                        }
+                }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .accessibilityLabel("\(accessibilityDescription)")
+                .accessibilityHint("Double tap to explore with touch and haptics")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction(named: Text("Open")) {
+                    openMultisensory()
                 }
             } else {
-                // Show alt text if graphicData is missing
                 VStack(spacing: 8) {
                     Image(systemName: "photo")
                         .font(.system(size: 40))
@@ -636,29 +626,14 @@ private struct SVGBlockView: View {
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
                 }
->>>>>>> feature/map-style-svg-rendering
                 .frame(maxWidth: .infinity)
                 .frame(height: svgHeight)
                 .background(Color(hex: "#F5F5F5"))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityDescription)
-<<<<<<< HEAD
-        .accessibilityAddTraits(.isImage)
-        .onAppear {
-            InteractionLogger.shared.logVoiceOverFocus(
-                objectType: .svg,
-                label: title ?? "Graphic"
-            )
-        }
-=======
-        .accessibilityHint("Double tap to explore this graphic with touch and haptic feedback")
-        .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("svg-element-\(svgElementID)")
         .fullScreenCover(isPresented: $showMultisensoryView, onDismiss: {
-            // FIXED: Return VoiceOver focus to this SVG element after dismissing
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 UIAccessibility.post(notification: .screenChanged, argument: nil)
             }
@@ -667,17 +642,6 @@ private struct SVGBlockView: View {
                 MultisensorySVGView(graphicData: graphicData, title: title)
                     .environmentObject(haptics)
                     .environmentObject(speech)
-                    .onAppear {
-                        #if DEBUG
-                        print("🔵 MultisensorySVGView appeared")
-                        if let lines = graphicData["lines"] as? [[String: Any]] {
-                            print("  Lines: \(lines.count)")
-                        }
-                        if let vertices = graphicData["vertices"] as? [[String: Any]] {
-                            print("  Vertices: \(vertices.count)")
-                        }
-                        #endif
-                    }
             } else {
                 Text("Graphic data not available")
                     .padding()
@@ -686,51 +650,3 @@ private struct SVGBlockView: View {
     }
 }
 
-// MARK: - SVG WebView
-
-private struct SVGWebView: UIViewRepresentable {
-    let svg: String
-
-    func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.isOpaque = false
-        webView.backgroundColor = .clear
-        webView.scrollView.isScrollEnabled = false
-        webView.scrollView.backgroundColor = .clear
-        
-        webView.isAccessibilityElement = false
-        webView.accessibilityElementsHidden = true
-        webView.scrollView.isAccessibilityElement = false
-        webView.scrollView.accessibilityElementsHidden = true
-        
-        return webView
-    }
-    
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        let html = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no"/>
-            <style>
-                * { -webkit-user-select: none; user-select: none; }
-                body { margin: 0; padding: 0; background: #fff; }
-                svg { max-width: 100%; height: auto; display: block; }
-                [tabindex], a, button, input, [role] { pointer-events: none; }
-            </style>
-        </head>
-        <body aria-hidden="true" role="presentation" tabindex="-1">
-            <div aria-hidden="true" role="presentation">\(svg)</div>
-        </body>
-        </html>
-        """
-        webView.loadHTMLString(html, baseURL: nil)
-        
-        webView.isAccessibilityElement = false
-        webView.accessibilityElementsHidden = true
-        webView.scrollView.isAccessibilityElement = false
-        webView.scrollView.accessibilityElementsHidden = true
->>>>>>> feature/map-style-svg-rendering
-    }
-}
