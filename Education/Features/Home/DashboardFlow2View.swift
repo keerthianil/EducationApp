@@ -17,6 +17,7 @@ struct DashboardFlow2View: View {
     @State private var showUpload = false
     @State private var selectedLesson: LessonIndexItem?
     @State private var selectedTab: Flow2Tab = .home
+    @State private var navigateToFlowSelection = false
     @StateObject private var notificationDelegate = NotificationDelegate.shared
     @StateObject private var uploadManager = UploadManager()
     
@@ -93,6 +94,7 @@ struct DashboardFlow2View: View {
             uploadManager.lessonStore = lessonStore
             previousProcessingCount = lessonStore.processing.count
             previousCompletedCount = lessonStore.downloaded.count
+            InteractionLogger.shared.setCurrentScreen("DashboardFlow2View")
         }
         .fullScreenCover(item: $selectedLesson) { lesson in
             NavigationStack {
@@ -116,12 +118,46 @@ struct DashboardFlow2View: View {
         .onChange(of: lessonStore.downloaded.count) { _, newCount in
             previousCompletedCount = newCount
         }
+        .onChange(of: selectedTab) { oldTab, newTab in
+            InteractionLogger.shared.log(
+                event: .tabChange,
+                objectType: .tab,
+                label: newTab.title,
+                location: .zero,
+                additionalInfo: "Flow 2 tab changed"
+            )
+        }
         .toolbar(.hidden, for: .navigationBar)
+        .background(
+            NavigationLink(destination: ChooseFlowView().navigationBarBackButtonHidden(true), isActive: $navigateToFlowSelection) {
+                EmptyView()
+            }
+            .hidden()
+        )
     }
     
-    // MARK: - Header
+    // MARK: - Header (with back button)
     private var flow2Header: some View {
         HStack {
+            // Back to Flows button
+            Button {
+                haptics.tapSelection()
+                InteractionLogger.shared.log(
+                    event: .tap,
+                    objectType: .button,
+                    label: "Back to Flows",
+                    location: .zero
+                )
+                InteractionLogger.shared.endSession()
+                navigateToFlowSelection = true
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(ColorTokens.primary)
+                    .frame(width: 48, height: 48)
+            }
+            .accessibilityLabel("Back to flow selection")
+            
             Spacer()
             
             // Hamburger menu - temporarily hidden for user testing
@@ -142,6 +178,7 @@ struct DashboardFlow2View: View {
             */
             
             Spacer()
+                .frame(width: 48)
         }
         .overlay(
             Text("StemAlly")
@@ -163,6 +200,10 @@ struct DashboardFlow2View: View {
                 
                 Button {
                     haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .tab,
+                        label: "Tab: \(tab.title)"
+                    )
                     selectedTab = tab
                 } label: {
                     VStack(spacing: 0) {
@@ -212,6 +253,10 @@ struct DashboardFlow2View: View {
             VStack(spacing: 12) {
                 Button("Browse files") {
                     haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .button,
+                        label: "Browse Files"
+                    )
                     showUpload = true
                 }
                 .buttonStyle(PrimaryButtonStyle())
@@ -309,6 +354,10 @@ struct DashboardFlow2View: View {
                         ForEach(teacherItems) { item in
                             Flow2TeacherCard(item: item) {
                                 haptics.tapSelection()
+                                InteractionLogger.shared.logTap(
+                                    objectType: .card,
+                                    label: "Teacher: \(item.title)"
+                                )
                                 selectedLesson = item
                             }
                         }
@@ -335,6 +384,10 @@ struct DashboardFlow2View: View {
                 ForEach(lessonStore.recent) { item in
                     Flow2RecentRow(item: item) {
                         haptics.tapSelection()
+                        InteractionLogger.shared.logTap(
+                            objectType: .listRow,
+                            label: "Recent: \(item.title)"
+                        )
                         selectedLesson = item
                     }
                 }
@@ -369,6 +422,10 @@ struct DashboardFlow2View: View {
                 ForEach(allFiles) { item in
                     Flow2FileRow(item: item) {
                         haptics.tapSelection()
+                        InteractionLogger.shared.logTap(
+                            objectType: .fileCard,
+                            label: "File: \(item.title)"
+                        )
                         selectedLesson = item
                     }
                 }
@@ -624,6 +681,9 @@ private struct Flow2ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            InteractionLogger.shared.setCurrentScreen("Flow2Reader: \(item.title)")
+        }
         // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
     }
 }

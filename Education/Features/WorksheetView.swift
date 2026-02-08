@@ -22,6 +22,7 @@ struct WorksheetView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var currentPage: Int = 0
+    @State private var isNavigating: Bool = false
     @AccessibilityFocusState private var isBackButtonFocused: Bool
     
     private var contentMaxWidth: CGFloat {
@@ -58,6 +59,13 @@ struct WorksheetView: View {
         worksheetContent
             .onThreeFingerSwipeBack {
                 speech.stop(immediate: true)
+                InteractionLogger.shared.log(
+                    event: .threeFingerSwipe,
+                    objectType: .background,
+                    label: "Three Finger Back",
+                    location: .zero,
+                    additionalInfo: "Dismissed WorksheetView"
+                )
                 dismiss()
             }
     }
@@ -83,6 +91,7 @@ struct WorksheetView: View {
                                 .accessibilityHidden(true)
                         }
 
+                        // FIX: .id(currentPage) forces SwiftUI to rebuild content on page change
                         VStack(alignment: .leading, spacing: Spacing.medium) {
                             ForEach(currentItems) { item in
                                 ForEach(Array(item.nodes.enumerated()), id: \.offset) { _, node in
@@ -95,100 +104,24 @@ struct WorksheetView: View {
                                 }
                             }
                         }
+                        .id(currentPage) // <-- KEY FIX: forces fresh render on page change
                         .padding(.horizontal, horizontalPadding)
 
                         if pages.count > 1 {
-                            HStack {
-                                if canGoPrevious {
-                                    Button {
-                                        moveToPreviousPage(scrollProxy: scrollProxy)
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "chevron.left")
-                                            Text("Prev")
-                                        }
-                                        .font(.custom("Arial", size: 14).weight(.semibold))
-                                        .foregroundColor(ColorTokens.primary)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(ColorTokens.primary, lineWidth: 1)
-                                        )
-                                    }
-                                    .accessibilityLabel("Previous page")
-                                    .accessibilityHint("Go to page \(safePageIndex)")
-                                } else {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "chevron.left")
-                                        Text("Prev")
-                                    }
-                                    .font(.custom("Arial", size: 14).weight(.semibold))
-                                    .foregroundColor(ColorTokens.primary.opacity(0.4))
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(ColorTokens.primary.opacity(0.4), lineWidth: 1)
-                                    )
-                                    .accessibilityHidden(true)
-                                }
-
-                                Spacer()
-
-                                if canGoNext {
-                                    Button {
-                                        moveToNextPage(scrollProxy: scrollProxy)
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Text("Next")
-                                            Image(systemName: "chevron.right")
-                                        }
-                                        .font(.custom("Arial", size: 14).weight(.semibold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 12)
-                                        .background(ColorTokens.primary)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    }
-                                    .accessibilityLabel("Next page")
-                                    .accessibilityHint("Go to page \(safePageIndex + 2)")
-                                } else {
-                                    HStack(spacing: 4) {
-                                        Text("Next")
-                                        Image(systemName: "chevron.right")
-                                    }
-                                    .font(.custom("Arial", size: 14).weight(.semibold))
-                                    .foregroundColor(.white.opacity(0.6))
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(ColorTokens.primary.opacity(0.4))
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .accessibilityHidden(true)
-                                }
-                            }
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.top, Spacing.large)
+                            navigationButtons(scrollProxy: scrollProxy)
                         }
                     }
                     .frame(maxWidth: contentMaxWidth)
                     .frame(maxWidth: .infinity)
                     .padding(.bottom, Spacing.xLarge)
                 }
-                .onChange(of: currentPage) { _ in
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        scrollProxy.scrollTo("topAnchor", anchor: .top)
-                    }
-                }
             }
         }
         .onAppear {
+            InteractionLogger.shared.setCurrentScreen("WorksheetView: \(title)")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isBackButtonFocused = true
             }
-        }
-        .onChange(of: currentPage) { _ in
-            announcePageChange()
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(title)
@@ -197,6 +130,10 @@ struct WorksheetView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     speech.stop(immediate: true)
+                    InteractionLogger.shared.logTap(
+                        objectType: .button,
+                        label: "Back Button"
+                    )
                     dismiss()
                 } label: {
                     HStack(spacing: 4) {
@@ -215,17 +152,112 @@ struct WorksheetView: View {
             speech.stop(immediate: true)
         }
     }
+    
+    // MARK: - Navigation Buttons
+    
+    @ViewBuilder
+    private func navigationButtons(scrollProxy: ScrollViewProxy) -> some View {
+        HStack {
+            Button {
+                moveToPreviousPage(scrollProxy: scrollProxy)
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                    Text("Prev")
+                }
+                .font(.custom("Arial", size: 14).weight(.semibold))
+                .foregroundColor(canGoPrevious ? ColorTokens.primary : ColorTokens.primary.opacity(0.4))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(canGoPrevious ? ColorTokens.primary : ColorTokens.primary.opacity(0.4), lineWidth: 1)
+                )
+            }
+            .disabled(!canGoPrevious || isNavigating)
+            .accessibilityLabel("Previous page")
+            .accessibilityHint(canGoPrevious ? "Go to page \(safePageIndex)" : "Already on first page")
+
+            Spacer()
+
+            Button {
+                moveToNextPage(scrollProxy: scrollProxy)
+            } label: {
+                HStack(spacing: 4) {
+                    Text("Next")
+                    Image(systemName: "chevron.right")
+                }
+                .font(.custom("Arial", size: 14).weight(.semibold))
+                .foregroundColor(canGoNext ? .white : .white.opacity(0.6))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(canGoNext ? ColorTokens.primary : ColorTokens.primary.opacity(0.4))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .disabled(!canGoNext || isNavigating)
+            .accessibilityLabel("Next page")
+            .accessibilityHint(canGoNext ? "Go to page \(safePageIndex + 2)" : "Already on last page")
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.top, Spacing.large)
+    }
+
+    // MARK: - Page Navigation
 
     private func moveToNextPage(scrollProxy: ScrollViewProxy) {
-        guard safePageIndex + 1 < pages.count else { return }
+        guard !isNavigating, canGoNext else { return }
+        
+        isNavigating = true
         haptics.pageChange()
+        
+        InteractionLogger.shared.log(
+            event: .pageChange,
+            objectType: .pageControl,
+            label: "Next Page",
+            location: .zero,
+            additionalInfo: "From page \(safePageIndex + 1) to \(safePageIndex + 2)"
+        )
+        
         currentPage = safePageIndex + 1
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                scrollProxy.scrollTo("topAnchor", anchor: .top)
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            isNavigating = false
+            announcePageChange()
+        }
     }
 
     private func moveToPreviousPage(scrollProxy: ScrollViewProxy) {
-        guard safePageIndex > 0 else { return }
+        guard !isNavigating, canGoPrevious else { return }
+        
+        isNavigating = true
         haptics.pageChange()
+        
+        InteractionLogger.shared.log(
+            event: .pageChange,
+            objectType: .pageControl,
+            label: "Previous Page",
+            location: .zero,
+            additionalInfo: "From page \(safePageIndex + 1) to \(safePageIndex)"
+        )
+        
         currentPage = safePageIndex - 1
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                scrollProxy.scrollTo("topAnchor", anchor: .top)
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            isNavigating = false
+            announcePageChange()
+        }
     }
 
     private func announcePageChange() {
@@ -233,7 +265,7 @@ struct WorksheetView: View {
         haptics.sectionChange()
         
         if UIAccessibility.isVoiceOverRunning {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 UIAccessibility.post(
                     notification: .announcement,
                     argument: "Page \(safePageIndex + 1) of \(pages.count)"
@@ -295,6 +327,12 @@ private struct NodeBlockView: View {
                 .foregroundColor(Color(hex: "#121417"))
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityHeading(level == 1 ? .h1 : level == 2 ? .h2 : .h3)
+                .onAppear {
+                    InteractionLogger.shared.logVoiceOverFocus(
+                        objectType: .heading,
+                        label: text
+                    )
+                }
 
         case .paragraph(let items):
             ParagraphBlockView(items: items)
@@ -358,6 +396,12 @@ private struct ParagraphBlockView: View {
                 Text(combinedText)
                     .font(.custom("Arial", size: bodyFontSize))
                     .foregroundColor(Color(hex: "#121417"))
+                    .onAppear {
+                        InteractionLogger.shared.logVoiceOverFocus(
+                            objectType: .paragraph,
+                            label: String(combinedText.prefix(50))
+                        )
+                    }
             }
             
             ForEach(mathParts, id: \.0) { _, mathInline in
@@ -401,9 +445,22 @@ private struct MathCATEquationView: View {
             displayType: display,
             onEnterMathMode: {
                 haptics.mathStart()
+                InteractionLogger.shared.log(
+                    event: .mathModeEnter,
+                    objectType: .mathEquation,
+                    label: "Math Mode Entered",
+                    location: .zero,
+                    additionalInfo: latex ?? "equation"
+                )
             },
             onExitMathMode: {
                 haptics.mathEnd()
+                InteractionLogger.shared.log(
+                    event: .mathModeExit,
+                    objectType: .mathEquation,
+                    label: "Math Mode Exited",
+                    location: .zero
+                )
             }
         )
         .frame(height: 60)
@@ -444,6 +501,12 @@ private struct ImageBlockView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(alt ?? "Image")
         .accessibilityAddTraits(.isImage)
+        .onAppear {
+            InteractionLogger.shared.logVoiceOverFocus(
+                objectType: .image,
+                label: alt ?? "Image"
+            )
+        }
     }
     
     private func decodeImage(dataURI: String) -> UIImage? {
@@ -483,60 +546,18 @@ private struct SVGBlockView: View {
                     .accessibilityHidden(true)
             }
 
-            SVGWebView(svg: svg)
+            SVGView(svg: svg)
                 .frame(maxWidth: .infinity)
                 .frame(height: svgHeight)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
         .accessibilityAddTraits(.isImage)
-    }
-}
-
-// MARK: - SVG WebView
-
-private struct SVGWebView: UIViewRepresentable {
-    let svg: String
-
-    func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.isOpaque = false
-        webView.backgroundColor = .clear
-        webView.scrollView.isScrollEnabled = false
-        webView.scrollView.backgroundColor = .clear
-        
-        webView.isAccessibilityElement = false
-        webView.accessibilityElementsHidden = true
-        webView.scrollView.isAccessibilityElement = false
-        webView.scrollView.accessibilityElementsHidden = true
-        
-        return webView
-    }
-    
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        let html = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no"/>
-            <style>
-                * { -webkit-user-select: none; user-select: none; }
-                body { margin: 0; padding: 0; background: #fff; }
-                svg { max-width: 100%; height: auto; display: block; }
-                [tabindex], a, button, input, [role] { pointer-events: none; }
-            </style>
-        </head>
-        <body aria-hidden="true" role="presentation" tabindex="-1">
-            <div aria-hidden="true" role="presentation">\(svg)</div>
-        </body>
-        </html>
-        """
-        webView.loadHTMLString(html, baseURL: nil)
-        
-        webView.isAccessibilityElement = false
-        webView.accessibilityElementsHidden = true
-        webView.scrollView.isAccessibilityElement = false
-        webView.scrollView.accessibilityElementsHidden = true
+        .onAppear {
+            InteractionLogger.shared.logVoiceOverFocus(
+                objectType: .svg,
+                label: title ?? "Graphic"
+            )
+        }
     }
 }

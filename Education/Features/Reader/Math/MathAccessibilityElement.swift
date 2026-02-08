@@ -58,30 +58,25 @@ enum MathNavigationLevel: String, CaseIterable {
 // MARK: - Math Mode State
 
 private enum MathModeState {
-    case inactive           // Not in math mode - double tap to enter
-    case exploringReady     // In math mode, instructions announced - double tap to read
-    case reading            // Currently reading equation
-    case navigating         // User is navigating with swipes
+    case inactive
+    case exploringReady
+    case reading
+    case navigating
 }
 
-// MARK: - MathCAT Accessibility Container (FIXED)
+// MARK: - MathCAT Accessibility Container
 
 class MathCATAccessibilityContainer: UIView {
     
-    // The full equation spoken text
     var fullEquationText: String = "equation" {
         didSet {
             parseEquationForNavigation()
         }
     }
     
-    // MathML for reference
     var mathML: String = ""
-    
-    // Kept for compatibility
     var mathParts: [MathPart] = []
     
-    // Callbacks
     var onEnterMathMode: (() -> Void)?
     var onExitMathMode: (() -> Void)?
     
@@ -90,14 +85,14 @@ class MathCATAccessibilityContainer: UIView {
     
     // MARK: - Navigation State
     private var currentLevel: MathNavigationLevel = .term
-    private var navigationParts: [[String]] = [[], [], [], []] // character, symbol, term, structure
+    private var navigationParts: [[String]] = [[], [], [], []]
     private var currentIndex: Int = 0
     
     // MARK: - Haptics
     private let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
     private let selectionGenerator = UISelectionFeedbackGenerator()
     
-    // MARK: - Announcement Queue (prevents overlap)
+    // MARK: - Announcement Queue
     private var isAnnouncing = false
     private var announcementQueue: [String] = []
     
@@ -118,7 +113,7 @@ class MathCATAccessibilityContainer: UIView {
         selectionGenerator.prepare()
     }
     
-    // MARK: - Accessibility Label (changes based on state)
+    // MARK: - Accessibility Label
     
     override var accessibilityLabel: String? {
         get {
@@ -166,27 +161,24 @@ class MathCATAccessibilityContainer: UIView {
         set { }
     }
     
-    // MARK: - Double Tap Action (State Machine)
+    // MARK: - Double Tap Action
     
     override func accessibilityActivate() -> Bool {
         switch state {
         case .inactive:
-            // Enter math mode - announce instructions ONLY
             enterMathMode()
             return true
             
         case .exploringReady, .navigating:
-            // Read the entire equation
             readFullEquation()
             return true
             
         case .reading:
-            // Already reading - do nothing or exit
             return true
         }
     }
     
-    // MARK: - Enter Math Mode (Instructions Only)
+    // MARK: - Enter Math Mode
     
     private func enterMathMode() {
         state = .exploringReady
@@ -196,20 +188,33 @@ class MathCATAccessibilityContainer: UIView {
         impactGenerator.impactOccurred(intensity: 1.0)
         onEnterMathMode?()
         
-        // Announce instructions ONLY - no equation yet
-        let instructions = "Math mode. Swipe up or down to change level. Swipe left or right to navigate. Double tap to read equation."
+        InteractionLogger.shared.log(
+            event: .mathModeEnter,
+            objectType: .mathEquation,
+            label: "Math Mode Entered",
+            location: .zero,
+            additionalInfo: "Instructions announced"
+        )
         
+        let instructions = "Math mode. Swipe up or down to change level. Swipe left or right to navigate. Double tap to read equation."
         queueAnnouncement(instructions)
     }
     
-    // MARK: - Read Full Equation (No Interruptions)
+    // MARK: - Read Full Equation
     
     private func readFullEquation() {
         state = .reading
         
         impactGenerator.impactOccurred(intensity: 0.8)
         
-        // Get clean equation text
+        InteractionLogger.shared.log(
+            event: .doubleTap,
+            objectType: .mathEquation,
+            label: "Read Full Equation",
+            location: .zero,
+            additionalInfo: "Reading equation aloud"
+        )
+        
         let equationText = prepareTextForReading(fullEquationText)
         
         if equationText.isEmpty {
@@ -218,13 +223,11 @@ class MathCATAccessibilityContainer: UIView {
             queueAnnouncement(equationText)
         }
         
-        // After reading completes, go to navigating state
         let readingDuration = Double(equationText.count) * 0.045 + 1.0
         DispatchQueue.main.asyncAfter(deadline: .now() + readingDuration) { [weak self] in
             guard let self = self else { return }
             if self.state == .reading {
                 self.state = .navigating
-                // Don't announce anything - let user navigate
             }
         }
     }
@@ -238,10 +241,18 @@ class MathCATAccessibilityContainer: UIView {
         impactGenerator.impactOccurred(intensity: 0.5)
         onExitMathMode?()
         
+        InteractionLogger.shared.log(
+            event: .mathModeExit,
+            objectType: .mathEquation,
+            label: "Math Mode Exited",
+            location: .zero,
+            additionalInfo: "Returned to normal navigation"
+        )
+        
         queueAnnouncement("Exited math mode")
     }
     
-    // MARK: - Announcement Queue (Prevents Overlap)
+    // MARK: - Announcement Queue
     
     private func queueAnnouncement(_ text: String) {
         announcementQueue.append(text)
@@ -254,11 +265,9 @@ class MathCATAccessibilityContainer: UIView {
         isAnnouncing = true
         announcementQueue.removeFirst()
         
-        // Small delay to ensure VoiceOver is ready
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
             UIAccessibility.post(notification: .announcement, argument: announcement)
             
-            // Estimate announcement duration and mark as complete
             let duration = Double(announcement.count) * 0.045 + 0.3
             DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
                 self?.isAnnouncing = false
@@ -267,10 +276,9 @@ class MathCATAccessibilityContainer: UIView {
         }
     }
     
-    // MARK: - Swipe Navigation (Accessibility Scroll)
+    // MARK: - Swipe Navigation
     
     override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
-        // Only handle swipes in exploring/navigating states
         guard state == .exploringReady || state == .navigating else {
             return false
         }
@@ -279,22 +287,46 @@ class MathCATAccessibilityContainer: UIView {
         
         switch direction {
         case .up:
-            // Change to more detailed level
+            InteractionLogger.shared.log(
+                event: .swipeUp,
+                objectType: .mathEquation,
+                label: "Math Swipe Up",
+                location: .zero,
+                additionalInfo: "Change to more detailed level"
+            )
             changeLevelUp()
             return true
             
         case .down:
-            // Change to less detailed level
+            InteractionLogger.shared.log(
+                event: .swipeDown,
+                objectType: .mathEquation,
+                label: "Math Swipe Down",
+                location: .zero,
+                additionalInfo: "Change to less detailed level"
+            )
             changeLevelDown()
             return true
             
         case .right:
-            // Navigate to previous (swipe right = go back)
+            InteractionLogger.shared.log(
+                event: .swipeRight,
+                objectType: .mathEquation,
+                label: "Math Swipe Right",
+                location: .zero,
+                additionalInfo: "Navigate to previous part"
+            )
             navigatePrevious()
             return true
             
         case .left:
-            // Navigate to next (swipe left = go forward)
+            InteractionLogger.shared.log(
+                event: .swipeLeft,
+                objectType: .mathEquation,
+                label: "Math Swipe Left",
+                location: .zero,
+                additionalInfo: "Navigate to next part"
+            )
             navigateNext()
             return true
             
@@ -306,19 +338,50 @@ class MathCATAccessibilityContainer: UIView {
     // MARK: - Level Navigation
     
     private func changeLevelUp() {
+        let previousLevel = currentLevel
         currentLevel = currentLevel.next
         currentIndex = 0
         
         impactGenerator.impactOccurred(intensity: 0.7)
+        
+        InteractionLogger.shared.log(
+            event: .mathLevelChange,
+            objectType: .mathEquation,
+            label: "Level Up",
+            location: .zero,
+            rotorFunction: mapLevelToRotor(currentLevel),
+            additionalInfo: "From \(previousLevel.rawValue) to \(currentLevel.rawValue)"
+        )
+        
         queueAnnouncement("\(currentLevel.rawValue) level")
     }
     
     private func changeLevelDown() {
+        let previousLevel = currentLevel
         currentLevel = currentLevel.previous
         currentIndex = 0
         
         impactGenerator.impactOccurred(intensity: 0.7)
+        
+        InteractionLogger.shared.log(
+            event: .mathLevelChange,
+            objectType: .mathEquation,
+            label: "Level Down",
+            location: .zero,
+            rotorFunction: mapLevelToRotor(currentLevel),
+            additionalInfo: "From \(previousLevel.rawValue) to \(currentLevel.rawValue)"
+        )
+        
         queueAnnouncement("\(currentLevel.rawValue) level")
+    }
+    
+    private func mapLevelToRotor(_ level: MathNavigationLevel) -> RotorFunction {
+        switch level {
+        case .character: return .characters
+        case .symbol: return .mathNavigation
+        case .term: return .mathNavigation
+        case .structure: return .mathNavigation
+        }
     }
     
     // MARK: - Part Navigation
@@ -334,9 +397,27 @@ class MathCATAccessibilityContainer: UIView {
         if currentIndex < parts.count - 1 {
             currentIndex += 1
             selectionGenerator.selectionChanged()
+            
+            InteractionLogger.shared.log(
+                event: .mathNavigate,
+                objectType: .mathEquation,
+                label: "Navigate Next",
+                location: .zero,
+                additionalInfo: "Index \(currentIndex) of \(parts.count): \(parts[currentIndex])"
+            )
+            
             queueAnnouncement(parts[currentIndex])
         } else {
             impactGenerator.impactOccurred(intensity: 0.3)
+            
+            InteractionLogger.shared.log(
+                event: .mathNavigate,
+                objectType: .mathEquation,
+                label: "Navigate Next - End",
+                location: .zero,
+                additionalInfo: "Reached end of equation"
+            )
+            
             queueAnnouncement("End")
         }
     }
@@ -352,9 +433,27 @@ class MathCATAccessibilityContainer: UIView {
         if currentIndex > 0 {
             currentIndex -= 1
             selectionGenerator.selectionChanged()
+            
+            InteractionLogger.shared.log(
+                event: .mathNavigate,
+                objectType: .mathEquation,
+                label: "Navigate Previous",
+                location: .zero,
+                additionalInfo: "Index \(currentIndex) of \(parts.count): \(parts[currentIndex])"
+            )
+            
             queueAnnouncement(parts[currentIndex])
         } else {
             impactGenerator.impactOccurred(intensity: 0.3)
+            
+            InteractionLogger.shared.log(
+                event: .mathNavigate,
+                objectType: .mathEquation,
+                label: "Navigate Previous - Beginning",
+                location: .zero,
+                additionalInfo: "Reached beginning of equation"
+            )
+            
             queueAnnouncement("Beginning")
         }
     }
@@ -381,24 +480,20 @@ class MathCATAccessibilityContainer: UIView {
             return
         }
         
-        // Character level: each character
         var characters: [String] = []
         for char in text where !char.isWhitespace && char != "," {
             characters.append(String(char))
         }
         
-        // Symbol level: split by spaces, keep operators
         let symbolPattern = text.components(separatedBy: " ")
             .flatMap { $0.components(separatedBy: ",") }
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         
-        // Term level: split by commas (natural pauses)
         let terms = text.components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         
-        // Structure level: identify major structures
         var structures: [String] = []
         let structureKeywords = ["fraction", "square root", "integral", "sum", "product", "limit", "end"]
         
@@ -447,7 +542,6 @@ class MathCATAccessibilityContainer: UIView {
     private func prepareTextForReading(_ text: String) -> String {
         var cleaned = text
         
-        // Remove prefixes
         let prefixes = ["Equation: ", "Equation:", "equation: ", "equation:", "Math: ", "Math:"]
         for prefix in prefixes {
             if cleaned.hasPrefix(prefix) {
@@ -455,7 +549,6 @@ class MathCATAccessibilityContainer: UIView {
             }
         }
         
-        // Remove answer portions
         let answerPatterns = [
             #"[,.]?\s*(the\s+)?(sum|total|answer|result|area|volume|perimeter|value)\s+(is|are|=|equals)\s+[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?"#,
             #"\s+is\s+[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#,
@@ -472,7 +565,6 @@ class MathCATAccessibilityContainer: UIView {
             }
         }
         
-        // Clean up
         cleaned = cleaned.replacingOccurrences(of: "  ", with: " ")
         cleaned = cleaned.replacingOccurrences(of: ", ,", with: ",")
         cleaned = cleaned.replacingOccurrences(of: ",,", with: ",")
@@ -489,7 +581,7 @@ class MathCATAccessibilityContainer: UIView {
         return cleaned
     }
     
-    // MARK: - Escape Action (Exit Math Mode)
+    // MARK: - Escape Action
     
     override func accessibilityPerformEscape() -> Bool {
         if state != .inactive {
@@ -516,7 +608,6 @@ struct MathCATView: UIViewRepresentable {
         let container = MathCATAccessibilityContainer()
         container.backgroundColor = .clear
         
-        // Add WebView for visual rendering
         let webView = createMathWebView()
         webView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(webView)
@@ -528,7 +619,6 @@ struct MathCATView: UIViewRepresentable {
             webView.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
         
-        // Set initial values
         container.fullEquationText = fullSpokenText
         container.mathML = mathml ?? ""
         container.mathParts = mathParts
@@ -545,7 +635,6 @@ struct MathCATView: UIViewRepresentable {
         container.onEnterMathMode = onEnterMathMode
         container.onExitMathMode = onExitMathMode
         
-        // Update WebView
         if let webView = container.subviews.first(where: { $0 is WKWebView }) as? WKWebView {
             loadMathContent(into: webView)
         }
@@ -559,7 +648,6 @@ struct MathCATView: UIViewRepresentable {
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.backgroundColor = .clear
         
-        // CRITICAL: Hide from VoiceOver
         webView.isAccessibilityElement = false
         webView.accessibilityElementsHidden = true
         

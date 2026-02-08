@@ -18,6 +18,7 @@ struct DashboardView: View {
     @State private var selectedLesson: LessonIndexItem?
     @State private var selectedTab: HomeTab = .home
     @State private var selectedSidebarItem: SidebarItem = .home
+    @State private var navigateToFlowSelection = false
     @StateObject private var notificationDelegate = NotificationDelegate.shared
     @StateObject private var uploadManager = UploadManager()
     
@@ -25,6 +26,7 @@ struct DashboardView: View {
     @State private var previousCompletedCount = 0
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dismiss) private var dismiss
 
     // Removed accessibility tab for user testing
     enum HomeTab {
@@ -54,23 +56,84 @@ struct DashboardView: View {
         }
     }
     
-    private var isIPad: Bool {
+    var isIPad: Bool {
         horizontalSizeClass == .regular
     }
     
-    private var contentMaxWidth: CGFloat {
+    var contentMaxWidth: CGFloat {
         horizontalSizeClass == .regular ? .infinity : .infinity
     }
     
-    private var horizontalPadding: CGFloat {
+    var horizontalPadding: CGFloat {
         horizontalSizeClass == .regular ? 24 : 16
     }
     
-    private var teacherCardWidth: CGFloat {
+    var teacherCardWidth: CGFloat {
         horizontalSizeClass == .regular ? 280 : 301
     }
 
+    // MARK: - Body (Split to fix compiler type-check error)
+
     var body: some View {
+        coreView
+            .onChange(of: notificationDelegate.selectedLessonId) { oldLessonId, newLessonId in
+                if let lessonId = newLessonId,
+                   let lesson = lessonStore.recent.first(where: { $0.id == lessonId }) {
+                    selectedLesson = lesson
+                    notificationDelegate.selectedLessonId = nil
+                }
+            }
+            .onChange(of: lessonStore.processing.count) { oldCount, newCount in
+                previousProcessingCount = newCount
+            }
+            .onChange(of: lessonStore.downloaded.count) { oldCount, newCount in
+                previousCompletedCount = newCount
+            }
+            .onChange(of: selectedTab) { oldTab, newTab in
+                InteractionLogger.shared.log(
+                    event: .tabChange,
+                    objectType: .tab,
+                    label: newTab == .home ? "Home" : "All Files",
+                    location: .zero,
+                    additionalInfo: "Tab changed from \(oldTab)"
+                )
+            }
+    }
+    
+    // Second half of modifiers, separated from body
+    private var coreView: some View {
+        mainLayout
+            .sheet(isPresented: $showUpload) {
+                UploadSheetView(uploadManager: uploadManager)
+                    .environmentObject(lessonStore)
+                    .environmentObject(haptics)
+            }
+            .onAppear {
+                uploadManager.lessonStore = lessonStore
+                previousProcessingCount = lessonStore.processing.count
+                previousCompletedCount = lessonStore.downloaded.count
+                InteractionLogger.shared.setCurrentScreen("DashboardView_Flow1")
+            }
+            .fullScreenCover(item: $selectedLesson) { lesson in
+                NavigationStack {
+                    ReaderContainer(item: lesson)
+                        .environmentObject(lessonStore)
+                        .environmentObject(speech)
+                        .environmentObject(haptics)
+                        .environmentObject(mathSpeech)
+                }
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .background(
+                NavigationLink(destination: ChooseFlowView().navigationBarBackButtonHidden(true), isActive: $navigateToFlowSelection) {
+                    EmptyView()
+                }
+                .hidden()
+            )
+    }
+    
+    // The actual layout switch
+    private var mainLayout: some View {
         Group {
             if isIPad {
                 iPadLayout
@@ -78,175 +141,198 @@ struct DashboardView: View {
                 iPhoneLayout
             }
         }
-        .sheet(isPresented: $showUpload) {
-            UploadSheetView(uploadManager: uploadManager)
-                .environmentObject(lessonStore)
-                .environmentObject(haptics)
-        }
-        .onAppear {
-            uploadManager.lessonStore = lessonStore
-            previousProcessingCount = lessonStore.processing.count
-            previousCompletedCount = lessonStore.downloaded.count
-        }
-        .fullScreenCover(item: $selectedLesson) { lesson in
-            NavigationStack {
-                ReaderContainer(item: lesson)
-                    .environmentObject(lessonStore)
-                    .environmentObject(speech)
-                    .environmentObject(haptics)
-                    .environmentObject(mathSpeech)
-            }
-        }
-        .onChange(of: notificationDelegate.selectedLessonId) { oldLessonId, newLessonId in
-            if let lessonId = newLessonId,
-               let lesson = lessonStore.recent.first(where: { $0.id == lessonId }) {
-                selectedLesson = lesson
-                notificationDelegate.selectedLessonId = nil
-            }
-        }
-        .onChange(of: lessonStore.processing.count) { oldCount, newCount in
-            previousProcessingCount = newCount
-        }
-        .onChange(of: lessonStore.downloaded.count) { oldCount, newCount in
-            previousCompletedCount = newCount
-        }
-        .toolbar(.hidden, for: .navigationBar)
     }
     
     // MARK: - iPad Layout
     
-    private var iPadLayout: some View {
+    var iPadLayout: some View {
         HStack(spacing: 0) {
             iPadSidebar
-            iPadMainContent
+            iPadMainContentArea
             iPadRecentActivityPanel
         }
         .background(Color(hex: "#F6F7F8"))
     }
     
-    // MARK: - iPad Sidebar
-    
-    private var iPadSidebar: some View {
+    var iPadMainContentArea: some View {
+        ScrollView {
+            iPadMainContentVStack
+        }
+        .background(Color(hex: "#F6F7F8"))
+    }
+       
+    private var iPadMainContentVStack: some View {
         VStack(alignment: .leading, spacing: 0) {
+            iPadMainTitle
+            
+            if selectedTab == .home {
+                iPadHomeContent
+            } else if selectedTab == .allFiles {
+                iPadAllFilesSection
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
+            }
+        }
+        .padding(.bottom, 40)
+    }
+       
+    private var iPadMainTitle: some View {
+        Text("StemAlly")
+            .font(.custom("Arial", size: 28).weight(.bold))
+            .foregroundColor(Color(hex: "#121417"))
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+    }
+       
+    private var iPadHomeContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            iPadBannerSection
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            
+            iPadUploadPanel
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
+            
+            iPadUploadedSection
+                .padding(.bottom, 12)
+            
+            iPadUploadedByTeacherSection
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
+        }
+    }
+
+    
+    // MARK: - iPad Sidebar
+       
+    var iPadSidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            iPadSidebarHeader
+            iPadSidebarContent
+            Spacer()
+            iPadSidebarFooter
+        }
+        .frame(width: 240)
+        .background(Color.white)
+    }
+       
+    private var iPadSidebarHeader: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Back to Flow Selection button
+            Button {
+                haptics.tapSelection()
+                InteractionLogger.shared.log(
+                    event: .tap,
+                    objectType: .button,
+                    label: "Back to Flow Selection",
+                    location: .zero
+                )
+                InteractionLogger.shared.endSession()
+                navigateToFlowSelection = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .medium))
+                    Text("Flows")
+                        .font(.custom("Arial", size: 14))
+                }
+                .foregroundColor(ColorTokens.primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+            .accessibilityLabel("Back to flow selection")
+            .padding(.top, 12)
+            
             Text("StemAlly")
                 .font(.custom("Arial", size: 22).weight(.bold))
                 .foregroundColor(Color(hex: "#121417"))
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
-                .padding(.top, 24)
-                .padding(.bottom, 24)
-            
-            VStack(spacing: 4) {
-                ForEach([SidebarItem.home, .uploads, .teacherFiles, .recent], id: \.self) { item in
-                    sidebarButton(item: item)
-                }
-                
-                Divider()
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 16)
-                
-                sidebarButton(item: .allFiles, isExpandable: true)
-            }
-            .padding(.horizontal, 8)
-            
-            Spacer()
-            
-            sidebarButton(item: .settings)
-                .padding(.horizontal, 8)
+                .padding(.top, 12)
                 .padding(.bottom, 24)
         }
-        .frame(width: 240)
-        .background(Color.white)
+    }
+       
+    private var iPadSidebarContent: some View {
+        VStack(spacing: 4) {
+            sidebarButton(item: .home)
+            sidebarButton(item: .uploads)
+            sidebarButton(item: .teacherFiles)
+            sidebarButton(item: .recent)
+            
+            Divider()
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+            
+            sidebarButton(item: .allFiles, isExpandable: true)
+        }
+        .padding(.horizontal, 8)
+    }
+       
+    private var iPadSidebarFooter: some View {
+        sidebarButton(item: .settings)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 24)
     }
     
-    private func sidebarButton(item: SidebarItem, isExpandable: Bool = false) -> some View {
+    // MARK: - Sidebar Button
+    
+    func sidebarButton(item: SidebarItem, isExpandable: Bool = false) -> some View {
         Button {
             haptics.tapSelection()
             selectedSidebarItem = item
+            
             switch item {
             case .home:
                 selectedTab = .home
             case .allFiles:
                 selectedTab = .allFiles
             default:
-                selectedTab = .home
+                break
             }
+            
+            InteractionLogger.shared.logTap(
+                objectType: .button,
+                label: "Sidebar: \(item.rawValue)"
+            )
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: item.icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(selectedSidebarItem == item ? .white : Color(hex: "#121417"))
+                    .font(.system(size: 18))
+                    .foregroundColor(selectedSidebarItem == item ? ColorTokens.primary : Color(hex: "#61758A"))
                     .frame(width: 24)
                 
                 Text(item.rawValue)
-                    .font(.custom("Arial", size: 16))
-                    .foregroundColor(selectedSidebarItem == item ? .white : Color(hex: "#121417"))
+                    .font(.custom("Arial", size: 15).weight(selectedSidebarItem == item ? .semibold : .regular))
+                    .foregroundColor(selectedSidebarItem == item ? ColorTokens.primary : Color(hex: "#121417"))
                 
                 Spacer()
                 
                 if isExpandable {
-                    Image(systemName: "chevron.down")
+                    Image(systemName: "chevron.right")
                         .font(.system(size: 12))
-                        .foregroundColor(selectedSidebarItem == item ? .white : Color(hex: "#61758A"))
+                        .foregroundColor(Color(hex: "#91949B"))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(selectedSidebarItem == item ? ColorTokens.primary : Color.clear)
-            )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(selectedSidebarItem == item ? ColorTokens.primaryLight3 : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(item.rawValue)
-        .accessibilityAddTraits(selectedSidebarItem == item ? .isSelected : [])
-    }
-    
-    // MARK: - iPad Main Content
-    
-    private var iPadMainContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("StemAlly")
-                    .font(.custom("Arial", size: 28).weight(.bold))
-                    .foregroundColor(Color(hex: "#121417"))
-                    .frame(maxWidth: .infinity)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 24)
-                    .padding(.bottom, 16)
-                
-                if selectedTab == .home {
-                    iPadBannerSection
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 16)
-                    
-                    iPadUploadPanel
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 20)
-                    
-                    iPadUploadedSection
-                        .padding(.bottom, 12)
-                    
-                    iPadUploadedByTeacherSection
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 20)
-                } else if selectedTab == .allFiles {
-                    iPadAllFilesSection
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 20)
-                }
-            }
-            .padding(.bottom, 40)
-        }
-        .background(Color(hex: "#F6F7F8"))
+        .accessibilityAddTraits(selectedSidebarItem == item ? [.isSelected, .isButton] : [.isButton])
     }
     
     // MARK: - iPad Banner Section
     
     @ViewBuilder
-    private var iPadBannerSection: some View {
+    var iPadBannerSection: some View {
         if let item = (lessonStore.banner ?? lessonStore.recent.first) {
             HStack(spacing: 16) {
                 ZStack {
@@ -279,6 +365,10 @@ struct DashboardView: View {
                 
                 Button("View") {
                     haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .banner,
+                        label: "Banner View: \(item.title)"
+                    )
                     selectedLesson = item
                 }
                 .font(.custom("Arial", size: 14).weight(.bold))
@@ -296,7 +386,7 @@ struct DashboardView: View {
     
     // MARK: - iPad Upload Panel
     
-    private var iPadUploadPanel: some View {
+    var iPadUploadPanel: some View {
         HStack(spacing: 24) {
             VStack(spacing: 16) {
                 Text("Upload Panel")
@@ -311,6 +401,10 @@ struct DashboardView: View {
                 HStack(spacing: 12) {
                     Button("Browse Files") {
                         haptics.tapSelection()
+                        InteractionLogger.shared.logTap(
+                            objectType: .button,
+                            label: "Browse Files"
+                        )
                         showUpload = true
                     }
                     .font(.custom("Arial", size: 14).weight(.bold))
@@ -410,7 +504,7 @@ struct DashboardView: View {
     // MARK: - iPad Uploaded Section
     
     @ViewBuilder
-    private var iPadUploadedSection: some View {
+    var iPadUploadedSection: some View {
         let processingFiles = lessonStore.processing
         let recentCompletedFiles = lessonStore.downloaded.filter { item in
             !processingFiles.contains { $0.item.id == item.id } &&
@@ -433,6 +527,10 @@ struct DashboardView: View {
                     ForEach(recentCompletedFiles) { item in
                         CompletedFileCard(item: item) {
                             haptics.tapSelection()
+                            InteractionLogger.shared.logTap(
+                                objectType: .fileCard,
+                                label: "Completed: \(item.title)"
+                            )
                             selectedLesson = item
                         }
                     }
@@ -445,7 +543,7 @@ struct DashboardView: View {
     // MARK: - iPad Uploaded by Teacher Section
     
     @ViewBuilder
-    private var iPadUploadedByTeacherSection: some View {
+    var iPadUploadedByTeacherSection: some View {
         let teacherItems = lessonStore.recent.filter { $0.teacher != nil }
         
         if !teacherItems.isEmpty {
@@ -459,6 +557,10 @@ struct DashboardView: View {
                     
                     Button("See all") {
                         haptics.tapSelection()
+                        InteractionLogger.shared.logTap(
+                            objectType: .button,
+                            label: "See All Teacher Files"
+                        )
                     }
                     .font(.custom("Arial", size: 14))
                     .foregroundColor(ColorTokens.primary)
@@ -474,7 +576,7 @@ struct DashboardView: View {
         }
     }
     
-    private func iPadTeacherCard(item: LessonIndexItem) -> some View {
+    func iPadTeacherCard(item: LessonIndexItem) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 ZStack {
@@ -514,6 +616,10 @@ struct DashboardView: View {
             
             Button("Open") {
                 haptics.tapSelection()
+                InteractionLogger.shared.logTap(
+                    objectType: .card,
+                    label: "Teacher Card: \(item.title)"
+                )
                 selectedLesson = item
             }
             .font(.custom("Arial", size: 14).weight(.medium))
@@ -539,7 +645,7 @@ struct DashboardView: View {
     // MARK: - iPad All Files Section
     
     @ViewBuilder
-    private var iPadAllFilesSection: some View {
+    var iPadAllFilesSection: some View {
         let allUploadedFiles = lessonStore.downloaded.sorted { $0.createdAt > $1.createdAt }
         
         VStack(alignment: .leading, spacing: 12) {
@@ -567,6 +673,10 @@ struct DashboardView: View {
                     ForEach(allUploadedFiles) { item in
                         CompletedFileCard(item: item) {
                             haptics.tapSelection()
+                            InteractionLogger.shared.logTap(
+                                objectType: .fileCard,
+                                label: "All Files: \(item.title)"
+                            )
                             selectedLesson = item
                         }
                     }
@@ -577,7 +687,7 @@ struct DashboardView: View {
     
     // MARK: - iPad Recent Activity Panel
     
-    private var iPadRecentActivityPanel: some View {
+    var iPadRecentActivityPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Recent Activity")
                 .font(.custom("Arial", size: 20).weight(.bold))
@@ -601,9 +711,13 @@ struct DashboardView: View {
         .background(Color.white)
     }
     
-    private func iPadRecentActivityRow(item: LessonIndexItem) -> some View {
+    func iPadRecentActivityRow(item: LessonIndexItem) -> some View {
         Button {
             haptics.tapSelection()
+            InteractionLogger.shared.logTap(
+                objectType: .listRow,
+                label: "Recent: \(item.title)"
+            )
             selectedLesson = item
         } label: {
             HStack(spacing: 12) {
@@ -643,51 +757,83 @@ struct DashboardView: View {
     
     private var iPhoneLayout: some View {
         ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    headerSection()
-                        .padding(.horizontal, horizontalPadding)
-                        .padding(.top, 20)
-                        .padding(.bottom, 20)
-                    
-                    if selectedTab == .home {
-                        bannerSection()
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.bottom, 16)
-                        
-                        uploadSection()
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.bottom, 20)
-                        
-                        uploadedSection()
-                            .padding(.bottom, 12)
-                        
-                        uploadedByTeacherSection()
-                            .padding(.bottom, 12)
-                        
-                        recentsSection()
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.bottom, 20)
-                    } else if selectedTab == .allFiles {
-                        allFilesSection()
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.bottom, 20)
-                    }
-                }
-                .frame(maxWidth: contentMaxWidth)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 95)
-            }
-            .background(Color(hex: "#F6F7F8"))
-
-            HomeTabBar(selectedTab: $selectedTab)
+            iPhoneScrollContent
+            
+            HomeTabBar(selectedTab: $selectedTab, onBackToFlows: {
+                InteractionLogger.shared.endSession()
+                navigateToFlowSelection = true
+            })
         }
         .ignoresSafeArea(edges: .bottom)
+    }
+    
+    private var iPhoneScrollContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                headerSection()
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.top, 20)
+                    .padding(.bottom, 20)
+                
+                if selectedTab == .home {
+                    iPhoneHomeTabContent
+                } else if selectedTab == .allFiles {
+                    allFilesSection()
+                        .padding(.horizontal, horizontalPadding)
+                        .padding(.bottom, 20)
+                }
+            }
+            .frame(maxWidth: contentMaxWidth)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 95)
+        }
+        .background(Color(hex: "#F6F7F8"))
+    }
+    
+    private var iPhoneHomeTabContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            bannerSection()
+                .padding(.horizontal, horizontalPadding)
+                .padding(.bottom, 16)
+            
+            uploadSection()
+                .padding(.horizontal, horizontalPadding)
+                .padding(.bottom, 20)
+            
+            uploadedSection()
+                .padding(.bottom, 12)
+            
+            uploadedByTeacherSection()
+                .padding(.bottom, 12)
+            
+            recentsSection()
+                .padding(.horizontal, horizontalPadding)
+                .padding(.bottom, 20)
+        }
     }
 
     // MARK: - Header Section
     private func headerSection() -> some View {
         HStack {
+            // Back to Flows button
+            Button {
+                haptics.tapSelection()
+                InteractionLogger.shared.log(
+                    event: .tap,
+                    objectType: .button,
+                    label: "Back to Flows",
+                    location: .zero
+                )
+                InteractionLogger.shared.endSession()
+                navigateToFlowSelection = true
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(ColorTokens.primary)
+                    .frame(width: 40, height: 40)
+            }
+            .accessibilityLabel("Back to flow selection")
+            
             Spacer()
             
             // Three dot menu - temporarily hidden for user testing
@@ -709,6 +855,7 @@ struct DashboardView: View {
             */
             
             Spacer()
+                .frame(width: 40)
         }
         .overlay(
             Text("StemAlly")
@@ -729,6 +876,10 @@ struct DashboardView: View {
                 subtitle: item.title
             ) {
                 haptics.success()
+                InteractionLogger.shared.logTap(
+                    objectType: .banner,
+                    label: "Banner: \(item.title)"
+                )
                 selectedLesson = item
             }
         }
@@ -757,6 +908,10 @@ struct DashboardView: View {
             VStack(spacing: 12) {
                 Button("Browse files") {
                     haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .button,
+                        label: "Browse Files"
+                    )
                     showUpload = true
                 }
                 .buttonStyle(PrimaryButtonStyle())
@@ -857,6 +1012,10 @@ struct DashboardView: View {
                     ForEach(recentCompletedFiles) { item in
                         CompletedFileCard(item: item) {
                             haptics.tapSelection()
+                            InteractionLogger.shared.logTap(
+                                objectType: .fileCard,
+                                label: "Completed: \(item.title)"
+                            )
                             selectedLesson = item
                         }
                     }
@@ -898,6 +1057,10 @@ struct DashboardView: View {
                     ForEach(allUploadedFiles) { item in
                         CompletedFileCard(item: item) {
                             haptics.tapSelection()
+                            InteractionLogger.shared.logTap(
+                                objectType: .fileCard,
+                                label: "All Files: \(item.title)"
+                            )
                             selectedLesson = item
                         }
                     }
@@ -927,6 +1090,10 @@ struct DashboardView: View {
                         ForEach(teacherItems) { item in
                             TeacherLessonCard(item: item, cardWidth: teacherCardWidth) {
                                 haptics.tapSelection()
+                                InteractionLogger.shared.logTap(
+                                    objectType: .card,
+                                    label: "Teacher: \(item.title)"
+                                )
                                 selectedLesson = item
                             }
                         }
@@ -940,7 +1107,7 @@ struct DashboardView: View {
         }
     }
 
-    private var teacherLessons: [LessonIndexItem] {
+    var teacherLessons: [LessonIndexItem] {
         lessonStore.recent.filter { $0.teacher != nil }
     }
 
@@ -958,6 +1125,10 @@ struct DashboardView: View {
                 ForEach(lessonStore.recent) { item in
                     RecentRow(item: item) {
                         haptics.tapSelection()
+                        InteractionLogger.shared.logTap(
+                            objectType: .listRow,
+                            label: "Recent: \(item.title)"
+                        )
                         selectedLesson = item
                     }
                 }
@@ -1120,16 +1291,16 @@ private struct RecentRow: View {
     }
 }
 
-// MARK: - Bottom Tab Bar (Removed Accessibility tab for user testing)
+// MARK: - Bottom Tab Bar
 private struct HomeTabBar: View {
     @Binding var selectedTab: DashboardView.HomeTab
+    var onBackToFlows: () -> Void
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     private var tabBarHeight: CGFloat {
         horizontalSizeClass == .regular ? 105 : 95
     }
     
-    // Tab definitions
     private var tabs: [(tab: DashboardView.HomeTab, icon: String, label: String)] {
         [
             (.home, "house.fill", "Home"),
@@ -1171,6 +1342,12 @@ private struct HomeTabBar: View {
         let isSelected = (tab == selectedTab)
 
         return Button {
+            InteractionLogger.shared.log(
+                event: .tabChange,
+                objectType: .tab,
+                label: label,
+                location: .zero
+            )
             selectedTab = tab
         } label: {
             VStack(spacing: 4) {
@@ -1187,7 +1364,6 @@ private struct HomeTabBar: View {
             .background(isSelected ? Color(hex: "#E8F2F2") : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 27))
         }
-        // FIXED: Proper VoiceOver tab announcement
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityValue(isSelected ? "selected" : "")
@@ -1196,6 +1372,7 @@ private struct HomeTabBar: View {
     }
 }
 
+// MARK: - Reader Container
 private struct ReaderContainer: View {
     @EnvironmentObject var lessonStore: LessonStore
     @EnvironmentObject var speech: SpeechService
@@ -1225,13 +1402,14 @@ private struct ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
+        .onAppear {
+            InteractionLogger.shared.setCurrentScreen("ReaderView: \(item.title)")
+        }
     }
 }
 
-
 // MARK: - Processing File Card
-private struct ProcessingFileCard: View {
+struct ProcessingFileCard: View {
     let processingFile: ProcessingFile
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
@@ -1298,7 +1476,7 @@ private struct ProcessingFileCard: View {
 }
 
 // MARK: - Completed File Card
-private struct CompletedFileCard: View {
+struct CompletedFileCard: View {
     let item: LessonIndexItem
     var onTap: () -> Void
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass

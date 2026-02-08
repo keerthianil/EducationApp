@@ -19,6 +19,7 @@ struct DashboardFlow3View: View {
     @State private var showHamburgerMenu = false
     @State private var selectedLesson: LessonIndexItem?
     @State private var showUpload = false
+    @State private var navigateToFlowSelection = false
     @StateObject private var uploadManager = UploadManager()
     @StateObject private var notificationDelegate = NotificationDelegate.shared
     
@@ -107,6 +108,7 @@ struct DashboardFlow3View: View {
             uploadManager.lessonStore = lessonStore
             previousProcessingCount = lessonStore.processing.count
             previousCompletedCount = lessonStore.downloaded.count
+            InteractionLogger.shared.setCurrentScreen("DashboardFlow3View")
         }
         .sheet(isPresented: $showUpload) {
             UploadSheetView(uploadManager: uploadManager)
@@ -135,15 +137,54 @@ struct DashboardFlow3View: View {
         .onChange(of: lessonStore.downloaded.count) { _, newCount in
             previousCompletedCount = newCount
         }
+        .onChange(of: selectedTab) { oldTab, newTab in
+            InteractionLogger.shared.log(
+                event: .tabChange,
+                objectType: .tab,
+                label: newTab.rawValue,
+                location: .zero,
+                additionalInfo: "Flow 3 top tab changed"
+            )
+        }
+        .onChange(of: selectedBottomTab) { oldTab, newTab in
+            InteractionLogger.shared.log(
+                event: .tabChange,
+                objectType: .tab,
+                label: newTab.title,
+                location: .zero,
+                additionalInfo: "Flow 3 bottom tab changed"
+            )
+        }
         .toolbar(.hidden, for: .navigationBar)
+        .background(
+            NavigationLink(destination: ChooseFlowView().navigationBarBackButtonHidden(true), isActive: $navigateToFlowSelection) {
+                EmptyView()
+            }
+            .hidden()
+        )
     }
     
-    // MARK: - Top Bar (Removed back button - this is dashboard screen)
+    // MARK: - Top Bar (with back button)
     private var topBar: some View {
         HStack {
-            // Back button removed - dashboard is the main screen
-            Spacer()
-                .frame(width: 48)
+            // Back to Flows button
+            Button {
+                haptics.tapSelection()
+                InteractionLogger.shared.log(
+                    event: .tap,
+                    objectType: .button,
+                    label: "Back to Flows",
+                    location: .zero
+                )
+                InteractionLogger.shared.endSession()
+                navigateToFlowSelection = true
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(ColorTokens.primary)
+                    .frame(width: 48, height: 48)
+            }
+            .accessibilityLabel("Back to flow selection")
             
             Spacer()
             
@@ -194,6 +235,10 @@ struct DashboardFlow3View: View {
                 
                 Button {
                     haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .tab,
+                        label: "Tab: \(tab.rawValue)"
+                    )
                     selectedTab = tab
                 } label: {
                     VStack(spacing: 0) {
@@ -255,6 +300,10 @@ struct DashboardFlow3View: View {
                     
                     Button("Browse Files") {
                         haptics.tapSelection()
+                        InteractionLogger.shared.logTap(
+                            objectType: .button,
+                            label: "Browse Files"
+                        )
                         showUpload = true
                     }
                     .font(.custom("Arial", size: 14).weight(.bold))
@@ -338,6 +387,10 @@ struct DashboardFlow3View: View {
                     ForEach(lessonStore.downloaded.prefix(3)) { item in
                         Flow3UploadedCard(item: item) {
                             haptics.tapSelection()
+                            InteractionLogger.shared.logTap(
+                                objectType: .fileCard,
+                                label: "Uploaded: \(item.title)"
+                            )
                             selectedLesson = item
                         }
                         .padding(.horizontal, horizontalPadding)
@@ -361,6 +414,10 @@ struct DashboardFlow3View: View {
             ForEach(lessonStore.recent.prefix(5)) { item in
                 Flow3HistoryRow(item: item) {
                     haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .listRow,
+                        label: "History: \(item.title)"
+                    )
                     selectedLesson = item
                 }
                 .padding(.horizontal, horizontalPadding)
@@ -405,6 +462,10 @@ struct DashboardFlow3View: View {
                     ForEach(teacherFiles) { item in
                         Flow3TeacherFileCard(item: item) {
                             haptics.tapSelection()
+                            InteractionLogger.shared.logTap(
+                                objectType: .card,
+                                label: "Teacher: \(item.title)"
+                            )
                             selectedLesson = item
                         }
                     }
@@ -445,6 +506,10 @@ struct DashboardFlow3View: View {
                 
                 Button {
                     haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .tab,
+                        label: "Bottom Tab: \(tab.title)"
+                    )
                     selectedBottomTab = tab
                     if tab == .home {
                         selectedTab = .upload
@@ -732,6 +797,9 @@ private struct Flow3ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            InteractionLogger.shared.setCurrentScreen("Flow3Reader: \(item.title)")
+        }
         // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
     }
 }

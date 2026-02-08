@@ -12,6 +12,7 @@ struct ChooseFlowView: View {
     @EnvironmentObject var appState: AppState
     @State private var goToDashboard = false
     @State private var didAnnounceScreen = false
+    @State private var showExportSheet = false
     @AccessibilityFocusState private var flow1Focused: Bool
     
     var body: some View {
@@ -44,9 +45,7 @@ struct ChooseFlowView: View {
                         subtitle: "Bottom tabs + Vertical menu",
                         isEnabled: true
                     ) {
-                        appState.selectedFlow = 1
-                        appState.completeOnboarding()
-                        goToDashboard = true
+                        selectFlow(1)
                     }
                     .accessibilityFocused($flow1Focused)
                     
@@ -57,9 +56,7 @@ struct ChooseFlowView: View {
                         subtitle: "Top tabs (Home/All files)",
                         isEnabled: true
                     ) {
-                        appState.selectedFlow = 2
-                        appState.completeOnboarding()
-                        goToDashboard = true
+                        selectFlow(2)
                     }
                     
                     // Flow 3 - Upload tabs design
@@ -69,12 +66,51 @@ struct ChooseFlowView: View {
                         subtitle: "Upload/Teacher/Recent tabs + Side menu",
                         isEnabled: true
                     ) {
-                        appState.selectedFlow = 3
-                        appState.completeOnboarding()
-                        goToDashboard = true
+                        selectFlow(3)
                     }
                 }
                 .padding(.horizontal, 32)
+                
+                Spacer()
+                    .frame(height: 20)
+                
+                // Export Data Button
+                Button {
+                    showExportSheet = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16))
+                        Text("Export Interaction Data")
+                            .font(.custom("Arial", size: 15))
+                    }
+                    .foregroundColor(ColorTokens.primary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(ColorTokens.primary, lineWidth: 1)
+                    )
+                }
+                .accessibilityLabel("Export interaction data")
+                .accessibilityHint("Export CSV files for all flows")
+                
+                // Entry counts
+                VStack(spacing: 4) {
+                    Text("Logged Interactions:")
+                        .font(.custom("Arial", size: 13))
+                        .foregroundColor(Color(hex: "#61758A"))
+                    
+                    HStack(spacing: 16) {
+                        ForEach(1...3, id: \.self) { flow in
+                            let count = InteractionLogger.shared.getEntryCount(for: flow)
+                            Text("Flow \(flow): \(count)")
+                                .font(.custom("Arial", size: 12))
+                                .foregroundColor(Color(hex: "#91949B"))
+                        }
+                    }
+                }
+                .padding(.top, 8)
                 
                 Spacer()
             }
@@ -89,7 +125,11 @@ struct ChooseFlowView: View {
             .hidden()
         }
         .navigationBarBackButtonHidden(true)
+        .trackScreen("ChooseFlowView")
         .onAppear {
+            // End any previous session
+            InteractionLogger.shared.endSession()
+            
             guard !didAnnounceScreen else { return }
             didAnnounceScreen = true
             
@@ -99,6 +139,28 @@ struct ChooseFlowView: View {
                 flow1Focused = true
             }
         }
+        .sheet(isPresented: $showExportSheet) {
+            ExportDataSheet()
+        }
+    }
+    
+    private func selectFlow(_ flow: Int) {
+        // Log the selection
+        InteractionLogger.shared.log(
+            event: .tap,
+            objectType: .button,
+            label: "Flow \(flow) Selected",
+            location: .zero,
+            additionalInfo: "User selected Flow \(flow)"
+        )
+        
+        appState.selectedFlow = flow
+        appState.completeOnboarding()
+        
+        // Start logging session for this flow
+        InteractionLogger.shared.startSession(flow: flow)
+        
+        goToDashboard = true
     }
     
     @ViewBuilder
@@ -149,6 +211,127 @@ private struct FlowSelectionButton: View {
         .accessibilityLabel("\(title). \(subtitle)")
         .accessibilityHint(isEnabled ? "Double tap to select this flow" : "Not available")
     }
+}
+
+// MARK: - Export Data Sheet
+
+private struct ExportDataSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var exportedURLs: [URL] = []
+    @State private var isExporting = false
+    @State private var showShareSheet = false
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Image(systemName: "doc.text")
+                    .font(.system(size: 48))
+                    .foregroundColor(ColorTokens.primary)
+                    .padding(.top, 40)
+                
+                Text("Export Interaction Logs")
+                    .font(.custom("Arial", size: 22).weight(.bold))
+                    .foregroundColor(Color(hex: "#121417"))
+                
+                VStack(spacing: 12) {
+                    ForEach(1...3, id: \.self) { flow in
+                        let count = InteractionLogger.shared.getEntryCount(for: flow)
+                        HStack {
+                            Text("Flow \(flow)")
+                                .font(.custom("Arial", size: 17))
+                                .foregroundColor(Color(hex: "#121417"))
+                            
+                            Spacer()
+                            
+                            Text("\(count) entries")
+                                .font(.custom("Arial", size: 15))
+                                .foregroundColor(Color(hex: "#61758A"))
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color(hex: "#F6F7F8"))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                .padding(.horizontal, 24)
+                
+                Spacer()
+                
+                VStack(spacing: 12) {
+                    Button {
+                        exportAllFlows()
+                    } label: {
+                        HStack {
+                            if isExporting {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .tint(.white)
+                            }
+                            Text(isExporting ? "Exporting..." : "Export All Flows")
+                                .font(.custom("Arial", size: 17).weight(.bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(ColorTokens.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(isExporting)
+                    
+                    Button("Clear All Data") {
+                        InteractionLogger.shared.clearAllData()
+                        dismiss()
+                    }
+                    .font(.custom("Arial", size: 15))
+                    .foregroundColor(ColorTokens.error)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+            }
+            .navigationTitle("Export Data")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if !exportedURLs.isEmpty {
+                    ShareSheet(activityItems: exportedURLs)
+                }
+            }
+        }
+    }
+    
+    private func exportAllFlows() {
+        isExporting = true
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let urls = InteractionLogger.shared.exportAllFlows()
+            
+            DispatchQueue.main.async {
+                isExporting = false
+                exportedURLs = urls
+                if !urls.isEmpty {
+                    showShareSheet = true
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Share Sheet
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {
