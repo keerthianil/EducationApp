@@ -141,6 +141,45 @@ struct DashboardView: View {
                 iPhoneLayout
             }
         }
+<<<<<<< HEAD
+=======
+        .sheet(isPresented: $showUpload) {
+            UploadSheetView(uploadManager: uploadManager)
+                .environmentObject(lessonStore)
+                .environmentObject(haptics)
+        }
+        .onAppear {
+            uploadManager.lessonStore = lessonStore
+            previousProcessingCount = lessonStore.processing.count
+            previousCompletedCount = lessonStore.downloaded.count
+        }
+        .fullScreenCover(item: $selectedLesson) { lesson in
+            NavigationStack {
+                ReaderContainer(item: lesson)
+                    .environmentObject(lessonStore)
+                    .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
+            }
+        }
+        .onChange(of: notificationDelegate.selectedLessonId) { oldLessonId, newLessonId in
+            if let lessonId = newLessonId,
+               let lesson = lessonStore.recent.first(where: { $0.id == lessonId }) {
+                selectedLesson = lesson
+                notificationDelegate.selectedLessonId = nil
+            }
+        }
+        .onChange(of: lessonStore.processing.count) { oldCount, newCount in
+            previousProcessingCount = newCount
+        }
+        .onChange(of: lessonStore.downloaded.count) { oldCount, newCount in
+            previousCompletedCount = newCount
+        }
+        .onThreeFingerSwipeBack {
+            dismiss()
+        }
+        .toolbar(.hidden, for: .navigationBar)
+>>>>>>> feature/map-style-svg-rendering
     }
     
     // MARK: - iPad Layout
@@ -1402,9 +1441,13 @@ private struct ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+<<<<<<< HEAD
         .onAppear {
             InteractionLogger.shared.setCurrentScreen("ReaderView: \(item.title)")
         }
+=======
+        // Gesture applied once inside WorksheetView/DocumentRendererView to avoid double wrapper and duplicate back button
+>>>>>>> feature/map-style-svg-rendering
     }
 }
 

@@ -41,6 +41,7 @@ struct AuthenticationView: View {
             .hidden()
         }
         .navigationBarBackButtonHidden(true)
+        .onThreeFingerSwipeBack { dismiss() }
         .onAppear {
             guard !didAnnounceAuth else { return }
             didAnnounceAuth = true

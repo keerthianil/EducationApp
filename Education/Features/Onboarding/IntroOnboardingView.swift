@@ -128,6 +128,7 @@ struct IntroOnboardingView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onThreeFingerSwipeBack { dismiss() }
         .onAppear {
             guard !didAnnounceOnboarding else { return }
             didAnnounceOnboarding = true

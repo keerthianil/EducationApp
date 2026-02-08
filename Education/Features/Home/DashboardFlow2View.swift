@@ -25,6 +25,7 @@ struct DashboardFlow2View: View {
     @State private var previousCompletedCount = 0
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dismiss) private var dismiss
     
     enum Flow2Tab: CaseIterable {
         case home, allFiles
@@ -118,6 +119,7 @@ struct DashboardFlow2View: View {
         .onChange(of: lessonStore.downloaded.count) { _, newCount in
             previousCompletedCount = newCount
         }
+<<<<<<< HEAD
         .onChange(of: selectedTab) { oldTab, newTab in
             InteractionLogger.shared.log(
                 event: .tabChange,
@@ -126,6 +128,10 @@ struct DashboardFlow2View: View {
                 location: .zero,
                 additionalInfo: "Flow 2 tab changed"
             )
+=======
+        .onThreeFingerSwipeBack {
+            dismiss()
+>>>>>>> feature/map-style-svg-rendering
         }
         .toolbar(.hidden, for: .navigationBar)
         .background(
@@ -681,9 +687,13 @@ private struct Flow2ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+<<<<<<< HEAD
         .onAppear {
             InteractionLogger.shared.setCurrentScreen("Flow2Reader: \(item.title)")
         }
         // NOTE: Gesture is now inside WorksheetView/DocumentRendererView
+=======
+        // Gesture applied once inside WorksheetView/DocumentRendererView to avoid double wrapper and duplicate back button
+>>>>>>> feature/map-style-svg-rendering
     }
 }

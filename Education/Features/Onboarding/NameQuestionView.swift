@@ -106,6 +106,7 @@ struct NameQuestionView: View {
             .accessibilitySortPriority(1)
         }
         .navigationBarBackButtonHidden(true)
+        .onThreeFingerSwipeBack { dismiss() }
         .onAppear {
             guard !didAnnounceNameScreen else { return }
             didAnnounceNameScreen = true

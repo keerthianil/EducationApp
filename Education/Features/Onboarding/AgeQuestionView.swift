@@ -137,6 +137,7 @@ struct AgeQuestionView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onThreeFingerSwipeBack { dismiss() }
         .onAppear {
             guard !didAnnounceAgeScreen else { return }
             didAnnounceAgeScreen = true
