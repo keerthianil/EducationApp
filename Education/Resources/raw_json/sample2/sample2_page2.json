@@ -1,120 +1,222 @@
 {
     "type": "doc",
     "content": [
-        {
-            "type": "heading",
-            "attrs": {
-                "textAlign": null,
-                "level": 1
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Area of Compound Figures"
-                }
+      {
+        "type": "heading",
+        "attrs": { "textAlign": null, "level": 1 },
+        "content": [{ "type": "text", "text": "Area of Simple Shapes" }]
+      },
+      {
+        "type": "heading",
+        "attrs": { "textAlign": null, "level": 3 },
+        "content": [{ "type": "text", "text": "Touch and explore each figure" }]
+      },
+      {
+        "type": "paragraph",
+        "attrs": { "textAlign": null },
+        "content": [
+          { "type": "text", "text": "Keep going! Explore each figure by touch, then find its area." }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": { "textAlign": null },
+        "content": [
+          {
+            "type": "text",
+            "text": "Figure 1 is a triangle. Figure 2 is a square. Use the labeled measurements to calculate the area of each shape."
+          }
+        ]
+      },
+  
+      {
+        "type": "svgNode",
+        "attrs": {
+          "figureId": "fig_1",
+          "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 240 300\">\n  <g id=\"lines\" stroke=\"black\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <line x1=\"50\" y1=\"240\" x2=\"190\" y2=\"240\" />\n    <line x1=\"190\" y1=\"240\" x2=\"120\" y2=\"70\" />\n    <line x1=\"120\" y1=\"70\" x2=\"50\" y2=\"240\" />\n    <!-- Height line (for labeled measurement) -->\n    <line x1=\"120\" y1=\"240\" x2=\"120\" y2=\"70\" />\n  </g>\n  <g id=\"labels\" fill=\"black\" font-size=\"14\">\n    <text x=\"120\" y=\"268\" text-anchor=\"middle\">40 ft</text>\n    <text x=\"22\" y=\"170\" transform=\"rotate(-90 22 170)\" text-anchor=\"middle\">30 ft</text>\n  </g>\n</svg>",
+          "title": "Triangle",
+          "summary": "A triangle with three straight sides. The base and height are labeled.",
+          "short_desc": "Triangle with base 40 ft and height 30 ft.",
+          "long_desc": "This figure is a triangle. The bottom edge is the base. Two slanted sides meet at the top vertex. The base is labeled 40 ft. The height is labeled 30 ft.",
+          "graphicData": {
+            "viewBox": { "x": 0, "y": 0, "width": 240, "height": 300 },
+            "lines": [
+              {
+                "id": "line_base",
+                "x1": 50.0,
+                "y1": 240.0,
+                "x2": 190.0,
+                "y2": 240.0,
+                "strokeWidth": 2,
+                "label": "40 ft"
+              },
+              {
+                "id": "line_height",
+                "x1": 120.0,
+                "y1": 240.0,
+                "x2": 120.0,
+                "y2": 70.0,
+                "strokeWidth": 2,
+                "label": "30 ft"
+              },
+              {
+                "id": "line_right",
+                "x1": 190.0,
+                "y1": 240.0,
+                "x2": 120.0,
+                "y2": 70.0,
+                "strokeWidth": 2,
+                "label": null
+              },
+              {
+                "id": "line_left",
+                "x1": 120.0,
+                "y1": 70.0,
+                "x2": 50.0,
+                "y2": 240.0,
+                "strokeWidth": 2,
+                "label": null
+              }
+            ],
+            "vertices": [
+              {
+                "id": "point_A",
+                "x": 50.0,
+                "y": 240.0,
+                "connectedLines": ["line_base", "line_left"]
+              },
+              {
+                "id": "point_B",
+                "x": 190.0,
+                "y": 240.0,
+                "connectedLines": ["line_base", "line_right"]
+              },
+              {
+                "id": "point_C",
+                "x": 120.0,
+                "y": 70.0,
+                "connectedLines": ["line_left", "line_right", "line_height"]
+              }
+            ],
+            "labels": [
+              {
+                "id": "label_base",
+                "x": 120.0,
+                "y": 268.0,
+                "text": "40 ft",
+                "fontSize": 15,
+                "forLine": "line_base"
+              },
+              {
+                "id": "label_height",
+                "x": 22.0,
+                "y": 170.0,
+                "text": "30 ft",
+                "fontSize": 15,
+                "forLine": "line_height"
+              }
             ]
-        },
-        {
-            "type": "heading",
-            "attrs": {
-                "textAlign": null,
-                "level": 3
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Area of Compound Figures"
-                }
-            ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "textAlign": null
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Keep going! Find the area of each figure."
-                }
-            ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "textAlign": null
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Think about it! Go back to problem 5 at the top of this page. Try enclosing the compound figure in a larger rectangle and subtracting the areas of the missing pieces. Do you get the same answer as before? Explain why you think that happens."
-                }
-            ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "textAlign": null
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "_________________________"
-                }
-            ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "textAlign": null
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "_________________________"
-                }
-            ]
-        },
-        {
-            "type": "paragraph",
-            "attrs": {
-                "textAlign": null
-            },
-            "content": [
-                {
-                    "type": "text",
-                    "text": "_________________________"
-                }
-            ]
-        },
-        {
-            "type": "svgNode",
-            "attrs": {
-                "figureId": "fig_1",
-                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 378 464\" style=\"max-width:100%;height:auto;\">\n  <metadata>{\"source\":\"UNAR AI v2\",\"title\":\"Geometric Shape with Dimensions\",\"summary\":\"The image shows a geometric shape with labeled dimensions.\",\"short_desc\":\"A 2D geometric shape is shown with dimensions labeled in feet.\",\"long_desc\":\"A 2D geometric shape is depicted with various sides labeled with their lengths in feet. The shape is a polygon with several sides and angles. The dimensions are labeled as 18 ft, 6 ft, 7 ft, 5 ft, and 12 ft.\",\"image_type\":\"geo\",\"items\":{\"shape\":{\"text_annotations\":[\"6 ft.\",\"18 ft.\",\"7 ft.\",\"5 ft.\",\"12 ft.\",\"5 ft.\",\"7 ft.\"]}},\"preferredDescription\":\"long_desc\"}</metadata>\n<defs/>\n  <g id=\"lines\">\n    <line id=\"line_1\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"104.0\" x2=\"102.0\" y1=\"317.0\" y2=\"43.0\"/>\n    <line id=\"line_2\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"278.0\" x2=\"277.0\" y1=\"390.0\" y2=\"212.0\"/>\n    <line id=\"line_3\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"176.0\" x2=\"277.0\" y1=\"211.0\" y2=\"212.0\"/>\n    <line id=\"line_4\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"175.0\" x2=\"278.0\" y1=\"391.0\" y2=\"390.0\"/>\n    <line id=\"line_5\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"102.0\" x2=\"176.0\" y1=\"43.0\" y2=\"130.0\"/>\n    <line id=\"line_6\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"177.0\" x2=\"175.0\" y1=\"213.0\" y2=\"127.0\"/>\n    <line id=\"line_7\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"174.0\" x2=\"178.0\" y1=\"317.0\" y2=\"390.0\"/>\n    <line id=\"line_8\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"1\" x1=\"103.0\" x2=\"169.0\" y1=\"316.0\" y2=\"317.0\"/>\n  </g>\n  <g id=\"points\">\n    <circle cx=\"103.99281052980865\" cy=\"316.015042583785\" fill=\"rgb(0,0,0)\" id=\"point_1\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"175.04361873990308\" cy=\"128.875605815832\" fill=\"rgb(0,0,0)\" id=\"point_2\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"278.0\" cy=\"390.0\" fill=\"rgb(0,0,0)\" id=\"point_3\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"277.0\" cy=\"212.0\" fill=\"rgb(0,0,0)\" id=\"point_4\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"102.0\" cy=\"43.0\" fill=\"rgb(0,0,0)\" id=\"point_5\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"178.0531702778147\" cy=\"390.9703575701183\" fill=\"rgb(0,0,0)\" id=\"point_6\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n    <circle cx=\"176.95370796867803\" cy=\"211.00944265315522\" fill=\"rgb(0,0,0)\" id=\"point_7\" r=\"2\" stroke=\"rgb(0,0,0)\"/>\n  </g>\n  <g id=\"texts\">\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_1\" x=\"204.08749389648438\" y=\"158.77500915527344\">6</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_2\" x=\"66.73709106445312\" y=\"188.2352752685547\">18</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_3\" x=\"230.60879516601562\" y=\"193.33773803710938\">7</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_4\" x=\"138.11248779296875\" y=\"298.70001220703125\">5 .</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_5\" x=\"312.4750061035156\" y=\"298.70001220703125\">12.</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_6\" x=\"154.78750610351562\" y=\"304.8625183105469\">0</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_7\" x=\"149.4283447265625\" y=\"353.9288330078125\">5</text>\n    <text fill=\"#000000\" font-size=\"15px\" id=\"label_8\" x=\"230.54998779296875\" y=\"409.625\">7.</text>\n  </g>\n</svg>",
-                "cropContent": "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",
-                "title": "Geometric Shape with Dimensions",
-                "summary": "The image shows a geometric shape with labeled dimensions.",
-                "short_desc": "A 2D geometric shape is shown with dimensions labeled in feet.",
-                "long_desc": "A 2D geometric shape is depicted with various sides labeled with their lengths in feet. The shape is a polygon with several sides and angles. The dimensions are labeled as 18 ft, 6 ft, 7 ft, 5 ft, and 12 ft.",
-                "width": "100%",
-                "height": "auto"
-            }
-        },
-        {
-            "type": "svgNode",
-            "attrs": {
-                "figureId": "fig_0",
-                "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595 842\" width=\"595\" height=\"842\">\n  <metadata>{\"source\":\"UNAR AI v2\",\"title\":\"Geometric Shape\",\"summary\":\"The image shows a geometric shape with labeled side lengths.\",\"short_desc\":\"A geometric figure is shown with labeled side lengths of 17 yd, 28 yd, and 9 yd.\",\"long_desc\":\"A geometric figure is shown with labeled side lengths. The lengths are 17 yd, 28 yd, and 9 yd.\",\"image_type\":\"geo\",\"items\":{\"shape\":{\"text_annotations\":[\"28 yd.\",\"9 yd.\",\"17 yd.\"]}},\"preferredDescription\":\"long_desc\",\"isBraille\":false}</metadata>\n<text x=\"338.4062271827679\" y=\"53.45702881878242\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">28 Yd</text>\n<text x=\"370.94528820289634\" y=\"56.71093306415332\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">0</text>\n<text x=\"254.26952711242848\" y=\"124.11328303191476\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">9 Yd</text>\n<text x=\"466.6427401538167\" y=\"282.84292945183006\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">9 Yd</text>\n<text x=\"279.3710847575294\" y=\"128.29687287836168\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">0</text>\n<text x=\"539.6835543521374\" y=\"128.29687287836168\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">0</text>\n<text x=\"129.77002542446644\" y=\"141.60262729557508\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">17 Yd</text>\n<text x=\"162.69530510064214\" y=\"145.03124154735906\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">0</text>\n<text x=\"131.08592968158973\" y=\"391.39842712582686\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">17 yd</text>\n<text x=\"163.16013397636561\" y=\"395.58203553869316\" fill=\"#000000\" stroke=\"#000000\" stroke-width=\"1\" font-size=\"36.50306582450867\">0</text>\n  <g id=\"g-1\">\n    <line x1=\"210.5010129213333\" y1=\"81.52351367473602\" x2=\"464.805704832077\" y2=\"81.52351367473602\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"5\"/>\n    <line x1=\"209.28424406051636\" y1=\"357.73004508018494\" x2=\"467.23924255371094\" y2=\"163.04702734947205\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"5\"/>\n    <line x1=\"51.104292154312134\" y1=\"358.9468139410019\" x2=\"52.32106101512909\" y2=\"164.263796210289\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"5\"/>\n    <line x1=\"52.32106101512909\" y1=\"163.04702734947205\" x2=\"210.5010129213333\" y2=\"164.263796210289\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"5\"/>\n    <line x1=\"51.104292154312134\" y1=\"358.9468139410019\" x2=\"211.71778178215027\" y2=\"356.513276219368\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"5\"/>\n    <line x1=\"464.805704832077\" y1=\"165.48056507110596\" x2=\"464.805704832077\" y2=\"81.52351367473602\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"5\"/>\n    <line x1=\"209.28424406051636\" y1=\"164.263796210289\" x2=\"210.5010129213333\" y2=\"82.74028253555298\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"5\"/>\n  </g>\n  <g id=\"g-2\">\n    <circle cx=\"52.32866545491112\" cy=\"163.04708584516268\" r=\"2.433537721633911\" fill=\"rgb(0,0,0)\" stroke=\"rgb(0,0,0)\" stroke-width=\"5\"/>\n    <circle cx=\"464.805704832077\" cy=\"81.52351367473602\" r=\"2.433537721633911\" fill=\"rgb(0,0,0)\" stroke=\"rgb(0,0,0)\" stroke-width=\"5\"/>\n    <circle cx=\"51.104292154312134\" cy=\"358.9468139410019\" r=\"2.433537721633911\" fill=\"rgb(0,0,0)\" stroke=\"rgb(0,0,0)\" stroke-width=\"5\"/>\n    <circle cx=\"209.28438374239684\" cy=\"164.25443752429715\" r=\"2.433537721633911\" fill=\"rgb(0,0,0)\" stroke=\"rgb(0,0,0)\" stroke-width=\"5\"/>\n    <circle cx=\"210.87963639754423\" cy=\"356.525975391862\" r=\"2.433537721633911\" fill=\"rgb(0,0,0)\" stroke=\"rgb(0,0,0)\" stroke-width=\"5\"/>\n    <circle cx=\"464.805704832077\" cy=\"164.88365959221463\" r=\"2.433537721633911\" fill=\"rgb(0,0,0)\" stroke=\"rgb(0,0,0)\" stroke-width=\"5\"/>\n    <circle cx=\"210.51917365059924\" cy=\"81.52351367473602\" r=\"2.433537721633911\" fill=\"rgb(0,0,0)\" stroke=\"rgb(0,0,0)\" stroke-width=\"5\"/>\n  </g>\n</svg>",
-                "cropContent": "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v4Kwv+FTaN/z9Xn/AH0v+FH/AAqbRv8An6vP++l/wotHuHPjf5F95u/8JHon/QVtP+/go/4SPRP+graf9/BWF/wqbRv+fq8/76X/AAo/4VNo3/P1ef8AfS/4UWj3Dnxv8i+83f8AhI9E/wCgraf9/BUc3ijQ4YXlbVbUqoyQr5P4DvWN/wAKm0b/AJ+rz/vpf8KVfhPooYE3N4RnkbgM/pRaPcOfG/yL7znr3Wdb8eXzaZo0LwWGcSOTjI9XPYf7Iru/DHg7T/DUAaNfOvGHz3Djn6L6CtfTdLs9IsktLGBYYU7L3PqT3NXKTl0RpQwnLL2lV80/y9AoooqTtCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAorm/GHi0eFLKGRNKvdSuJywigtVz90ZJY9hjvg1F4M8T3nivwXHrf2SKO4mEhjgViVyCQoJP4c8UAdTRXj2u/Eb4g+GktDqnhjSonu5BDBGl1vaRz2AVj6j869XjuGt9MS41J4YXSIPcMDtjQ4+bk9APegC1RVJtY0xNNGpNqFqLE4xcmZfLPOPvZx14qO81/R9OWBr3VbK2W4AMJmnVPMB6bcnmgDRorhPAPiPU9d13xXBfXYuLexvhFagIgCIRnGVAz9Tmu7oAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigDn/ABnr+meH/DdzPqlyLeKZGgjYgnLspwOPpXF/A7xBpl14MtdEgulfULRGkmhAPyqWwDnpXpt1Z2t9EIru3hnjByFljDjPrg1HaaXp9g7PaWVtbswwzRQqhI9OBQB5dp5Hj74yz34Il0fw2vlQkHKvOe/ocHJ/AV6xPBFdW0tvOgkhlQo6N0ZSMEH8KZa2VrZK62ttDAHbcwijC7j6nA5NT0AfOVrpOqTeJbf4WTB20yz1Rr15M8tbY3KPock/7zVqaifDVl8W/EH/AAnsQ+ztCg04zq3leVtHC4/HHvnvXoPg7wpqNh4o8QeJNbMLX+oy7IFjfcIoB0XP4KP+A+9ddd6bY35Q3lnb3BT7hmiV9v0yOKAPFvhHrWj+HtL8Z6qzSw6TbXaOu5SzrHghQR1z0r2jS9StdZ0u11KycyWtzGJYmKkEqRkcHpQNMsBHPGLK2CT/AOtXylxJ/vDHP41ZjjSGNY4kVEQYVVGAB6AUAOooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP//Z",
-                "title": "Geometric Shape",
-                "summary": "The image shows a geometric shape with labeled side lengths.",
-                "short_desc": "A geometric figure is shown with labeled side lengths of 17 yd, 28 yd, and 9 yd.",
-                "long_desc": "A geometric figure is shown with labeled side lengths. The lengths are 17 yd, 28 yd, and 9 yd.",
-                "width": "100%",
-                "height": "auto"
-            }
+          }
         }
+      },
+  
+      {
+        "type": "svgNode",
+        "attrs": {
+          "figureId": "fig_0",
+          "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 240 300\">\n  <g id=\"lines\" stroke=\"black\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <line x1=\"60\" y1=\"220\" x2=\"180\" y2=\"220\" />\n    <line x1=\"180\" y1=\"220\" x2=\"180\" y2=\"100\" />\n    <line x1=\"180\" y1=\"100\" x2=\"60\" y2=\"100\" />\n    <line x1=\"60\" y1=\"100\" x2=\"60\" y2=\"220\" />\n  </g>\n  <g id=\"labels\" fill=\"black\" font-size=\"14\">\n    <text x=\"120\" y=\"248\" text-anchor=\"middle\">20 ft</text>\n    <text x=\"198\" y=\"160\" transform=\"rotate(-90 198 160)\" text-anchor=\"middle\">20 ft</text>\n  </g>\n</svg>",
+          "title": "Square",
+          "summary": "A square with four equal sides. The base and height are labeled.",
+          "short_desc": "Square with side 20 ft.",
+          "long_desc": "This figure is a square. All four sides are equal. The bottom edge is the base. The base and height are each labeled 20 ft.",
+          "graphicData": {
+            "viewBox": { "x": 0, "y": 0, "width": 240, "height": 300 },
+            "lines": [
+              {
+                "id": "line_bottom",
+                "x1": 60.0,
+                "y1": 220.0,
+                "x2": 180.0,
+                "y2": 220.0,
+                "strokeWidth": 2,
+                "label": "20 ft"
+              },
+              {
+                "id": "line_right",
+                "x1": 180.0,
+                "y1": 220.0,
+                "x2": 180.0,
+                "y2": 100.0,
+                "strokeWidth": 2,
+                "label": "20 ft"
+              },
+              {
+                "id": "line_top",
+                "x1": 180.0,
+                "y1": 100.0,
+                "x2": 60.0,
+                "y2": 100.0,
+                "strokeWidth": 2,
+                "label": null
+              },
+              {
+                "id": "line_left",
+                "x1": 60.0,
+                "y1": 100.0,
+                "x2": 60.0,
+                "y2": 220.0,
+                "strokeWidth": 2,
+                "label": null
+              }
+            ],
+            "vertices": [
+              {
+                "id": "point_P1",
+                "x": 60.0,
+                "y": 220.0,
+                "connectedLines": ["line_bottom", "line_left"]
+              },
+              {
+                "id": "point_P2",
+                "x": 180.0,
+                "y": 220.0,
+                "connectedLines": ["line_bottom", "line_right"]
+              },
+              {
+                "id": "point_P3",
+                "x": 180.0,
+                "y": 100.0,
+                "connectedLines": ["line_right", "line_top"]
+              },
+              {
+                "id": "point_P4",
+                "x": 60.0,
+                "y": 100.0,
+                "connectedLines": ["line_top", "line_left"]
+              }
+            ],
+            "labels": [
+              {
+                "id": "label_base",
+                "x": 120.0,
+                "y": 248.0,
+                "text": "20 ft",
+                "fontSize": 15,
+                "forLine": "line_bottom"
+              },
+              {
+                "id": "label_height",
+                "x": 198.0,
+                "y": 160.0,
+                "text": "20 ft",
+                "fontSize": 15,
+                "forLine": "line_right"
+              }
+            ]
+          }
+        }
+      }
     ],
     "isEdited": true
-}
+  }
+  

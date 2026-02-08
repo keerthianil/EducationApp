@@ -7,22 +7,62 @@
 
 import Foundation
 
-/// A strict “document” shape some converters output: { "content": [nodes...] }
-struct LessonDocument: Codable {
-    let content: [Node]
-}
-
 /// High-level blocks in the lesson – these are what the UI renders into
-/// separate items: headings, paragraphs, images, SVGs, etc.
+/// separate items: headings, paragraphs, images, SVGs, maps, etc.
 enum Node: Codable, Identifiable {
     case heading(level: Int, text: String)
     case paragraph(items: [Inline])
-    case image(src: String, alt: String?)
-    case svgNode(svg: String, title: String?, summaries: [String]?)
+    case image(src: String, alt: String?, shortDesc: String?)
+    case svgNode(svg: String, title: String?, summaries: [String]?, shortDesc: [String]?, graphicData: [String: Any]?)
+    case mapNode(json: String, title: String?, summaries: [String]?)
     case unknown
 
-    /// We don’t rely on identity across frames, so a random UUID per node is fine.
-    var id: UUID { UUID() }
+    /// We don't rely on identity across frames, so a random UUID per node is fine.
+    var id: UUID {
+        let contentString: String
+        switch self {
+        case .heading(let level, let text):
+            contentString = "heading:\(level):\(text)"
+        case .paragraph(let items):
+            let itemsString = items.map { item in
+                switch item {
+                case .text(let t): return "text:\(t)"
+                case .math(let latex, let mathml, let display):
+                    return "math:\(latex ?? ""):\(mathml ?? ""):\(display ?? "")"
+                case .unknown: return "unknown"
+                }
+            }.joined(separator: "|")
+            contentString = "paragraph:\(itemsString)"
+        case .image(let src, let alt, let shortDesc):
+            contentString = "image:\(src):\(alt ?? ""):\(shortDesc ?? "")"
+        case .svgNode(let svg, let title, let summaries, let shortDesc, let graphicData):
+            let summariesStr = summaries?.joined(separator: "|") ?? ""
+            let shortDescStr = shortDesc?.joined(separator: "|") ?? ""
+            let graphicDataStr = graphicData != nil ? "hasGraphicData" : ""
+            contentString = "svg:\(svg):\(title ?? ""):\(summariesStr):\(shortDescStr):\(graphicDataStr)"
+        case .mapNode(let json, let title, let summaries):
+            let summariesStr = summaries?.joined(separator: "|") ?? ""
+            contentString = "map:\(json):\(title ?? ""):\(summariesStr)"
+        case .unknown:
+            contentString = "unknown"
+        }
+        return stableUUID(from: contentString)
+    }
+    
+    /// Generate a stable UUID from a string hash
+    private func stableUUID(from string: String) -> UUID {
+        var hasher = Hasher()
+        hasher.combine(string)
+        let hash = hasher.finalize()
+        // Convert hash to UUID format (8-4-4-4-12)
+        let uuidString = String(format: "%08x-%04x-%04x-%04x-%012x",
+                               UInt32(truncatingIfNeeded: hash) & 0xFFFFFFFF,
+                               UInt16(truncatingIfNeeded: hash >> 32) & 0xFFFF,
+                               UInt16(truncatingIfNeeded: (hash >> 48) & 0x0FFF) | 0x4000,
+                               UInt16(truncatingIfNeeded: (hash >> 60) & 0x3FFF) | 0x8000,
+                               UInt64(abs(Int64(hash))) % 1000000000000)
+        return UUID(uuidString: uuidString) ?? UUID()
+    }
 
     init(from decoder: Decoder) throws {
         // Not used – we parse via FlexibleLessonParser instead.
@@ -104,8 +144,24 @@ enum FlexibleLessonParser {
         if rawType == "image" || rawType == "img" {
             let attrs = d["attrs"] as? [String: Any]
             let src = (attrs?["src"] as? String) ?? ""
-            let alt = attrs?["alt"] as? String
-            return .image(src: src, alt: alt)
+            
+            // Handle alt - can be string or array
+            let alt: String?
+            if let altArray = attrs?["alt"] as? [String] {
+                alt = altArray.first
+            } else {
+                alt = attrs?["alt"] as? String
+            }
+            
+            // Handle short_desc - can be string or array
+            let shortDesc: String?
+            if let shortDescArray = attrs?["short_desc"] as? [String] {
+                shortDesc = shortDescArray.first
+            } else {
+                shortDesc = attrs?["short_desc"] as? String
+            }
+            
+            return .image(src: src, alt: alt, shortDesc: shortDesc)
         }
 
         // SVG / graphics
@@ -113,10 +169,61 @@ enum FlexibleLessonParser {
             let attrs = d["attrs"] as? [String: Any]
             let svg = (attrs?["svgContent"] as? String) ?? (attrs?["svg"] as? String) ?? ""
             let title = attrs?["title"] as? String
+            
+            // Handle both array and string formats for descriptions
+            let long: [String]?
+            if let longArray = attrs?["long_desc"] as? [String] {
+                long = longArray
+            } else if let longString = attrs?["long_desc"] as? String {
+                long = [longString]
+            } else {
+                long = nil
+            }
+            
+            let short: [String]?
+            if let shortArray = attrs?["short_desc"] as? [String] {
+                short = shortArray
+            } else if let shortString = attrs?["short_desc"] as? String {
+                short = [shortString]
+            } else {
+                short = nil
+            }
+            
+            let summary: [String]?
+            if let summaryArray = attrs?["summary"] as? [String] {
+                summary = summaryArray
+            } else if let summaryString = attrs?["summary"] as? String {
+                summary = [summaryString]
+            } else {
+                summary = nil
+            }
+            
+            // Extract graphicData if available (structured JSON with lines, vertices, labels)
+            let graphicData = attrs?["graphicData"] as? [String: Any]
+            
+            // Use long_desc or summary for summaries, short_desc separately for VoiceOver
+            return .svgNode(svg: svg, title: title, summaries: long ?? summary, shortDesc: short, graphicData: graphicData)
+        }
+
+        // Map / geographic graphics
+        if rawType == "mapnode" || rawType == "map" {
+            let attrs = d["attrs"] as? [String: Any]
+            // Try to get JSON as string, or serialize if it's a dictionary
+            let jsonString: String
+            if let jsonStr = (attrs?["jsonContent"] as? String) ?? (attrs?["json"] as? String) {
+                jsonString = jsonStr
+            } else if let jsonDict = attrs?["jsonContent"] as? [String: Any] ?? attrs?["json"] as? [String: Any],
+                      let jsonData = try? JSONSerialization.data(withJSONObject: jsonDict),
+                      let jsonStr = String(data: jsonData, encoding: .utf8) {
+                jsonString = jsonStr
+            } else {
+                jsonString = ""
+            }
+            let title = attrs?["title"] as? String
             let long  = attrs?["long_desc"] as? [String]
             let short = attrs?["short_desc"] as? [String]
             let summary = attrs?["summary"] as? [String]
-            return .svgNode(svg: svg, title: title, summaries: long ?? summary ?? short)
+            return .mapNode(json: jsonString, title: title, summaries: long ?? summary ?? short)
         }
 
         // Unknown containers that still hold "content"
@@ -174,7 +281,7 @@ enum FlexibleLessonParser {
 //  NOTE: attrs is [String:String]. If the actual JSON uses numbers for some
 //  attributes (like "level": 2), decoding this strict model might fail; in
 //  that case we fall back to the FlexibleLessonParser above, so the app
-//  still won’t crash.
+//  still won't crash.
 
 private struct LessonDocumentStrict: Codable {
     let content: [StrictNode]
@@ -215,12 +322,19 @@ private struct LessonDocumentStrict: Codable {
             case "image":
                 let src = attrs?["src"] ?? ""
                 let alt = attrs?["alt"]
-                return .image(src: src, alt: alt)
+                let shortDesc = attrs?["short_desc"]
+                return .image(src: src, alt: alt, shortDesc: shortDesc)
 
             case "svgNode":
                 let svg = attrs?["svgContent"] ?? ""
                 let title = attrs?["title"]
-                return .svgNode(svg: svg, title: title, summaries: nil)
+                let graphicData = attrs?["graphicData"] as? [String: Any]
+                return .svgNode(svg: svg, title: title, summaries: nil, shortDesc: nil, graphicData: graphicData)
+
+            case "mapNode", "map":
+                let json = attrs?["jsonContent"] ?? attrs?["json"] ?? ""
+                let title = attrs?["title"]
+                return .mapNode(json: json, title: title, summaries: nil)
 
             default:
                 return .unknown

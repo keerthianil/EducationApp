@@ -19,16 +19,17 @@ struct LessonIndexItem: Identifiable, Codable, Hashable {
 
 final class LessonStore: ObservableObject {
 
-    // MARK: - Seed lessons from teacher (3 sample PDFs)
+    // MARK: - Seed lessons from teacher (2 sample PDFs - precalculus removed for user testing)
 
     /// Accessibility article – samples in `raw_json/sample1`
+    /// Page 2 removed for testing - temporarily using only page 1
     let teacherSeed: LessonIndexItem? = LessonIndexItem(
         id: "sample1_accessibility",
         title: "The Science of Accessible Design",
         teacher: "Ms. Rivera",
         localFiles: [
-            "sample1_page1",      // looks up sample1_page1.json in bundle
-            "sample1_page2"
+            "sample1_page1"      // looks up sample1_page1.json in bundle
+            // "sample1_page2" - temporarily removed for testing
         ],
         createdAt: Date()
     )
@@ -45,7 +46,9 @@ final class LessonStore: ObservableObject {
         createdAt: Date().addingTimeInterval(-3600)
     )
 
-    /// Precalculus packet – `raw_json/sample3`
+    /// Precalculus packet – `raw_json/sample3` - temporarily commented out for user testing
+    /// We will only use 2 documents for the first round of user testing
+    /*
     private let sample3Lesson = LessonIndexItem(
         id: "sample3_precalculus",
         title: "Precalculus Math Packet",
@@ -64,25 +67,27 @@ final class LessonStore: ObservableObject {
         ],
         createdAt: Date().addingTimeInterval(-7200)
     )
+    */
 
     // MARK: - Published lists for dashboard
 
-    /// “Recent Activity” on the dashboard (teacher items + uploads).
+    /// "Recent Activity" on the dashboard (teacher items + uploads).
     @Published var recent: [LessonIndexItem] = []
 
     /// Student-uploaded & converted items.
     @Published var downloaded: [LessonIndexItem] = []
 
-    /// Optional banner lesson shown at the top (“New document from …”).
+    /// Optional banner lesson shown at the top ("New document from …").
     @Published var banner: LessonIndexItem? = nil
     
     /// Files currently being processed (uploading/processing state)
     @Published var processing: [ProcessingFile] = []
 
     init() {
-        // Seed dashboard with all three teacher lessons so they’re visible
+        // Seed dashboard with teacher lessons so they're visible (using 2 documents for user testing)
+        // Precalculus lesson removed for first round of user testing
         if let seed = teacherSeed {
-            recent = [seed, sample2Lesson, sample3Lesson]
+            recent = [seed, sample2Lesson]
             banner = seed
         }
     }
@@ -148,7 +153,7 @@ final class LessonStore: ObservableObject {
     }
 
     /// Load and parse nodes for a list of filenames.
-    /// If a file fails to load or parse, we just skip it so the app doesn’t crash.
+    /// If a file fails to load or parse, we just skip it so the app doesn't crash.
     func loadNodes(forFilenames files: [String]) -> [Node] {
         var all: [Node] = []
 

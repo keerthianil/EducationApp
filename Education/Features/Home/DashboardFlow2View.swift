@@ -2,6 +2,7 @@
 //  DashboardFlow2View.swift
 //  Education
 //
+//
 
 import SwiftUI
 import UIKit
@@ -16,6 +17,7 @@ struct DashboardFlow2View: View {
     @State private var showUpload = false
     @State private var selectedLesson: LessonIndexItem?
     @State private var selectedTab: Flow2Tab = .home
+    @State private var navigateToFlowSelection = false
     @StateObject private var notificationDelegate = NotificationDelegate.shared
     @StateObject private var uploadManager = UploadManager()
     
@@ -23,8 +25,18 @@ struct DashboardFlow2View: View {
     @State private var previousCompletedCount = 0
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dismiss) private var dismiss
     
-    enum Flow2Tab { case home, allFiles }
+    enum Flow2Tab: CaseIterable {
+        case home, allFiles
+        
+        var title: String {
+            switch self {
+            case .home: return "Home"
+            case .allFiles: return "All files"
+            }
+        }
+    }
     
     private var contentMaxWidth: CGFloat {
         horizontalSizeClass == .regular ? 800 : .infinity
@@ -39,8 +51,8 @@ struct DashboardFlow2View: View {
             VStack(alignment: .leading, spacing: 0) {
                 flow2Header
                     .padding(.horizontal, horizontalPadding)
-                    .padding(.top, 20)
-                    .padding(.bottom, 8)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 
                 flow2TopTabs
                     .padding(.bottom, 16)
@@ -70,6 +82,10 @@ struct DashboardFlow2View: View {
             .padding(.bottom, 40)
         }
         .background(Color(hex: "#F6F7F8"))
+        .safeAreaInset(edge: .top) {
+            Spacer()
+                .frame(height: 44)
+        }
         .sheet(isPresented: $showUpload) {
             UploadSheetView(uploadManager: uploadManager)
                 .environmentObject(lessonStore)
@@ -79,12 +95,22 @@ struct DashboardFlow2View: View {
             uploadManager.lessonStore = lessonStore
             previousProcessingCount = lessonStore.processing.count
             previousCompletedCount = lessonStore.downloaded.count
+            InteractionLogger.shared.setCurrentScreen("DashboardFlow2View")
+            
+            // --- CHANGED: Announce title for VoiceOver ---
+            if UIAccessibility.isVoiceOverRunning {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 2")
+                }
+            }
         }
         .fullScreenCover(item: $selectedLesson) { lesson in
             NavigationStack {
                 Flow2ReaderContainer(item: lesson)
                     .environmentObject(lessonStore)
                     .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             }
         }
         .onChange(of: notificationDelegate.selectedLessonId) { _, newValue in
@@ -100,73 +126,99 @@ struct DashboardFlow2View: View {
         .onChange(of: lessonStore.downloaded.count) { _, newCount in
             previousCompletedCount = newCount
         }
+        .onChange(of: selectedTab) { oldTab, newTab in
+            InteractionLogger.shared.log(
+                event: .tabChange,
+                objectType: .tab,
+                label: newTab.title,
+                location: .zero,
+                additionalInfo: "Flow 2 tab changed"
+            )
+        }
+        .onThreeFingerSwipeBack {
+            dismiss()
+        }
         .toolbar(.hidden, for: .navigationBar)
+        .background(
+            NavigationLink(destination: ChooseFlowView().navigationBarBackButtonHidden(true), isActive: $navigateToFlowSelection) {
+                EmptyView()
+            }
+            .hidden()
+        )
     }
     
-    // MARK: - Header
+    // MARK: - Header (with back button)
     private var flow2Header: some View {
         HStack {
-            Text("Logo")
-                .font(.custom("Arial", size: 18).weight(.bold))
-                .foregroundColor(Color(hex: "#121417"))
-                .accessibilityLabel("Education App")
+            Button {
+                haptics.tapSelection()
+                InteractionLogger.shared.log(
+                    event: .tap,
+                    objectType: .button,
+                    label: "Back to Flows",
+                    location: .zero
+                )
+                InteractionLogger.shared.endSession()
+                navigateToFlowSelection = true
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(ColorTokens.primary)
+                    .frame(width: 48, height: 48)
+            }
+            .accessibilityLabel("Back to flow selection")
             
             Spacer()
             
-            Button {
-                haptics.tapSelection()
-            } label: {
-                VStack(spacing: 4) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Rectangle()
-                            .fill(Color(hex: "#121417"))
-                            .frame(width: 18, height: 2)
-                    }
-                }
-                .frame(width: 48, height: 48)
-            }
-            .accessibilityLabel("Menu")
+            Spacer()
+                .frame(width: 48)
         }
+        .overlay(
+            Text("StemAlly")
+                .font(.custom("Arial", size: 18).weight(.bold))
+                .foregroundColor(Color(hex: "#121417"))
+                .accessibilityAddTraits(.isHeader),
+            alignment: .center
+        )
     }
     
     // MARK: - Top Tabs
     private var flow2TopTabs: some View {
-        HStack(spacing: 0) {
-            Button { selectedTab = .home } label: {
-                VStack(spacing: 0) {
-                    Spacer()
-                    Text("Home")
-                        .font(.custom("Arial", size: 15.9).weight(.semibold))
-                        .foregroundColor(selectedTab == .home ? ColorTokens.primary : Color(hex: "#8B919C"))
-                    Spacer()
-                    Rectangle()
-                        .fill(selectedTab == .home ? ColorTokens.primary : Color.clear)
-                        .frame(height: 4)
+        let allTabs = Flow2Tab.allCases
+        let tabCount = allTabs.count
+        
+        return HStack(spacing: 0) {
+            ForEach(Array(allTabs.enumerated()), id: \.element) { index, tab in
+                let isSelected = (selectedTab == tab)
+                
+                Button {
+                    haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .tab,
+                        label: "Tab: \(tab.title)"
+                    )
+                    selectedTab = tab
+                } label: {
+                    VStack(spacing: 0) {
+                        Spacer()
+                        Text(tab.title)
+                            .font(.custom("Arial", size: 15.9).weight(.semibold))
+                            .foregroundColor(isSelected ? ColorTokens.primary : Color(hex: "#8B919C"))
+                        Spacer()
+                        Rectangle()
+                            .fill(isSelected ? ColorTokens.primary : Color.clear)
+                            .frame(height: 4)
+                    }
+                    .frame(height: 75)
                 }
-                .frame(height: 75)
+                .frame(maxWidth: .infinity)
+                .background(isSelected ? Color.white : Color.clear)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(tab.title)
+                .accessibilityValue(isSelected ? "selected" : "")
+                .accessibilityHint("Tab \(index + 1) of \(tabCount)")
+                .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
             }
-            .frame(maxWidth: .infinity)
-            .background(selectedTab == .home ? Color.white : Color.clear)
-            .accessibilityLabel("Home")
-            .accessibilityAddTraits(selectedTab == .home ? .isSelected : [])
-            
-            Button { selectedTab = .allFiles } label: {
-                VStack(spacing: 0) {
-                    Spacer()
-                    Text("All files")
-                        .font(.custom("Arial", size: 16.2).weight(.semibold))
-                        .foregroundColor(selectedTab == .allFiles ? ColorTokens.primary : Color(hex: "#8B919C"))
-                    Spacer()
-                    Rectangle()
-                        .fill(selectedTab == .allFiles ? ColorTokens.primary : Color.clear)
-                        .frame(height: 4)
-                }
-                .frame(height: 75)
-            }
-            .frame(maxWidth: .infinity)
-            .background(selectedTab == .allFiles ? Color.white : Color.clear)
-            .accessibilityLabel("All files")
-            .accessibilityAddTraits(selectedTab == .allFiles ? .isSelected : [])
         }
         .background(Color.white)
         .overlay(
@@ -175,6 +227,7 @@ struct DashboardFlow2View: View {
                 .frame(height: 2),
             alignment: .bottom
         )
+        .accessibilityElement(children: .contain)
     }
     
     // MARK: - Upload Section
@@ -190,57 +243,21 @@ struct DashboardFlow2View: View {
                 .foregroundColor(Color(hex: "#4E5055"))
             
             VStack(spacing: 12) {
+                // --- CHANGED: Browse files disabled ---
                 Button("Browse files") {
                     haptics.tapSelection()
+                    InteractionLogger.shared.logTap(
+                        objectType: .button,
+                        label: "Browse Files"
+                    )
                     showUpload = true
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                
-                Button("Scan files") {}
-                    .buttonStyle(TertiaryButtonStyle())
-                    .disabled(true)
+                .disabled(true)
+                .opacity(0.5)
+                .accessibilityLabel("Browse files")
+                .accessibilityHint("Currently disabled")
             }
-            
-            Text("or upload from")
-                .font(.custom("Arial", size: 15.9))
-                .foregroundColor(Color(hex: "#989CA6"))
-            
-            HStack(spacing: 8) {
-                // Google Drive - using asset
-                HStack(spacing: 8) {
-                    Image("GoogleDrive")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                    
-                    Text("Google Drive")
-                        .font(.custom("Arial", size: 16.7).weight(.bold))
-                        .foregroundColor(.black)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(hex: "#FEFEFE"))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#DADDE2"), lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                
-                // Dropbox - using asset
-                HStack(spacing: 8) {
-                    Image("Dropbox")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                    
-                    Text("Dropbox")
-                        .font(.custom("Arial", size: 16.7).weight(.bold))
-                        .foregroundColor(.black)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(hex: "#FEFEFE"))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#DADDE2"), lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .accessibilityHidden(true)
         }
         .padding(.vertical, 32)
         .padding(.horizontal, 25)
@@ -283,6 +300,10 @@ struct DashboardFlow2View: View {
                         ForEach(teacherItems) { item in
                             Flow2TeacherCard(item: item) {
                                 haptics.tapSelection()
+                                InteractionLogger.shared.logTap(
+                                    objectType: .card,
+                                    label: "Teacher: \(item.title)"
+                                )
                                 selectedLesson = item
                             }
                         }
@@ -290,6 +311,8 @@ struct DashboardFlow2View: View {
                     .padding(.horizontal, horizontalPadding)
                     .padding(.vertical, 16)
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Uploaded by teacher, \(teacherItems.count) file\(teacherItems.count == 1 ? "" : "s")")
             }
         }
     }
@@ -307,6 +330,10 @@ struct DashboardFlow2View: View {
                 ForEach(lessonStore.recent) { item in
                     Flow2RecentRow(item: item) {
                         haptics.tapSelection()
+                        InteractionLogger.shared.logTap(
+                            objectType: .listRow,
+                            label: "Recent: \(item.title)"
+                        )
                         selectedLesson = item
                     }
                 }
@@ -330,6 +357,7 @@ struct DashboardFlow2View: View {
                     Image(systemName: "doc")
                         .font(.system(size: 48))
                         .foregroundColor(Color(hex: "#989CA6"))
+                        .accessibilityHidden(true)
                     Text("No files yet")
                         .font(.custom("Arial", size: 17))
                         .foregroundColor(Color(hex: "#61758A"))
@@ -340,6 +368,10 @@ struct DashboardFlow2View: View {
                 ForEach(allFiles) { item in
                     Flow2FileRow(item: item) {
                         haptics.tapSelection()
+                        InteractionLogger.shared.logTap(
+                            objectType: .fileCard,
+                            label: "File: \(item.title)"
+                        )
                         selectedLesson = item
                     }
                 }
@@ -348,7 +380,7 @@ struct DashboardFlow2View: View {
     }
 }
 
-// MARK: - Flow 2 Processing Card (Using pdf-icon-red)
+// MARK: - Flow 2 Processing Card
 private struct Flow2ProcessingCard: View {
     let processingFile: ProcessingFile
     
@@ -404,7 +436,7 @@ private struct Flow2ProcessingCard: View {
     }
 }
 
-// MARK: - Flow 2 Teacher Card (Using worksheet-preview)
+// MARK: - Flow 2 Teacher Card
 private struct Flow2TeacherCard: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -418,12 +450,12 @@ private struct Flow2TeacherCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 8) {
-                // Worksheet thumbnail using worksheet-preview asset
                 Image("worksheet-preview")
                     .resizable()
                     .scaledToFill()
                     .frame(width: cardWidth - 32, height: 90)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .accessibilityHidden(true)
                 
                 Text(item.title)
                     .font(.custom("Arial", size: 17))
@@ -446,10 +478,11 @@ private struct Flow2TeacherCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(item.title), from \(item.teacher ?? "teacher")")
         .accessibilityHint("Double tap to open")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
-// MARK: - Flow 2 Recent Row (Using book-cover assets)
+// MARK: - Flow 2 Recent Row
 private struct Flow2RecentRow: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -457,7 +490,6 @@ private struct Flow2RecentRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // Document icon
                 ZStack {
                     RoundedRectangle(cornerRadius: 13.75)
                         .fill(Color(hex: "#DEECF8"))
@@ -483,7 +515,6 @@ private struct Flow2RecentRow: View {
                 
                 Spacer()
                 
-                // Book cover thumbnail using assets
                 Image(bookCoverImageName(for: item))
                     .resizable()
                     .scaledToFill()
@@ -498,15 +529,14 @@ private struct Flow2RecentRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(item.title)")
+        .accessibilityLabel(item.title)
         .accessibilityHint("Double tap to open")
+        .accessibilityAddTraits(.isButton)
     }
     
     private func bookCoverImageName(for item: LessonIndexItem) -> String {
         let title = item.title.lowercased()
-        if title.contains("precalculus") || title.contains("calculus") {
-            return "book-cover-calculus"
-        } else if title.contains("compound") || title.contains("figures") || title.contains("geometry") {
+        if title.contains("compound") || title.contains("figures") || title.contains("geometry") {
             return "book-cover-geometry"
         } else {
             return "book-cover-algebra"
@@ -514,7 +544,7 @@ private struct Flow2RecentRow: View {
     }
 }
 
-// MARK: - Flow 2 File Row (Using tick-mark)
+// MARK: - Flow 2 File Row
 private struct Flow2FileRow: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -522,7 +552,6 @@ private struct Flow2FileRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // PDF icon
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(hex: "#FEDFDE"))
@@ -562,6 +591,7 @@ private struct Flow2FileRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(item.title), completed")
         .accessibilityHint("Double tap to open")
+        .accessibilityAddTraits(.isButton)
     }
     
     private func formatDate(_ date: Date) -> String {
@@ -575,6 +605,8 @@ private struct Flow2FileRow: View {
 private struct Flow2ReaderContainer: View {
     @EnvironmentObject var lessonStore: LessonStore
     @EnvironmentObject var speech: SpeechService
+    @EnvironmentObject var haptics: HapticService
+    @EnvironmentObject var mathSpeech: MathSpeechService
     @Environment(\.dismiss) private var dismiss
     let item: LessonIndexItem
     
@@ -584,22 +616,17 @@ private struct Flow2ReaderContainer: View {
         Group {
             if !pages.isEmpty {
                 WorksheetView(title: item.title, pages: pages)
+                    .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             } else {
                 DocumentRendererView(title: item.title, nodes: lessonStore.loadNodes(forFilenames: item.localFiles))
+                    .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    speech.stop(immediate: true)
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.black)
-                }
-                .accessibilityLabel("Back")
-            }
-        }
+        .navigationBarBackButtonHidden(true)
+        // NO document logging here
     }
 }
