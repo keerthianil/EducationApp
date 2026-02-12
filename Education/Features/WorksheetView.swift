@@ -410,18 +410,39 @@ private struct ParagraphBlockView: View {
     @EnvironmentObject var speech: SpeechService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
-    private var textParts: [String] {
-        items.compactMap { inline -> String? in
-            if case .text(let t) = inline { return t }
-            return nil
-        }
+    private enum Segment: Identifiable {
+        case text(String)
+        case math(latex: String?, mathml: String?, display: String?)
+        
+        var id: UUID { UUID() }
     }
     
-    private var mathParts: [(Int, Inline)] {
-        items.enumerated().compactMap { idx, inline in
-            if case .math = inline { return (idx, inline) }
-            return nil
+    /// Interleave text and MathCAT blocks in-order:
+    /// text → equation → text → equation …
+    private var segments: [Segment] {
+        var result: [Segment] = []
+        var textBuffer = ""
+        
+        func flushText() {
+            let t = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !t.isEmpty { result.append(.text(t)) }
+            textBuffer = ""
         }
+        
+        for inline in items {
+            switch inline {
+            case .text(let t):
+                textBuffer += t
+            case .math(let latex, let mathml, let display):
+                flushText()
+                result.append(.math(latex: latex, mathml: mathml, display: display))
+            case .unknown:
+                break
+            }
+        }
+        
+        flushText()
+        return result
     }
     
     private var bodyFontSize: CGFloat {
@@ -430,16 +451,13 @@ private struct ParagraphBlockView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            let combinedText = textParts.joined()
-            if !combinedText.isEmpty {
-                Text(combinedText)
-                    .font(.custom("Arial", size: bodyFontSize))
-                    .foregroundColor(Color(hex: "#121417"))
-
-            }
-            
-            ForEach(mathParts, id: \.0) { _, mathInline in
-                if case .math(let latex, let mathml, let display) = mathInline {
+            ForEach(segments) { segment in
+                switch segment {
+                case .text(let t):
+                    Text(t)
+                        .font(.custom("Arial", size: bodyFontSize))
+                        .foregroundColor(Color(hex: "#121417"))
+                case .math(let latex, let mathml, let display):
                     MathCATEquationView(latex: latex, mathml: mathml, display: display)
                         .environmentObject(haptics)
                         .environmentObject(mathSpeech)
@@ -603,10 +621,15 @@ private struct SVGBlockView: View {
             if graphicData != nil {
                 // Button wrapping SVGView — same pattern as DocumentRendererView
                 Button(action: openMultisensory) {
-                    SVGView(svg: svg, graphicData: graphicData)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: svgHeight)
-                        .clipped()
+                    ZStack {
+                        SVGView(svg: svg, graphicData: graphicData)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: svgHeight)
+                            .clipped()
+                        // Transparent overlay to guarantee taps land on the Button.
+                        Color.clear
+                            .contentShape(Rectangle())
+                    }
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())

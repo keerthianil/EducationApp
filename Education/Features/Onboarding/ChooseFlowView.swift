@@ -10,6 +10,8 @@ import UIKit
 
 struct ChooseFlowView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var lessonStore: LessonStore
+    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverEnabled
     @State private var goToDashboard = false
     @State private var didAnnounceScreen = false
     @State private var showExportSheet = false
@@ -41,7 +43,7 @@ struct ChooseFlowView: View {
                     // Flow 1 - Current Design
                     FlowSelectionButton(
                         flowNumber: 1,
-                        title: "Flow 1",
+                        title: "Practice Scenario",
                         subtitle: "Bottom tabs + Vertical menu",
                         isEnabled: true
                     ) {
@@ -52,7 +54,7 @@ struct ChooseFlowView: View {
                     // Flow 2 - Top tabs design
                     FlowSelectionButton(
                         flowNumber: 2,
-                        title: "Flow 2",
+                        title: "Scenario 1",
                         subtitle: "Top tabs (Home/All files)",
                         isEnabled: true
                     ) {
@@ -62,7 +64,7 @@ struct ChooseFlowView: View {
                     // Flow 3 - Upload tabs design
                     FlowSelectionButton(
                         flowNumber: 3,
-                        title: "Flow 3",
+                        title: "Scenario 2",
                         subtitle: "Upload/Teacher/Recent tabs + Side menu",
                         isEnabled: true
                     ) {
@@ -74,28 +76,27 @@ struct ChooseFlowView: View {
                 Spacer()
                     .frame(height: 20)
             
-                // Export Data Button - hidden from VoiceOver during sessions
-                               Button {
-                                   showExportSheet = true
-                               } label: {
-                                   HStack(spacing: 8) {
-                                       Image(systemName: "square.and.arrow.up")
-                                           .font(.system(size: 16))
-                                       Text("Export Interaction Data")
-                                           .font(.custom("Arial", size: 15))
-                                   }
-                                   .foregroundColor(ColorTokens.primary)
-                                   .padding(.horizontal, 20)
-                                   .padding(.vertical, 12)
-                                   .background(
-                                       RoundedRectangle(cornerRadius: 8)
-                                           .stroke(ColorTokens.primary, lineWidth: 1)
-                                   )
-                               }
-                               // Skip during VoiceOver interaction ---
-                               .accessibilityHidden(UIAccessibility.isVoiceOverRunning)
+                // Export Data Button (keep visible, hide from VO so focus stays on flows)
+                Button {
+                    showExportSheet = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16))
+                        Text("Export Interaction Data")
+                            .font(.custom("Arial", size: 15))
+                    }
+                    .foregroundColor(ColorTokens.primary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(ColorTokens.primary, lineWidth: 1)
+                    )
+                }
+                .accessibilityHidden(isVoiceOverEnabled)
                 
-                // Entry counts
+                // Entry counts (keep visible, hide from VO so focus stays on flows)
                 VStack(spacing: 4) {
                     Text("Logged Interactions:")
                         .font(.custom("Arial", size: 13))
@@ -104,13 +105,14 @@ struct ChooseFlowView: View {
                     HStack(spacing: 16) {
                         ForEach(1...3, id: \.self) { flow in
                             let count = InteractionLogger.shared.getEntryCount(for: flow)
-                            Text("Flow \(flow): \(count)")
+                            Text("\(flow == 1 ? "Practice Scenario" : flow == 2 ? "Scenario 1" : "Scenario 2"): \(count)")
                                 .font(.custom("Arial", size: 12))
                                 .foregroundColor(Color(hex: "#91949B"))
                         }
                     }
                 }
                 .padding(.top, 8)
+                .accessibilityHidden(isVoiceOverEnabled)
                 
                 Spacer()
             }
@@ -146,12 +148,20 @@ struct ChooseFlowView: View {
     
     private func selectFlow(_ flow: Int) {
         // Log the selection
+        let scenarioName: String = {
+            switch flow {
+            case 1: return "Practice Scenario"
+            case 2: return "Scenario 1"
+            case 3: return "Scenario 2"
+            default: return "Flow \(flow)"
+            }
+        }()
         InteractionLogger.shared.log(
             event: .tap,
             objectType: .button,
-            label: "Flow \(flow) Selected",
+            label: "\(scenarioName) Selected",
             location: .zero,
-            additionalInfo: "User selected Flow \(flow)"
+            additionalInfo: "User selected \(scenarioName)"
         )
         
         appState.selectedFlow = flow
@@ -159,6 +169,9 @@ struct ChooseFlowView: View {
         
         // Start logging session for this flow
         InteractionLogger.shared.startSession(flow: flow)
+
+        // Phase 1: apply Flow 1 practice scenario lesson seeds only
+        lessonStore.applySeedLessons(forFlow: flow)
         
         goToDashboard = true
     }
@@ -236,7 +249,7 @@ private struct ExportDataSheet: View {
                     ForEach(1...3, id: \.self) { flow in
                         let count = InteractionLogger.shared.getEntryCount(for: flow)
                         HStack {
-                            Text("Flow \(flow)")
+                            Text(flow == 1 ? "Practice Scenario" : flow == 2 ? "Scenario 1" : "Scenario 2")
                                 .font(.custom("Arial", size: 17))
                                 .foregroundColor(Color(hex: "#121417"))
                             
@@ -308,13 +321,19 @@ private struct ExportDataSheet: View {
         isExporting = true
         
         DispatchQueue.global(qos: .userInitiated).async {
-            let urls = InteractionLogger.shared.exportAllFlows()
-            
-            DispatchQueue.main.async {
-                isExporting = false
-                exportedURLs = urls
-                if !urls.isEmpty {
+            // Export ALL flows as separate Excel files (each with 3 tabs)
+            let urls = InteractionLogger.shared.exportAllFlowsAsExcel()
+            if !urls.isEmpty {
+                DispatchQueue.main.async {
+                    isExporting = false
+                    exportedURLs = urls
+                    print("[ChooseFlowView] Prepared \(urls.count) Excel file(s) for sharing")
                     showShareSheet = true
+                }
+            } else {
+                DispatchQueue.main.async {
+                    isExporting = false
+                    print("[ChooseFlowView] Excel export failed – no files to share")
                 }
             }
         }

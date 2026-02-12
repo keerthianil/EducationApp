@@ -350,7 +350,12 @@ struct DashboardFlow2View: View {
                 .padding(.top, 20)
                 .accessibilityAddTraits(.isHeader)
             
-            let allFiles = lessonStore.downloaded.sorted { $0.createdAt > $1.createdAt }
+            // Show both teacher PDFs and student-uploaded PDFs
+            let teacherItems = lessonStore.recent.filter { $0.teacher != nil }
+            let allFilesById = (lessonStore.downloaded + teacherItems).reduce(into: [String: LessonIndexItem]()) { acc, item in
+                acc[item.id] = acc[item.id] ?? item
+            }
+            let allFiles = allFilesById.values.sorted { $0.createdAt > $1.createdAt }
             
             if allFiles.isEmpty {
                 VStack(spacing: 16) {

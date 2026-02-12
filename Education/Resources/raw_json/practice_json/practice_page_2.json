@@ -1,0 +1,49 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 1 },
+      "content": [{ "type": "text", "text": "Math Practice Test 2" }]
+    },
+    {
+      "type": "paragraph",
+      "attrs": { "contentType": "body_text" },
+      "content": [{ "type": "text", "text": "Find the area of the rectangle below." }]
+    },
+    {
+      "type": "svgNode",
+      "attrs": {
+        "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 618 377\" style=\"max-width:100%;height:auto;\">\\n<defs/>\\n  <g id=\\\"lines\\\">\\n    <line id=\\\"line_1\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"44.0\\\" x2=\\\"512.0\\\" y1=\\\"283.0\\\" y2=\\\"283.0\\\"/>\\n    <line id=\\\"line_2\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"46.0\\\" x2=\\\"511.0\\\" y1=\\\"44.0\\\" y2=\\\"45.0\\\"/>\\n    <line id=\\\"line_3\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"509.0\\\" x2=\\\"511.0\\\" y1=\\\"286.0\\\" y2=\\\"44.0\\\"/>\\n    <line id=\\\"line_4\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"47.0\\\" x2=\\\"46.0\\\" y1=\\\"285.0\\\" y2=\\\"44.0\\\"/>\\n  </g>\\n  <g id=\\\"points\\\">\\n    <circle cx=\\\"46.0\\\" cy=\\\"44.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_1\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"510.99173568407207\\\" cy=\\\"44.99998222727757\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_2\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"46.99170124481327\\\" cy=\\\"283.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_3\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"509.02479338842977\\\" cy=\\\"283.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_4\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n  </g>\\n  <g id=\\\"texts\\\">\\n    <text fill=\\\"#000000\\\" font-size=\\\"15px\\\" id=\\\"label_1\\\" x=\\\"549.980224609375\\\" y=\\\"166.79751586914062\\\">4m</text>\\n    <text fill=\\\"#000000\\\" font-size=\\\"15px\\\" id=\\\"label_2\\\" x=\\\"278.15399169921875\\\" y=\\\"313.9268493652344\\\">6m</text>\\n  </g>\\n</svg>",
+        "title": "Pink Rectangle",
+        "summary": ["The image shows a pink rectangle with dimensions 6m and 4m."],
+        "short_desc": ["The image is a pink rectangle with the length labeled as 6m and the width labeled as 4m."],
+        "long_desc": [
+          "A pink rectangle. The bottom side is labeled 6m and the right side is labeled 4m."
+        ],
+        "fig_id": "fig_0",
+        "graphicData": {
+          "viewBox": { "x": 0, "y": 0, "width": 618, "height": 377 },
+          "lines": [
+            { "id": "line_1", "x1": 44.0, "y1": 283.0, "x2": 512.0, "y2": 283.0, "strokeWidth": 1, "label": "6m" },
+            { "id": "line_2", "x1": 46.0, "y1": 44.0, "x2": 511.0, "y2": 45.0, "strokeWidth": 1, "label": null },
+            { "id": "line_3", "x1": 509.0, "y1": 286.0, "x2": 511.0, "y2": 44.0, "strokeWidth": 1, "label": "4m" },
+            { "id": "line_4", "x1": 47.0, "y1": 285.0, "x2": 46.0, "y2": 44.0, "strokeWidth": 1, "label": null }
+          ],
+          "vertices": [
+            { "x": 46.0, "y": 44.0 },
+            { "x": 510.9917, "y": 44.99998 },
+            { "x": 46.9917, "y": 283.0 },
+            { "x": 509.0248, "y": 283.0 }
+          ],
+          "labels": [
+            { "text": "6m", "forLine": "line_1" },
+            { "text": "4m", "forLine": "line_3" }
+          ]
+        }
+      }
+    }
+  ],
+  "pageNumber": 1,
+  "isEdited": false
+}
