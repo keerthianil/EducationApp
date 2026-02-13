@@ -108,7 +108,7 @@ struct DashboardFlow3View: View {
             // --- CHANGED: Announce title for VoiceOver ---
             if UIAccessibility.isVoiceOverRunning {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 3")
+                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Scenario 2")
                 }
             }
         }

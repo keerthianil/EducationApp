@@ -83,7 +83,6 @@ final class LessonStore: ObservableObject {
     )
     
     // MARK: - Scenario 2 (Flow 3) seed lessons
-    // New documents live in `Resources/raw_json/scenario_2/`
     private let scenario2Lesson1 = LessonIndexItem(
         id: "scenario_2_shapes_1",
         title: "Shapes and Geometry (1)",
@@ -91,7 +90,11 @@ final class LessonStore: ObservableObject {
         localFiles: ["scenario2_page_1"],
         createdAt: Date()
     )
-    
+
+    // Page 2 of the original PDF = "Find the area of the square" (square graphic only)
+    // Page 3 = parallelogram question
+    // We handle this split in WorksheetLoader, not here.
+    // Keep localFiles pointing to the single JSON; WorksheetLoader splits SVG nodes.
     private let scenario2Lesson2 = LessonIndexItem(
         id: "scenario_2_shapes_2",
         title: "Shapes and Geometry (2)",
@@ -99,6 +102,7 @@ final class LessonStore: ObservableObject {
         localFiles: ["scenario2_page_2"],
         createdAt: Date().addingTimeInterval(-60)
     )
+
 
     /// Precalculus packet – `raw_json/sample3` - temporarily commented out for user testing
     /// We will only use 2 documents for the first round of user testing

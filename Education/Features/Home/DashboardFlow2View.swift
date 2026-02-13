@@ -100,8 +100,7 @@ struct DashboardFlow2View: View {
             // --- CHANGED: Announce title for VoiceOver ---
             if UIAccessibility.isVoiceOverRunning {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 2")
-                }
+                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Scenario 1")                }
             }
         }
         .fullScreenCover(item: $selectedLesson) { lesson in
@@ -320,7 +319,7 @@ struct DashboardFlow2View: View {
     // MARK: - Recent Activity Section
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Text("Recent Activity")
+            Text("Recent files")
                 .font(.custom("Arial", size: 22).weight(.bold))
                 .foregroundColor(Color(hex: "#121417"))
                 .padding(.top, 20)

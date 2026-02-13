@@ -37,10 +37,19 @@ struct MultisensorySVGView: View {
             dismiss()
         }
         .onAppear {
-            let message = "You are in the multisensory view. You can touch and feel the figure."
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
-                UIAccessibility.post(notification: .announcement, argument: message)
-            }
+                   // CHANGED: Added 3-finger swipe exit instruction
+                   let message = "You are in the multisensory view. Touch and explore the figure. Use a 3 finger swipe to go back."
+                   DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                       UIAccessibility.post(notification: .announcement, argument: message)
+                   }
+                   // Log entry into multisensory view
+                   InteractionLogger.shared.log(
+                       event: .screenTransition,
+                       objectType: .svg,
+                       label: title ?? "Multisensory View",
+                       location: .zero,
+                       additionalInfo: "Entered multisensory exploration"
+                   )
         }
     }
 }

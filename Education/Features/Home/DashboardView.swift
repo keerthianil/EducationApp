@@ -138,8 +138,7 @@ struct DashboardView: View {
                 // --- CHANGED: Announce title for VoiceOver ---
                 if UIAccessibility.isVoiceOverRunning {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 1")
-                    }
+                        UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Practice Scenario")                    }
                 }
             }
             .fullScreenCover(item: $selectedLesson) { lesson in

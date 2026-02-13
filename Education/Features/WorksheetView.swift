@@ -401,63 +401,89 @@ private struct NodeBlockView: View {
 }
 
 // MARK: - Paragraph Block
-
 private struct ParagraphBlockView: View {
     let items: [Inline]
-    
+
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     private enum Segment: Identifiable {
-        case text(String)
-        case math(latex: String?, mathml: String?, display: String?)
-        
+        /// displayText = what user sees; spokenText = what VoiceOver reads
+        case text(displayText: String, spokenText: String)
+        /// A standalone equation rendered via MathCAT (math mode available)
+        case blockMath(latex: String?, mathml: String?, display: String?)
         var id: UUID { UUID() }
     }
-    
-    /// Interleave text and MathCAT blocks in-order:
-    /// text → equation → text → equation …
+
     private var segments: [Segment] {
         var result: [Segment] = []
-        var textBuffer = ""
-        
+        var displayBuf = ""
+        var spokenBuf = ""
+
         func flushText() {
-            let t = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !t.isEmpty { result.append(.text(t)) }
-            textBuffer = ""
+            let d = MathDisplayHelper.decodeHTMLEntities(displayBuf)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let s = MathDisplayHelper.decodeHTMLEntities(spokenBuf)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !d.isEmpty {
+                result.append(.text(displayText: d, spokenText: s.isEmpty ? d : s))
+            }
+            displayBuf = ""
+            spokenBuf = ""
         }
-        
+
         for inline in items {
             switch inline {
             case .text(let t):
-                textBuffer += t
+                displayBuf += t
+                spokenBuf += t
+
             case .math(let latex, let mathml, let display):
-                flushText()
-                result.append(.math(latex: latex, mathml: mathml, display: display))
+                let isBlock = display?.lowercased() == "block" || display?.lowercased() == "display"
+                let isSubstantial = MathComplexity.isSubstantial(latex: latex, mathml: mathml)
+
+                if isBlock || isSubstantial {
+                    // Flush preceding text first
+                    flushText()
+                    // Render as MathCAT block (user can enter math mode)
+                    result.append(.blockMath(latex: latex, mathml: mathml, display: display ?? "block"))
+                } else {
+                    // Simple inline math — show readable notation, speak for VO
+                    let displayStr = MathDisplayHelper.displayableText(mathml: mathml, latex: latex)
+                    let spokenStr = mathSpeech.speakable(from: mathml, latex: latex, verbosity: .brief)
+                    let cleanSpoken = spokenStr
+                        .replacingOccurrences(of: ",", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    displayBuf += displayStr
+                    spokenBuf += cleanSpoken.isEmpty ? displayStr : cleanSpoken
+                }
+
             case .unknown:
                 break
             }
         }
-        
+
         flushText()
         return result
     }
-    
+
     private var bodyFontSize: CGFloat {
         horizontalSizeClass == .regular ? 19 : 17
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(segments) { segment in
                 switch segment {
-                case .text(let t):
-                    Text(t)
+                case .text(let displayText, let spokenText):
+                    Text(displayText)
                         .font(.custom("Arial", size: bodyFontSize))
                         .foregroundColor(Color(hex: "#121417"))
-                case .math(let latex, let mathml, let display):
+                        .accessibilityLabel(spokenText)
+
+                case .blockMath(let latex, let mathml, let display):
                     MathCATEquationView(latex: latex, mathml: mathml, display: display)
                         .environmentObject(haptics)
                         .environmentObject(mathSpeech)
@@ -467,8 +493,7 @@ private struct ParagraphBlockView: View {
         }
     }
 }
-
-// MARK: - MathCAT Equation View
+// MARK: - MathCAT Equation View (block math only)
 
 private struct MathCATEquationView: View {
     let latex: String?
@@ -523,7 +548,6 @@ private struct MathCATEquationView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
-
 // MARK: - Image Block
 
 private struct ImageBlockView: View {
