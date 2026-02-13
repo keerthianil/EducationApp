@@ -91,15 +91,14 @@ final class LessonStore: ObservableObject {
         createdAt: Date()
     )
 
-    // Page 2 of the original PDF = "Find the area of the square" (square graphic only)
-    // Page 3 = parallelogram question
-    // We handle this split in WorksheetLoader, not here.
-    // Keep localFiles pointing to the single JSON; WorksheetLoader splits SVG nodes.
     private let scenario2Lesson2 = LessonIndexItem(
         id: "scenario_2_shapes_2",
         title: "Shapes and Geometry (2)",
         teacher: "Ms. Rivera",
-        localFiles: ["scenario2_page_2"],
+        // Split into two pages so the reader shows Previous/Next controls:
+        // 1) Square question + square diagram
+        // 2) Natick Mall question + parallelogram diagram
+        localFiles: ["scenario2_page_2_1", "scenario2_page_2_2"],
         createdAt: Date().addingTimeInterval(-60)
     )
 

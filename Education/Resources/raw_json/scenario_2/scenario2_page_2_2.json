@@ -1,0 +1,47 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "paragraph",
+      "attrs": { "contentType": "body_text" },
+      "content": [
+        {
+          "type": "text",
+          "text": "The diagram below shows the plan for a new parking lot at the Natick Mall. It is estimated that such construction costs $12 per square yard. What will be the total cost for the parking lot?"
+        }
+      ]
+    },
+    {
+      "type": "svgNode",
+      "attrs": {
+        "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 521 279\" style=\"max-width:100%;height:auto;\">\\n<defs/>\\n  <g id=\\\"lines\\\">\\n    <line id=\\\"line_1\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"148.0\\\" x2=\\\"429.0\\\" y1=\\\"229.0\\\" y2=\\\"229.0\\\"/>\\n    <line id=\\\"line_2\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"194.0\\\" x2=\\\"475.0\\\" y1=\\\"42.0\\\" y2=\\\"42.0\\\"/>\\n    <line id=\\\"line_3\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"149.0\\\" x2=\\\"196.0\\\" y1=\\\"231.0\\\" y2=\\\"41.0\\\"/>\\n    <line id=\\\"line_4\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"427.0\\\" x2=\\\"475.0\\\" y1=\\\"231.0\\\" y2=\\\"43.0\\\"/>\\n  </g>\\n  <g id=\\\"points\\\">\\n    <circle cx=\\\"195.75263157894736\\\" cy=\\\"42.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_1\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"475.25531914893617\\\" cy=\\\"42.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_2\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"427.51063829787233\\\" cy=\\\"229.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_3\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"149.49473684210525\\\" cy=\\\"229.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_4\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n  </g>\\n  <g id=\\\"texts\\\">\\n    <text fill=\\\"#000000\\\" font-size=\\\"11px\\\" id=\\\"label_1\\\" x=\\\"84.25546264648438\\\" y=\\\"121.29530334472656\\\">780 feet</text>\\n    <text fill=\\\"#000000\\\" font-size=\\\"11px\\\" id=\\\"label_2\\\" x=\\\"260\\\" y=\\\"260\\\">1004 feet</text>\\n  </g>\\n</svg>",
+        "title": "Parallelogram",
+        "summary": ["The image shows a parallelogram with a side labeled as 780 feet."],
+        "short_desc": ["A parallelogram is shown with one side labeled as 780 feet."],
+        "long_desc": ["The image shows a parallelogram shape. One of the sides of the parallelogram is labeled with the text '780 feet'."],
+        "fig_id": "fig_0",
+        "graphicData": {
+          "viewBox": { "x": 0, "y": 0, "width": 521, "height": 279 },
+          "lines": [
+            { "id": "line_1", "x1": 148.0, "y1": 229.0, "x2": 429.0, "y2": 229.0, "strokeWidth": 1, "label": "1004 feet" },
+            { "id": "line_2", "x1": 194.0, "y1": 42.0, "x2": 475.0, "y2": 42.0, "strokeWidth": 1, "label": null },
+            { "id": "line_3", "x1": 149.0, "y1": 231.0, "x2": 196.0, "y2": 41.0, "strokeWidth": 1, "label": "780 feet" },
+            { "id": "line_4", "x1": 427.0, "y1": 231.0, "x2": 475.0, "y2": 43.0, "strokeWidth": 1, "label": null }
+          ],
+          "vertices": [
+            { "x": 195.75263, "y": 42.0 },
+            { "x": 475.25532, "y": 42.0 },
+            { "x": 427.51064, "y": 229.0 },
+            { "x": 149.49474, "y": 229.0 }
+          ],
+          "labels": [
+            { "text": "780 feet", "forLine": "line_3" },
+            { "text": "1004 feet", "forLine": "line_1" }
+          ]
+        }
+      }
+    }
+  ],
+  "pageNumber": 2,
+  "isEdited": false
+}

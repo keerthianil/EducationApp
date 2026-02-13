@@ -1,0 +1,42 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "paragraph",
+      "attrs": { "contentType": "body_text" },
+      "content": [{ "type": "text", "text": "Find the area of the square." }]
+    },
+    {
+      "type": "svgNode",
+      "attrs": {
+        "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 414 326\" style=\"max-width:100%;height:auto;\">\\n<defs/>\\n  <g id=\\\"lines\\\">\\n    <line id=\\\"line_1\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"265.0\\\" x2=\\\"265.0\\\" y1=\\\"267.0\\\" y2=\\\"39.0\\\"/>\\n    <line id=\\\"line_2\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"40.0\\\" x2=\\\"40.0\\\" y1=\\\"267.0\\\" y2=\\\"39.0\\\"/>\\n    <line id=\\\"line_3\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"40.0\\\" x2=\\\"265.0\\\" y1=\\\"39.0\\\" y2=\\\"39.0\\\"/>\\n    <line id=\\\"line_4\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"40.0\\\" x2=\\\"265.0\\\" y1=\\\"267.0\\\" y2=\\\"267.0\\\"/>\\n  </g>\\n  <g id=\\\"points\\\">\\n    <circle cx=\\\"40.0\\\" cy=\\\"39.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_1\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"265.0\\\" cy=\\\"39.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_2\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"265.0\\\" cy=\\\"267.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_3\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"40.0\\\" cy=\\\"267.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_4\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n  </g>\\n  <g id=\\\"texts\\\">\\n    <text fill=\\\"#000000\\\" font-size=\\\"13px\\\" id=\\\"label_1\\\" x=\\\"342\\\" y=\\\"155\\\">6 inch</text>\\n    <text fill=\\\"#000000\\\" font-size=\\\"13px\\\" id=\\\"label_2\\\" x=\\\"140\\\" y=\\\"284\\\">6 inch</text>\\n  </g>\\n</svg>",
+        "title": "Square",
+        "summary": ["The image shows a square with side length 6 inches."],
+        "short_desc": ["The image is a square with side length labeled as 6 inches."],
+        "long_desc": ["The image is a square. The length of one side is labeled as 6 inches."],
+        "fig_id": "fig_1",
+        "graphicData": {
+          "viewBox": { "x": 0, "y": 0, "width": 414, "height": 326 },
+          "lines": [
+            { "id": "line_1", "x1": 265.0, "y1": 267.0, "x2": 265.0, "y2": 39.0, "strokeWidth": 1, "label": "6 inch" },
+            { "id": "line_2", "x1": 40.0, "y1": 267.0, "x2": 40.0, "y2": 39.0, "strokeWidth": 1, "label": null },
+            { "id": "line_3", "x1": 40.0, "y1": 39.0, "x2": 265.0, "y2": 39.0, "strokeWidth": 1, "label": null },
+            { "id": "line_4", "x1": 40.0, "y1": 267.0, "x2": 265.0, "y2": 267.0, "strokeWidth": 1, "label": "6 inch" }
+          ],
+          "vertices": [
+            { "x": 40.0, "y": 39.0 },
+            { "x": 265.0, "y": 39.0 },
+            { "x": 265.0, "y": 267.0 },
+            { "x": 40.0, "y": 267.0 }
+          ],
+          "labels": [
+            { "text": "6 inch", "forLine": "line_1" },
+            { "text": "6 inch", "forLine": "line_4" }
+          ]
+        }
+      }
+    }
+  ],
+  "pageNumber": 1,
+  "isEdited": false
+}
