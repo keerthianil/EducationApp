@@ -37,10 +37,19 @@ struct MultisensorySVGView: View {
             dismiss()
         }
         .onAppear {
-            let message = "You are in the multisensory view. You can touch and feel the figure."
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
-                UIAccessibility.post(notification: .announcement, argument: message)
-            }
+                   // CHANGED: Added 3-finger swipe exit instruction
+                   let message = "You are in the multisensory view. Touch and explore the figure. Use a 3 finger swipe to go back."
+                   DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                       UIAccessibility.post(notification: .announcement, argument: message)
+                   }
+                   // Log entry into multisensory view
+                   InteractionLogger.shared.log(
+                       event: .screenTransition,
+                       objectType: .svg,
+                       label: title ?? "Multisensory View",
+                       location: .zero,
+                       additionalInfo: "Entered multisensory exploration"
+                   )
         }
     }
 }
@@ -234,19 +243,31 @@ class MultisensoryCanvasView: UIView {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         ensureHapticEngineRunning()
-        handleTouchAt(touch.location(in: self))
+        let point = touch.location(in: self)
+        logGraphicTouch(event: .touchDown, at: point)
+        handleTouchAt(point)
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        handleTouchAt(touch.location(in: self))
+        let point = touch.location(in: self)
+        logGraphicTouch(event: .touchMove, at: point)
+        handleTouchAt(point)
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let touch = touches.first {
+            let point = touch.location(in: self)
+            logGraphicTouch(event: .touchUp, at: point)
+        }
         stopAllFeedback()
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let touch = touches.first {
+            let point = touch.location(in: self)
+            logGraphicTouch(event: .touchUp, at: point)
+        }
         stopAllFeedback()
     }
     
@@ -298,6 +319,37 @@ class MultisensoryCanvasView: UIView {
                 activeLineIndex = nil
             }
         }
+    }
+    
+    /// Log what the user is currently touching in the multisensory graphic.
+    private func logGraphicTouch(event: TouchEventType, at point: CGPoint) {
+        let (objectType, label) = classifyGraphicElement(at: point)
+        InteractionLogger.shared.log(
+            event: event,
+            objectType: objectType,
+            label: label,
+            location: point,
+            additionalInfo: "Multisensory SVG"
+        )
+    }
+    
+    /// Classify the current touch point as vertex / label / line / background for logging.
+    private func classifyGraphicElement(at point: CGPoint) -> (ObjectType, String) {
+        if let vIdx = findVertexAt(point) {
+            return (.svg, "Vertex \(vIdx + 1)")
+        }
+        
+        if let lIdx = findLabelAt(point), lIdx < labelTargets.count {
+            let text = labelTargets[lIdx].text
+            return (.svg, "Label: \(text)")
+        }
+        
+        if let lineIdx = findLineAt(point), lineIdx < lines.count {
+            let lineLabel = lines[lineIdx].label ?? "Line \(lineIdx + 1)"
+            return (.svg, lineLabel)
+        }
+        
+        return (.svg, "Background")
     }
     
     // MARK: - Element Detection

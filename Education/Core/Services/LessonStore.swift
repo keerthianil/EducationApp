@@ -46,6 +46,64 @@ final class LessonStore: ObservableObject {
         createdAt: Date().addingTimeInterval(-3600)
     )
 
+    // MARK: - Practice Scenario (Flow 1) seed lessons
+    // New documents live in `Resources/raw_json/practice_json/`
+    private let practiceScenarioLesson1 = LessonIndexItem(
+        id: "practice_scenario_1",
+        title: "Math Practice Test 1",
+        teacher: "Ms. Rivera",
+        localFiles: ["page_1"],
+        createdAt: Date()
+    )
+
+    private let practiceScenarioLesson2 = LessonIndexItem(
+        id: "practice_scenario_2",
+        title: "Math Practice Test 2",
+        teacher: "Ms. Rivera",
+        localFiles: ["practice_page_2"],
+        createdAt: Date().addingTimeInterval(-60)
+    )
+    
+    // MARK: - Scenario 1 (Flow 2) seed lessons
+    // New documents live in `Resources/raw_json/scenario_1/`
+    private let scenario1Lesson1 = LessonIndexItem(
+        id: "scenario_1_unit_1",
+        title: "Unit 1: Introductory Topics",
+        teacher: "Ms. Rivera",
+        localFiles: ["scenario1_page_1"],
+        createdAt: Date()
+    )
+    
+    private let scenario1Lesson2 = LessonIndexItem(
+        id: "scenario_1_unit_2",
+        title: "Unit 2: Integers",
+        teacher: "Ms. Rivera",
+        localFiles: ["scenario1_page_2"],
+        createdAt: Date().addingTimeInterval(-60)
+    )
+    
+    // MARK: - Scenario 2 (Flow 3) seed lessons
+    private let scenario2Lesson1 = LessonIndexItem(
+        id: "scenario_2_shapes_1",
+        title: "Shapes and Geometry (1)",
+        teacher: "Ms. Rivera",
+        localFiles: ["scenario2_page_1"],
+        createdAt: Date()
+    )
+
+    // Page 2 of the original PDF = "Find the area of the square" (square graphic only)
+    // Page 3 = parallelogram question
+    // We handle this split in WorksheetLoader, not here.
+    // Keep localFiles pointing to the single JSON; WorksheetLoader splits SVG nodes.
+    private let scenario2Lesson2 = LessonIndexItem(
+        id: "scenario_2_shapes_2",
+        title: "Shapes and Geometry (2)",
+        teacher: "Ms. Rivera",
+        localFiles: ["scenario2_page_2"],
+        createdAt: Date().addingTimeInterval(-60)
+    )
+
+
     /// Precalculus packet – `raw_json/sample3` - temporarily commented out for user testing
     /// We will only use 2 documents for the first round of user testing
     /*
@@ -84,11 +142,43 @@ final class LessonStore: ObservableObject {
     @Published var processing: [ProcessingFile] = []
 
     init() {
-        // Seed dashboard with teacher lessons so they're visible (using 2 documents for user testing)
-        // Precalculus lesson removed for first round of user testing
-        if let seed = teacherSeed {
-            recent = [seed, sample2Lesson]
-            banner = seed
+        // Default seed (used by Flow 2 / Flow 3 until migrated)
+        applySeedLessons(forFlow: 2)
+    }
+
+    /// Apply flow-specific seed lessons.
+    /// Phase 1: only Flow 1 ("Practice Scenario") uses the new practice_json docs.
+    func applySeedLessons(forFlow flow: Int) {
+        switch flow {
+        case 1:
+            // Practice Scenario
+            recent = [practiceScenarioLesson1, practiceScenarioLesson2]
+            banner = nil
+            #if DEBUG
+            print("[Practice Scenario] Loading JSON files: \(practiceScenarioLesson1.localFiles) and \(practiceScenarioLesson2.localFiles)")
+            #endif
+        case 2:
+            // Scenario 1
+            recent = [scenario1Lesson1, scenario1Lesson2]
+            banner = nil
+            #if DEBUG
+            print("[Scenario 1] Loading JSON files: \(scenario1Lesson1.localFiles) and \(scenario1Lesson2.localFiles)")
+            #endif
+        case 3:
+            // Scenario 2
+            recent = [scenario2Lesson1, scenario2Lesson2]
+            banner = nil
+            #if DEBUG
+            print("[Scenario 2] Loading JSON files: \(scenario2Lesson1.localFiles) and \(scenario2Lesson2.localFiles)")
+            #endif
+        default:
+            if let seed = teacherSeed {
+                recent = [seed, sample2Lesson]
+                banner = seed
+            } else {
+                recent = [sample2Lesson]
+                banner = nil
+            }
         }
     }
 

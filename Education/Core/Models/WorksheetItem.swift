@@ -144,14 +144,9 @@ private extension WorksheetItem {
 struct WorksheetLoader {
 
     /// Build worksheet pages from the lesson's JSON files.
-    ///
-    /// - Each filename (JSON) is treated as **one page**.
-    /// - Inside that page, we keep every Node (heading, paragraph, image, equation)
-    ///   as its own object – exactly how your JSON is currently rendered.
-    ///
-    /// Returned shape: `pages[pageIndex][itemIndex]`.
-    /// For now there is **one item per page**, but the extra layer keeps
-    /// the design flexible if you ever want multiple cards per page.
+    /// Each filename (JSON) is treated as one page, UNLESS the page
+    /// contains multiple svgNode blocks — then each SVG and its
+    /// preceding text become a separate page.
     static func loadPages(
         lessonStore: LessonStore,
         filenames: [String]
@@ -163,32 +158,37 @@ struct WorksheetLoader {
             let nodesForPage = lessonStore.loadNodes(forFilenames: [filename])
             guard !nodesForPage.isEmpty else { continue }
 
-            // Try to use the first NON "Question …" heading as the page title.
-            var pageTitle: String? = nil
-            for node in nodesForPage {
-                if case let .heading(_, text) = node {
-                    let lower = text.lowercased()
-                    let isQuestion =
-                        lower.hasPrefix("question ") ||
-                        lower.hasPrefix("q.") ||
-                        lower.hasPrefix("q ")
-                    if !isQuestion {
-                        pageTitle = text
-                        break
+            // Count SVG nodes
+            let svgCount = nodesForPage.filter { node in
+                if case .svgNode = node { return true }
+                return false
+            }.count
+
+            if svgCount > 1 {
+                // SPLIT: each SVG + its preceding non-SVG nodes become a page
+                let splitPages = splitAtSVGBoundaries(nodesForPage, startIndex: pages.count)
+                pages.append(contentsOf: splitPages)
+            } else {
+                // Normal: one page per JSON file
+                var pageTitle: String? = nil
+                for node in nodesForPage {
+                    if case let .heading(_, text) = node {
+                        let lower = text.lowercased()
+                        let isQuestion = lower.hasPrefix("question ") || lower.hasPrefix("q.") || lower.hasPrefix("q ")
+                        if !isQuestion { pageTitle = text; break }
                     }
                 }
+
+                let item = WorksheetItem(
+                    index: pages.count + 1,
+                    title: pageTitle,
+                    nodes: nodesForPage
+                )
+                pages.append([item])
             }
-
-            let item = WorksheetItem(
-                index: pageIndex + 1,
-                title: pageTitle,
-                nodes: nodesForPage
-            )
-
-            pages.append([item])   // one card per page
         }
 
-        // Fallback: if nothing loaded, merge everything into a single page
+        // Fallback
         if pages.isEmpty {
             let mergedNodes = lessonStore.loadNodes(forFilenames: filenames)
             if !mergedNodes.isEmpty {
@@ -198,5 +198,52 @@ struct WorksheetLoader {
         }
 
         return pages
+    }
+
+    /// Split nodes into pages at each svgNode boundary.
+    /// Each page gets: heading (if any) + text before SVG + the SVG itself.
+    private static func splitAtSVGBoundaries(_ nodes: [Node], startIndex: Int) -> [[[WorksheetItem]].Element] {
+        var result: [[WorksheetItem]] = []
+        var currentBuffer: [Node] = []
+        var pageCounter = startIndex
+
+        // Keep the first heading for all sub-pages (it's the document title)
+        var sharedHeading: Node? = nil
+        if case .heading = nodes.first {
+            sharedHeading = nodes.first
+        }
+
+        for node in nodes {
+            if case .svgNode = node {
+                // This SVG + buffered text = one page
+                currentBuffer.append(node)
+                pageCounter += 1
+
+                var pageTitle: String? = nil
+                for n in currentBuffer {
+                    if case let .heading(_, text) = n {
+                        let lower = text.lowercased()
+                        if !lower.hasPrefix("question ") && !lower.hasPrefix("q.") && !lower.hasPrefix("q ") {
+                            pageTitle = text; break
+                        }
+                    }
+                }
+
+                let item = WorksheetItem(index: pageCounter, title: pageTitle, nodes: currentBuffer)
+                result.append([item])
+                currentBuffer = []
+            } else {
+                currentBuffer.append(node)
+            }
+        }
+
+        // Any trailing non-SVG nodes
+        if !currentBuffer.isEmpty {
+            pageCounter += 1
+            let item = WorksheetItem(index: pageCounter, title: nil, nodes: currentBuffer)
+            result.append([item])
+        }
+
+        return result
     }
 }

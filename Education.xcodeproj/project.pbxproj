@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D0976A7D2F3D007400E12A5B /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = D0976A7D2F3CFB3C00E12A5B /* ZIPFoundation */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B21A13C42EB1B8B400F8F092 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0976A7D2F3D007400E12A5B /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Education;
 			packageProductDependencies = (
+				D0976A7D2F3CFB3C00E12A5B /* ZIPFoundation */,
 			);
 			productName = Education;
 			productReference = B21A13B62EB1B8B300F8F092 /* Education.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = B21A13AD2EB1B8B300F8F092;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D0976A7C2F3CFB3C00E12A5B /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B21A13B72EB1B8B300F8F092 /* Products */;
 			projectDirPath = "";
@@ -582,6 +591,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D0976A7C2F3CFB3C00E12A5B /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.20;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D0976A7D2F3CFB3C00E12A5B /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D0976A7C2F3CFB3C00E12A5B /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B21A13AE2EB1B8B300F8F092 /* Project object */;
 }

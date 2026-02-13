@@ -100,8 +100,7 @@ struct DashboardFlow2View: View {
             // --- CHANGED: Announce title for VoiceOver ---
             if UIAccessibility.isVoiceOverRunning {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 2")
-                }
+                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Scenario 1")                }
             }
         }
         .fullScreenCover(item: $selectedLesson) { lesson in
@@ -320,7 +319,7 @@ struct DashboardFlow2View: View {
     // MARK: - Recent Activity Section
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Text("Recent Activity")
+            Text("Recent files")
                 .font(.custom("Arial", size: 22).weight(.bold))
                 .foregroundColor(Color(hex: "#121417"))
                 .padding(.top, 20)
@@ -350,7 +349,12 @@ struct DashboardFlow2View: View {
                 .padding(.top, 20)
                 .accessibilityAddTraits(.isHeader)
             
-            let allFiles = lessonStore.downloaded.sorted { $0.createdAt > $1.createdAt }
+            // Show both teacher PDFs and student-uploaded PDFs
+            let teacherItems = lessonStore.recent.filter { $0.teacher != nil }
+            let allFilesById = (lessonStore.downloaded + teacherItems).reduce(into: [String: LessonIndexItem]()) { acc, item in
+                acc[item.id] = acc[item.id] ?? item
+            }
+            let allFiles = allFilesById.values.sorted { $0.createdAt > $1.createdAt }
             
             if allFiles.isEmpty {
                 VStack(spacing: 16) {

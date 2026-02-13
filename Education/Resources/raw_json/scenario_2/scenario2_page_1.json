@@ -1,0 +1,58 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 1 },
+      "content": [{ "type": "text", "text": "Shapes and Geometry" }]
+    },
+    {
+      "type": "paragraph",
+      "attrs": { "contentType": "body_text" },
+      "content": [
+        {
+          "type": "text",
+          "text": "Some urban planners specialize in planning entire new towns. These towns are designed for livability, with plenty of open space. The sketch below shows the dimensions for a new town called Panorama. Find Panorama's area."
+        }
+      ]
+    },
+    {
+      "type": "svgNode",
+      "attrs": {
+        "svgContent": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:ev=\"http://www.w3.org/2001/xml-events\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" baseProfile=\"full\" height=\"100%\" version=\"1.1\" width=\"100%\" viewBox=\"0 0 508 351\" style=\"max-width:100%;height:auto;\">\\n<defs/>\\n  <g id=\\\"lines\\\">\\n    <line id=\\\"line_1\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"368.0\\\" x2=\\\"368.0\\\" y1=\\\"275.0\\\" y2=\\\"75.0\\\"/>\\n    <line id=\\\"line_2\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"146.0\\\" x2=\\\"369.0\\\" y1=\\\"274.0\\\" y2=\\\"274.0\\\"/>\\n    <line id=\\\"line_3\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"147.0\\\" x2=\\\"147.0\\\" y1=\\\"275.0\\\" y2=\\\"136.0\\\"/>\\n    <line id=\\\"line_4\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"146.0\\\" x2=\\\"280.0\\\" y1=\\\"136.0\\\" y2=\\\"134.0\\\"/>\\n    <line id=\\\"line_5\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"281.0\\\" x2=\\\"369.0\\\" y1=\\\"76.0\\\" y2=\\\"75.0\\\"/>\\n    <line id=\\\"line_6\\\" stroke=\\\"rgb(0%,0%,0%)\\\" stroke-width=\\\"1\\\" x1=\\\"280.0\\\" x2=\\\"281.0\\\" y1=\\\"134.0\\\" y2=\\\"76.0\\\"/>\\n  </g>\\n  <g id=\\\"points\\\">\\n    <circle cx=\\\"147.0\\\" cy=\\\"274.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_1\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"280.0\\\" cy=\\\"134.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_2\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"368.0\\\" cy=\\\"274.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_3\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"368.0\\\" cy=\\\"75.01136363636364\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_4\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"147.0\\\" cy=\\\"135.98507462686567\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_5\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n    <circle cx=\\\"281.0\\\" cy=\\\"76.0\\\" fill=\\\"rgb(0,0,0)\\\" id=\\\"point_6\\\" r=\\\"2\\\" stroke=\\\"rgb(0,0,0)\\\"/>\\n  </g>\\n  <g id=\\\"texts\\\">\\n    <text fill=\\\"#000000\\\" font-size=\\\"14px\\\" id=\\\"label_1\\\" x=\\\"318.69061279296875\\\" y=\\\"50.006248474121094\\\">2 km</text>\\n    <text fill=\\\"#000000\\\" font-size=\\\"14px\\\" id=\\\"label_2\\\" x=\\\"440.14788818359375\\\" y=\\\"167.69383239746094\\\">6km</text>\\n    <text fill=\\\"#000000\\\" font-size=\\\"14px\\\" id=\\\"label_3\\\" x=\\\"73.45600128173828\\\" y=\\\"199.3084716796875\\\">4km</text>\\n    <text fill=\\\"#000000\\\" font-size=\\\"14px\\\" id=\\\"label_4\\\" x=\\\"263.921875\\\" y=\\\"297.65625\\\">5 km</text>\\n  </g>\\n</svg>",
+        "title": "Geometric Shape with Dimensions",
+        "summary": ["The image shows a geometric shape with labeled dimensions."],
+        "short_desc": ["The image depicts a polygon shape with dimensions labeled as 4 km, 5 km, 6 km, and 2 km."],
+        "long_desc": ["The image shows a geometric shape that resembles a combination of rectangles. The dimensions are labeled as 4 km on the left side, 5 km on the bottom, 6 km on the right side, and 2 km on the top."],
+        "fig_id": "fig_0",
+        "graphicData": {
+          "viewBox": { "x": 0, "y": 0, "width": 508, "height": 351 },
+          "lines": [
+            { "id": "line_1", "x1": 368.0, "y1": 275.0, "x2": 368.0, "y2": 75.0, "strokeWidth": 1, "label": "6 km" },
+            { "id": "line_2", "x1": 146.0, "y1": 274.0, "x2": 369.0, "y2": 274.0, "strokeWidth": 1, "label": "5 km" },
+            { "id": "line_3", "x1": 147.0, "y1": 275.0, "x2": 147.0, "y2": 136.0, "strokeWidth": 1, "label": "4 km" },
+            { "id": "line_4", "x1": 146.0, "y1": 136.0, "x2": 280.0, "y2": 134.0, "strokeWidth": 1, "label": null },
+            { "id": "line_5", "x1": 281.0, "y1": 76.0, "x2": 369.0, "y2": 75.0, "strokeWidth": 1, "label": "2 km" },
+            { "id": "line_6", "x1": 280.0, "y1": 134.0, "x2": 281.0, "y2": 76.0, "strokeWidth": 1, "label": null }
+          ],
+          "vertices": [
+            { "x": 147.0, "y": 274.0 },
+            { "x": 280.0, "y": 134.0 },
+            { "x": 368.0, "y": 274.0 },
+            { "x": 368.0, "y": 75.01136 },
+            { "x": 147.0, "y": 135.98507 },
+            { "x": 281.0, "y": 76.0 }
+          ],
+          "labels": [
+            { "text": "4 km", "forLine": "line_3" },
+            { "text": "5 km", "forLine": "line_2" },
+            { "text": "6 km", "forLine": "line_1" },
+            { "text": "2 km", "forLine": "line_5" }
+          ]
+        }
+      }
+    }
+  ],
+  "pageNumber": 1,
+  "isEdited": false
+}

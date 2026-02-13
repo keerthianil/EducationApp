@@ -7,6 +7,26 @@
 import SwiftUI
 import UIKit
 
+/// UIKit focus anchor: an invisible UIView that VoiceOver can focus.
+/// Use with UIAccessibility.post(.screenChanged, argument: view).
+private struct FocusAnchorView: UIViewRepresentable {
+    let label: String
+    let onMake: (UIView) -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        let v = UIView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
+        v.isAccessibilityElement = true
+        v.accessibilityLabel = label
+        v.accessibilityTraits = .header
+        onMake(v)
+        return v
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        uiView.accessibilityLabel = label
+    }
+}
+
 struct DashboardView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var lessonStore: LessonStore
@@ -21,6 +41,10 @@ struct DashboardView: View {
     @State private var navigateToFlowSelection = false
     @StateObject private var notificationDelegate = NotificationDelegate.shared
     @StateObject private var uploadManager = UploadManager()
+    
+    // VoiceOver focus anchors (so focus doesn't land on tab bar)
+    @State private var allFilesTitleAnchorView: UIView?
+    @State private var iPadAllFilesTitleAnchorView: UIView?
     
     @State private var previousProcessingCount = 0
     @State private var previousCompletedCount = 0
@@ -79,6 +103,16 @@ struct DashboardView: View {
                     notificationDelegate.selectedLessonId = nil
                 }
             }
+            .onChange(of: selectedTab) { _, newTab in
+                guard newTab == .allFiles else { return }
+                // Let the All Files content render, then force VO focus to the title.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    let anchor = isIPad ? iPadAllFilesTitleAnchorView : allFilesTitleAnchorView
+                    if let view = anchor {
+                        UIAccessibility.post(notification: .screenChanged, argument: view)
+                    }
+                }
+            }
             .onChange(of: lessonStore.processing.count) { oldCount, newCount in
                 previousProcessingCount = newCount
             }
@@ -104,8 +138,7 @@ struct DashboardView: View {
                 // --- CHANGED: Announce title for VoiceOver ---
                 if UIAccessibility.isVoiceOverRunning {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 1")
-                    }
+                        UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Practice Scenario")                    }
                 }
             }
             .fullScreenCover(item: $selectedLesson) { lesson in
@@ -329,55 +362,13 @@ struct DashboardView: View {
     
     @ViewBuilder
     var iPadBannerSection: some View {
-        if let item = (lessonStore.banner ?? lessonStore.recent.first) {
-            HStack(spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(ColorTokens.primaryLight3)
-                        .frame(width: 56, height: 56)
-                    
-                    Image("pdf-icon-blue")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 32, height: 32)
-                }
-                .accessibilityHidden(true)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Important Update")
-                        .font(.custom("Arial", size: 14))
-                        .foregroundColor(ColorTokens.primary)
-                    
-                    Text(item.title)
-                        .font(.custom("Arial", size: 18).weight(.semibold))
-                        .foregroundColor(Color(hex: "#121417"))
-                    
-                    Text("Uploaded \(item.createdAt, style: .relative)")
-                        .font(.custom("Arial", size: 13))
-                        .foregroundColor(Color(hex: "#61758A"))
-                }
-                
-                Spacer()
-                
-                Button("View") {
-                    haptics.tapSelection()
-                    InteractionLogger.shared.logTap(
-                        objectType: .banner,
-                        label: "Banner View: \(item.title)"
-                    )
-                    selectedLesson = item
-                }
-                .font(.custom("Arial", size: 14).weight(.bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(ColorTokens.primary)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .padding(16)
-            .background(Color(hex: "#F4F1FE"))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
+        /*
+         Disabled per request:
+         "New file from Ms. Rivera" notification/banner.
+         
+         If we want this back later, restore the previous implementation.
+         */
+        EmptyView()
     }
     
     // MARK: - iPad Upload Panel
@@ -572,16 +563,23 @@ struct DashboardView: View {
     
     @ViewBuilder
     var iPadAllFilesSection: some View {
-        let allUploadedFiles = lessonStore.downloaded.sorted { $0.createdAt > $1.createdAt }
+        // Show both teacher PDFs and student-uploaded PDFs
+        let allFilesById = (lessonStore.downloaded + teacherLessons).reduce(into: [String: LessonIndexItem]()) { acc, item in
+            acc[item.id] = acc[item.id] ?? item
+        }
+        let allFiles = allFilesById.values.sorted { $0.createdAt > $1.createdAt }
         
         VStack(alignment: .leading, spacing: 12) {
+            // Invisible, focusable anchor so VO lands on the title instead of the tab bar.
+            FocusAnchorView(label: "All Files") { iPadAllFilesTitleAnchorView = $0 }
+                .frame(height: 1)
             Text("All Files")
                 .font(.custom("Arial", size: 20).weight(.bold))
                 .foregroundColor(Color(hex: "#121417"))
                 .padding(.top, 20)
                 .accessibilityAddTraits(.isHeader)
             
-            if allUploadedFiles.isEmpty {
+            if allFiles.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "doc")
                         .font(.system(size: 48))
@@ -596,7 +594,7 @@ struct DashboardView: View {
                 .padding(.vertical, 40)
             } else {
                 VStack(spacing: 8) {
-                    ForEach(allUploadedFiles) { item in
+                    ForEach(allFiles) { item in
                         CompletedFileCard(item: item) {
                             haptics.tapSelection()
                             InteractionLogger.shared.logTap(
@@ -615,7 +613,7 @@ struct DashboardView: View {
     
     var iPadRecentActivityPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Recent Activity")
+            Text("Recent files")
                 .font(.custom("Arial", size: 20).weight(.bold))
                 .foregroundColor(Color(hex: "#121417"))
                 .padding(.horizontal, 20)
@@ -777,19 +775,13 @@ struct DashboardView: View {
     // MARK: - Banner Section
     @ViewBuilder
     private func bannerSection() -> some View {
-        if let item = (lessonStore.banner ?? lessonStore.recent.first) {
-            NotificationBannerView(
-                title: bannerTitle(for: item),
-                subtitle: item.title
-            ) {
-                haptics.success()
-                InteractionLogger.shared.logTap(
-                    objectType: .banner,
-                    label: "Banner: \(item.title)"
-                )
-                selectedLesson = item
-            }
-        }
+        /*
+         Disabled per request:
+         "New file from Ms. Rivera" notification/banner.
+         
+         If we want this back later, restore the previous implementation.
+         */
+        EmptyView()
     }
 
     // MARK: - Upload Section
@@ -874,9 +866,16 @@ struct DashboardView: View {
     // MARK: - All Files Section
     @ViewBuilder
     private func allFilesSection() -> some View {
-        let allUploadedFiles = lessonStore.downloaded.sorted { $0.createdAt > $1.createdAt }
+        // Show both teacher PDFs and student-uploaded PDFs
+        let allFilesById = (lessonStore.downloaded + teacherLessons).reduce(into: [String: LessonIndexItem]()) { acc, item in
+            acc[item.id] = acc[item.id] ?? item
+        }
+        let allUploadedFiles = allFilesById.values.sorted { $0.createdAt > $1.createdAt }
         
         VStack(alignment: .leading, spacing: 0) {
+            // Invisible, focusable anchor so VO lands on the title instead of the tab bar.
+            FocusAnchorView(label: "All Files") { allFilesTitleAnchorView = $0 }
+                .frame(height: 1)
             Text("All Files")
                 .font(.custom("Arial", size: 22))
                 .fontWeight(.bold)
@@ -960,7 +959,7 @@ struct DashboardView: View {
     // MARK: - Recents Section
     private func recentsSection() -> some View {
         VStack(alignment: .leading, spacing: 11) {
-            Text("Recent Activity")
+            Text("Recent files")
                 .font(.custom("Arial", size: 22))
                 .fontWeight(.bold)
                 .foregroundColor(Color(hex: "#121417"))

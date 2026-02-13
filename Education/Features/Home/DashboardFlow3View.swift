@@ -77,11 +77,15 @@ struct DashboardFlow3View: View {
                 
                 ScrollView {
                     VStack(spacing: 0) {
-                        switch selectedTab {
-                        case .upload:
-                            uploadTabContent
-                        case .uploadedByTeacher:
-                            uploadedByTeacherTabContent
+                        if selectedBottomTab == .allFiles {
+                            allFilesBottomTabContent
+                        } else {
+                            switch selectedTab {
+                            case .upload:
+                                uploadTabContent
+                            case .uploadedByTeacher:
+                                uploadedByTeacherTabContent
+                            }
                         }
                     }
                     .frame(maxWidth: contentMaxWidth)
@@ -104,7 +108,7 @@ struct DashboardFlow3View: View {
             // --- CHANGED: Announce title for VoiceOver ---
             if UIAccessibility.isVoiceOverRunning {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Flow 3")
+                    UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Scenario 2")
                 }
             }
         }
@@ -395,6 +399,53 @@ struct DashboardFlow3View: View {
                 }
                 .padding(.horizontal, horizontalPadding)
                 .padding(.top, 16)
+            }
+        }
+    }
+
+    // MARK: - Bottom Tab: All Files
+    private var allFilesBottomTabContent: some View {
+        // Show both teacher PDFs and student-uploaded PDFs
+        let allFilesById = (lessonStore.downloaded + teacherFiles).reduce(into: [String: LessonIndexItem]()) { acc, item in
+            acc[item.id] = acc[item.id] ?? item
+        }
+        let allFiles = allFilesById.values.sorted { $0.createdAt > $1.createdAt }
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("All Files")
+                .font(.custom("Arial", size: 18).weight(.bold))
+                .foregroundColor(Color(hex: "#0D141C"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, 16)
+                .accessibilityAddTraits(.isHeader)
+
+            if allFiles.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "doc")
+                        .font(.system(size: 48))
+                        .foregroundColor(Color(hex: "#989CA6"))
+                        .accessibilityHidden(true)
+                    Text("No files yet")
+                        .font(.custom("Arial", size: 17))
+                        .foregroundColor(Color(hex: "#61758A"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 60)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(allFiles) { item in
+                        Flow3UploadedCard(item: item) {
+                            haptics.tapSelection()
+                            InteractionLogger.shared.logTap(
+                                objectType: .fileCard,
+                                label: "All Files: \(item.title)"
+                            )
+                            selectedLesson = item
+                        }
+                        .padding(.horizontal, horizontalPadding)
+                    }
+                }
             }
         }
     }

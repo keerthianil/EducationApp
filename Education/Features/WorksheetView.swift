@@ -401,45 +401,89 @@ private struct NodeBlockView: View {
 }
 
 // MARK: - Paragraph Block
-
 private struct ParagraphBlockView: View {
     let items: [Inline]
-    
+
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
-    private var textParts: [String] {
-        items.compactMap { inline -> String? in
-            if case .text(let t) = inline { return t }
-            return nil
-        }
+
+    private enum Segment: Identifiable {
+        /// displayText = what user sees; spokenText = what VoiceOver reads
+        case text(displayText: String, spokenText: String)
+        /// A standalone equation rendered via MathCAT (math mode available)
+        case blockMath(latex: String?, mathml: String?, display: String?)
+        var id: UUID { UUID() }
     }
-    
-    private var mathParts: [(Int, Inline)] {
-        items.enumerated().compactMap { idx, inline in
-            if case .math = inline { return (idx, inline) }
-            return nil
+
+    private var segments: [Segment] {
+        var result: [Segment] = []
+        var displayBuf = ""
+        var spokenBuf = ""
+
+        func flushText() {
+            let d = MathDisplayHelper.decodeHTMLEntities(displayBuf)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let s = MathDisplayHelper.decodeHTMLEntities(spokenBuf)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !d.isEmpty {
+                result.append(.text(displayText: d, spokenText: s.isEmpty ? d : s))
+            }
+            displayBuf = ""
+            spokenBuf = ""
         }
+
+        for inline in items {
+            switch inline {
+            case .text(let t):
+                displayBuf += t
+                spokenBuf += t
+
+            case .math(let latex, let mathml, let display):
+                let isBlock = display?.lowercased() == "block" || display?.lowercased() == "display"
+                let isSubstantial = MathComplexity.isSubstantial(latex: latex, mathml: mathml)
+
+                if isBlock || isSubstantial {
+                    // Flush preceding text first
+                    flushText()
+                    // Render as MathCAT block (user can enter math mode)
+                    result.append(.blockMath(latex: latex, mathml: mathml, display: display ?? "block"))
+                } else {
+                    // Simple inline math — show readable notation, speak for VO
+                    let displayStr = MathDisplayHelper.displayableText(mathml: mathml, latex: latex)
+                    let spokenStr = mathSpeech.speakable(from: mathml, latex: latex, verbosity: .brief)
+                    let cleanSpoken = spokenStr
+                        .replacingOccurrences(of: ",", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    displayBuf += displayStr
+                    spokenBuf += cleanSpoken.isEmpty ? displayStr : cleanSpoken
+                }
+
+            case .unknown:
+                break
+            }
+        }
+
+        flushText()
+        return result
     }
-    
+
     private var bodyFontSize: CGFloat {
         horizontalSizeClass == .regular ? 19 : 17
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            let combinedText = textParts.joined()
-            if !combinedText.isEmpty {
-                Text(combinedText)
-                    .font(.custom("Arial", size: bodyFontSize))
-                    .foregroundColor(Color(hex: "#121417"))
+            ForEach(segments) { segment in
+                switch segment {
+                case .text(let displayText, let spokenText):
+                    Text(displayText)
+                        .font(.custom("Arial", size: bodyFontSize))
+                        .foregroundColor(Color(hex: "#121417"))
+                        .accessibilityLabel(spokenText)
 
-            }
-            
-            ForEach(mathParts, id: \.0) { _, mathInline in
-                if case .math(let latex, let mathml, let display) = mathInline {
+                case .blockMath(let latex, let mathml, let display):
                     MathCATEquationView(latex: latex, mathml: mathml, display: display)
                         .environmentObject(haptics)
                         .environmentObject(mathSpeech)
@@ -449,8 +493,7 @@ private struct ParagraphBlockView: View {
         }
     }
 }
-
-// MARK: - MathCAT Equation View
+// MARK: - MathCAT Equation View (block math only)
 
 private struct MathCATEquationView: View {
     let latex: String?
@@ -505,7 +548,6 @@ private struct MathCATEquationView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
-
 // MARK: - Image Block
 
 private struct ImageBlockView: View {
@@ -603,10 +645,15 @@ private struct SVGBlockView: View {
             if graphicData != nil {
                 // Button wrapping SVGView — same pattern as DocumentRendererView
                 Button(action: openMultisensory) {
-                    SVGView(svg: svg, graphicData: graphicData)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: svgHeight)
-                        .clipped()
+                    ZStack {
+                        SVGView(svg: svg, graphicData: graphicData)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: svgHeight)
+                            .clipped()
+                        // Transparent overlay to guarantee taps land on the Button.
+                        Color.clear
+                            .contentShape(Rectangle())
+                    }
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())

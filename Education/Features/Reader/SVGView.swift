@@ -31,6 +31,9 @@ struct SVGView: UIViewRepresentable {
         webView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.backgroundColor = .clear
+        // Disable interaction so taps go to the surrounding SwiftUI Button
+        webView.isUserInteractionEnabled = false
+        webView.scrollView.isUserInteractionEnabled = false
 
         // CRITICAL: COMPLETELY disable accessibility on the WebView
         // This prevents VoiceOver from jumping to internal SVG elements

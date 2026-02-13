@@ -231,7 +231,6 @@ private struct DocumentNodeView: View {
 }
 
 // MARK: - Document Paragraph
-
 private struct DocumentParagraphView: View {
     let items: [Inline]
 
@@ -239,41 +238,71 @@ private struct DocumentParagraphView: View {
     @EnvironmentObject var mathSpeech: MathSpeechService
     @EnvironmentObject var speech: SpeechService
 
-    private var textParts: [String] {
-        items.compactMap { inline -> String? in
-            if case .text(let t) = inline { return t }
-            return nil
-        }
+    private enum Segment: Identifiable {
+        case text(displayText: String, spokenText: String)
+        case blockMath(latex: String?, mathml: String?, display: String?)
+        var id: UUID { UUID() }
     }
 
-    private var mathParts: [(Int, Inline)] {
-        items.enumerated().compactMap { idx, inline in
-            if case .math = inline { return (idx, inline) }
-            return nil
+    private var segments: [Segment] {
+        var result: [Segment] = []
+        var displayBuffer = ""
+        var spokenBuffer = ""
+        
+        func flushText() {
+            let d = MathDisplayHelper.decodeHTMLEntities(displayBuffer).trimmingCharacters(in: .whitespacesAndNewlines)
+            let s = MathDisplayHelper.decodeHTMLEntities(spokenBuffer).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !d.isEmpty {
+                result.append(.text(displayText: d, spokenText: s.isEmpty ? d : s))
+            }
+            displayBuffer = ""
+            spokenBuffer = ""
         }
+        
+        for inline in items {
+            switch inline {
+            case .text(let t):
+                displayBuffer += t
+                spokenBuffer += t
+            case .math(let latex, let mathml, let display):
+                let isBlock = display?.lowercased() == "block" || display?.lowercased() == "display"
+                if isBlock {
+                    flushText()
+                    result.append(.blockMath(latex: latex, mathml: mathml, display: display))
+                } else {
+                    let displayStr = MathDisplayHelper.displayableText(mathml: mathml, latex: latex)
+                    let spokenStr = mathSpeech.speakable(from: mathml, latex: latex, verbosity: .brief)
+                    let cleanSpoken = spokenStr.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    displayBuffer += displayStr
+                    spokenBuffer += cleanSpoken.isEmpty ? displayStr : cleanSpoken
+                }
+            case .unknown:
+                break
+            }
+        }
+        flushText()
+        return result
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            let combinedText = textParts.joined()
-            if !combinedText.isEmpty {
-                Text(combinedText)
-                    .font(.custom("Arial", size: 17))
-                    .foregroundColor(Color(hex: "#121417"))
-            }
-
-            ForEach(mathParts, id: \.0) { _, mathInline in
-                if case .math(let latex, let mathml, let display) = mathInline {
+            ForEach(segments) { segment in
+                switch segment {
+                case .text(let displayText, let spokenText):
+                    Text(displayText)
+                        .font(.custom("Arial", size: 17))
+                        .foregroundColor(Color(hex: "#121417"))
+                        .accessibilityLabel(spokenText)
+                case .blockMath(let latex, let mathml, let display):
                     DocumentMathCATView(latex: latex, mathml: mathml, display: display)
-                        .environmentObject(haptics)
-                        .environmentObject(mathSpeech)
-                        .environmentObject(speech)
+                    .environmentObject(haptics)
+                    .environmentObject(mathSpeech)
+                    .environmentObject(speech)
                 }
             }
         }
     }
 }
-
 // MARK: - Document MathCAT View
 
 private struct DocumentMathCATView: View {
@@ -398,10 +427,16 @@ private struct DocumentSVGView: View {
             if graphicData != nil {
                 // Use a real Button so VoiceOver double-tap reliably activates it.
                 Button(action: openMultisensory) {
-                    SVGView(svg: svg, graphicData: graphicData)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 200)
-                        .clipped()
+                    ZStack {
+                        SVGView(svg: svg, graphicData: graphicData)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 200)
+                            .clipped()
+                        // Transparent overlay to ensure taps hit the Button,
+                        // even if the underlying WKWebView behaves oddly.
+                        Color.clear
+                            .contentShape(Rectangle())
+                    }
                 }
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
