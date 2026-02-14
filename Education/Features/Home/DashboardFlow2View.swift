@@ -82,10 +82,6 @@ struct DashboardFlow2View: View {
             .padding(.bottom, 40)
         }
         .background(Color(hex: "#F6F7F8"))
-        .safeAreaInset(edge: .top) {
-            Spacer()
-                .frame(height: 44)
-        }
         .sheet(isPresented: $showUpload) {
             UploadSheetView(uploadManager: uploadManager)
                 .environmentObject(lessonStore)

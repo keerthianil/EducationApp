@@ -20,39 +20,74 @@ import CoreHaptics
 /// Multisensory view: figure only. User touches and feels the shape.
 struct MultisensorySVGView: View {
     let graphicData: [String: Any]
-    let title: String?
-    
-    @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var haptics: HapticService
-    @EnvironmentObject var speech: SpeechService
-    
-    var body: some View {
-        GeometryReader { geometry in
-            MultisensorySVGViewRepresentable(graphicData: graphicData, haptics: haptics, speech: speech, onDismiss: { dismiss() })
-                .frame(width: geometry.size.width, height: geometry.size.height)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
-        .accessibilityAction(.escape) {
-            dismiss()
-        }
-        .onAppear {
-                   // CHANGED: Added 3-finger swipe exit instruction
-                   let message = "You are in the multisensory view. Touch and explore the figure. Use a 3 finger swipe to go back."
-                   DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
-                       UIAccessibility.post(notification: .announcement, argument: message)
-                   }
-                   // Log entry into multisensory view
-                   InteractionLogger.shared.log(
-                       event: .screenTransition,
-                       objectType: .svg,
-                       label: title ?? "Multisensory View",
-                       location: .zero,
-                       additionalInfo: "Entered multisensory exploration"
+       let title: String?
+       
+       @Environment(\.dismiss) private var dismiss
+       @EnvironmentObject var haptics: HapticService
+       @EnvironmentObject var speech: SpeechService
+       
+       var body: some View {
+           ZStack {
+               // Full-screen haptic canvas
+               GeometryReader { geometry in
+                   MultisensorySVGViewRepresentable(
+                       graphicData: graphicData,
+                       haptics: haptics,
+                       speech: speech,
+                       onDismiss: { dismiss() }
                    )
-        }
-    }
-}
+                   .frame(width: geometry.size.width, height: geometry.size.height)
+               }
+               .frame(maxWidth: .infinity, maxHeight: .infinity)
+               .ignoresSafeArea()
+               
+               // Back button overlay (top-left)
+               VStack {
+                   HStack {
+                       Button {
+                           dismiss()
+                       } label: {
+                           HStack(spacing: 4) {
+                               Image(systemName: "chevron.left")
+                                   .font(.system(size: 18, weight: .semibold))
+                               Text("Back")
+                                   .font(.custom("Arial", size: 17))
+                           }
+                           .foregroundColor(ColorTokens.primary)
+                           .padding(.horizontal, 16)
+                           .padding(.vertical, 10)
+                           .background(Color.white.opacity(0.9))
+                           .clipShape(RoundedRectangle(cornerRadius: 8))
+                       }
+                       .accessibilityLabel("Back")
+                       .accessibilityHint("Return to document")
+                       
+                       Spacer()
+                   }
+                   .padding(.top, 56) // below status bar
+                   .padding(.leading, 16)
+                   
+                   Spacer()
+               }
+           }
+           .accessibilityAction(.escape) {
+               dismiss()
+           }
+           .onAppear {
+               let message = "Tactile figure. Touch and explore. Use 3 finger swipe or Back button to go back."
+               DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                   UIAccessibility.post(notification: .announcement, argument: message)
+               }
+               InteractionLogger.shared.log(
+                   event: .screenTransition,
+                   objectType: .svg,
+                   label: title ?? "Multisensory View",
+                   location: .zero,
+                   additionalInfo: "Entered multisensory exploration"
+               )
+           }
+       }
+   }
 
 // MARK: - UIViewRepresentable
 

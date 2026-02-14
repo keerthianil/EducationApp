@@ -3,8 +3,6 @@
 //  Education
 //
 //  Converts math (LaTeX/MathML) to spoken text for VoiceOver.
-//  Handles subscripts, superscripts, fractions, integrals, summations,
-//  Greek letters, implicit multiplication, and more.
 //
 
 import Foundation
@@ -16,485 +14,303 @@ final class MathSpeechService: ObservableObject {
 
     // MARK: - Public API
 
-    /// Convert math to spoken text.
-    /// - brief: for inline math merged into paragraph text (no pauses)
-    /// - verbose: for standalone block equations read aloud (pauses added)
     func speakable(from mathml: String?, latex: String?, verbosity: Verbosity) -> String {
         var result = convertToSpeech(mathml: mathml, latex: latex)
-        result = cleanAnswerFromText(result)
         if verbosity == .verbose {
             result = addPausesForSlowReading(result)
         }
         return result
     }
 
-    /// Legacy compatibility
     func speakable(from latex: String, verbosity: Verbosity) -> String {
-        return speakable(from: nil, latex: latex, verbosity: verbosity)
+        speakable(from: nil, latex: latex, verbosity: verbosity)
     }
 
     // MARK: - Main Conversion
 
     private func convertToSpeech(mathml: String?, latex: String?) -> String {
-        // Priority 1: alttext from MathML
         if let mathml = mathml, !mathml.isEmpty {
-            if let alttext = extractAltText(from: mathml), !alttext.isEmpty {
-                return convertLaTeXToSpeech(alttext)
+            if let alt = extractAltText(from: mathml), !alt.isEmpty {
+                return convertLaTeXToSpeech(alt)
             }
             let parsed = parseMathMLStructure(mathml)
-            if !parsed.isEmpty && parsed != "equation" {
-                return parsed
-            }
+            if !parsed.isEmpty && parsed != "equation" { return parsed }
         }
-        // Priority 2: LaTeX
         if let latex = latex, !latex.isEmpty {
             return convertLaTeXToSpeech(latex)
         }
         return "equation"
     }
 
-    // MARK: - LaTeX to Speech (MAIN METHOD)
+    // MARK: - LaTeX / Alttext → Speech
 
     private func convertLaTeXToSpeech(_ text: String) -> String {
-        var result = text
+        var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        // 1. Complex structures (order matters — do these first)
-        let complexPatterns: [(String, String)] = [
-            (#"\\binom\s*\{([^}]*)\}\s*\{([^}]*)\}"#, "$1, choose, $2"),
+        // 0. Decode HTML entities FIRST
+        s = decodeHTMLEntities(s)
+
+        // 1. Insert spaces around bare operators
+        s = insertSpacesAroundOperators(s)
+
+        // 2. Complex structures (fractions, roots, integrals, sums)
+        let complex: [(String, String)] = [
+            (#"\\binom\s*\{([^}]*)\}\s*\{([^}]*)\}"#, "$1 choose $2"),
             (#"\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}"#, "fraction, $1, over, $2, end fraction"),
-            (#"\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "integral, from, $1, to, $2, of"),
-            (#"\\int\s*_\s*(\w)\s*\^\s*(\w)"#, "integral, from, $1, to, $2, of"),
-            (#"\\sum\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "sum, from, $1, to, $2, of"),
-            (#"\\prod\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "product, from, $1, to, $2, of"),
-            (#"\\lim\s*_\s*\{([^}]*?)\\to\s*([^}]*)\}"#, "limit, as, $1, approaches, $2, of"),
-            (#"\\sqrt\s*\[([^\]]+)\]\s*\{([^}]+)\}"#, "$1 th root of, $2, end root"),
-            (#"\\sqrt\s*\{([^}]+)\}"#, "square root of, $1, end root")
+            (#"\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "integral from $1 to $2 of"),
+            (#"\\int\s*_\s*(\w)\s*\^\s*(\w)"#, "integral from $1 to $2 of"),
+            (#"\\sum\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "sum from $1 to $2 of"),
+            (#"\\prod\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "product from $1 to $2 of"),
+            (#"\\lim\s*_\s*\{([^}]*?)\\to\s*([^}]*)\}"#, "limit as $1 approaches $2 of"),
+            (#"\\sqrt\s*\[([^\]]+)\]\s*\{([^}]+)\}"#, "$1 th root of $2 end root"),
+            (#"\\sqrt\s*\{([^}]+)\}"#, "square root of $1 end root"),
         ]
-        for (pattern, replacement) in complexPatterns {
-            if let regex = try? NSRegularExpression(pattern: pattern) {
-                result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: replacement)
+        for (pat, rep) in complex {
+            if let rx = try? NSRegularExpression(pattern: pat) {
+                s = rx.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: rep)
             }
         }
 
-        // 2. Superscripts with braces: x^{2} → x, squared
-        let supComplexPattern = #"([a-zA-Z0-9])\s*\^\s*\{([^}]+)\}"#
-        if let regex = try? NSRegularExpression(pattern: supComplexPattern) {
-            var temp = result
-            let matches = regex.matches(in: temp, range: NSRange(temp.startIndex..., in: temp))
-            for match in matches.reversed() {
-                if let fullRange = Range(match.range, in: temp),
-                   let baseRange = Range(match.range(at: 1), in: temp),
-                   let expRange = Range(match.range(at: 2), in: temp) {
-                    let base = String(temp[baseRange])
-                    let exp = String(temp[expRange])
-                    temp.replaceSubrange(fullRange, with: "\(base), \(convertExponent(exp))")
+        // 3. Superscripts with braces
+        let supPat = #"([a-zA-Z0-9\)\]])\s*\^\s*\{([^}]+)\}"#
+        if let rx = try? NSRegularExpression(pattern: supPat) {
+            var t = s
+            for m in rx.matches(in: t, range: NSRange(t.startIndex..., in: t)).reversed() {
+                if let full = Range(m.range, in: t),
+                   let bR = Range(m.range(at: 1), in: t),
+                   let eR = Range(m.range(at: 2), in: t) {
+                    t.replaceSubrange(full, with: "\(t[bR]) \(exponent(String(t[eR])))")
                 }
             }
-            result = temp
+            s = t
+        }
+        // Standalone ^{n} (no captured base)
+        if let rx = try? NSRegularExpression(pattern: #"\^\s*\{([^}]+)\}"#) {
+            var t = s
+            for m in rx.matches(in: t, range: NSRange(t.startIndex..., in: t)).reversed() {
+                if let full = Range(m.range, in: t), let eR = Range(m.range(at: 1), in: t) {
+                    t.replaceSubrange(full, with: " \(exponent(String(t[eR])))")
+                }
+            }
+            s = t
         }
 
-        // 3. Simple superscripts/subscripts
-        result = result.replacingOccurrences(of: "^2", with: " squared")
-        result = result.replacingOccurrences(of: "^3", with: " cubed")
-        result = result.replacingOccurrences(of: "^{-1}", with: ", to the negative one")
-        result = result.replacingOccurrences(of: "_0", with: " sub zero")
-        result = result.replacingOccurrences(of: "_1", with: " sub one")
-        result = result.replacingOccurrences(of: "_2", with: " sub two")
-        result = result.replacingOccurrences(of: "_n", with: " sub n")
-        result = result.replacingOccurrences(of: "_i", with: " sub i")
-
-        // 4. Subscript with braces
-        let subComplexPattern = #"([a-zA-Z])\s*_\s*\{([^}]+)\}"#
-        if let regex = try? NSRegularExpression(pattern: subComplexPattern) {
-            result = regex.stringByReplacingMatches(in: result, range: NSRange(result.startIndex..., in: result), withTemplate: "$1, sub, $2")
+        // 4. Subscripts with braces  x_{n}
+        if let rx = try? NSRegularExpression(pattern: #"([a-zA-Z])\s*_\s*\{([^}]+)\}"#) {
+            s = rx.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "$1 sub $2")
         }
 
-        // 5. Delimiters
-        result = result.replacingOccurrences(of: "\\left(", with: " open paren ")
-        result = result.replacingOccurrences(of: "\\right)", with: " close paren ")
-        result = result.replacingOccurrences(of: "\\left[", with: " open bracket ")
-        result = result.replacingOccurrences(of: "\\right]", with: " close bracket ")
-        result = result.replacingOccurrences(of: "\\left\\{", with: " open brace ")
-        result = result.replacingOccurrences(of: "\\right\\}", with: " close brace ")
-        result = result.replacingOccurrences(of: "\\left|", with: " absolute value of ")
-        result = result.replacingOccurrences(of: "\\right|", with: " end absolute value ")
-        result = result.replacingOccurrences(of: "\\left", with: "")
-        result = result.replacingOccurrences(of: "\\right", with: "")
+        // 5. Simple super/subscripts (no braces)
+        s = s.replacingOccurrences(of: "^2", with: " squared")
+        s = s.replacingOccurrences(of: "^3", with: " cubed")
+        s = s.replacingOccurrences(of: "^{-1}", with: " to the negative one")
+        let simpleSubs: [(String,String)] = [("_0"," sub zero"),("_1"," sub one"),("_2"," sub two"),("_n"," sub n"),("_i"," sub i")]
+        for (k,v) in simpleSubs { s = s.replacingOccurrences(of: k, with: v) }
 
-        // 6. Command replacements
-        let replacements: [(String, String)] = [
-            ("\\int", " integral "), ("\\sum", " sum "), ("\\prod", " product "),
-            ("\\cdot", " times "), ("\\times", " times "), ("\\div", " divided by "),
-            ("\\pm", " plus or minus "), ("\\leq", " less than or equal to "),
-            ("\\geq", " greater than or equal to "), ("\\neq", " not equal to "),
-            ("\\approx", " approximately "), ("\\infty", " infinity "),
-            ("\\sin", " sine of "), ("\\cos", " cosine of "), ("\\tan", " tangent of "),
-            ("\\log", " log "), ("\\ln", " natural log of "),
-            ("\\alpha", " alpha "), ("\\beta", " beta "), ("\\gamma", " gamma "),
-            ("\\delta", " delta "), ("\\theta", " theta "), ("\\pi", " pi "),
-            ("\\sigma", " sigma "), ("\\lambda", " lambda "), ("\\omega", " omega "),
-            ("\\Sigma", " Sigma "), ("\\Delta", " Delta "), ("\\Omega", " Omega "),
+        // 6. Delimiters
+        let delims: [(String,String)] = [
+            ("\\left(", " open paren "), ("\\right)", " close paren "),
+            ("\\left[", " open bracket "), ("\\right]", " close bracket "),
+            ("\\left\\{", " open brace "), ("\\right\\}", " close brace "),
+            ("\\left|", " absolute value of "), ("\\right|", " end absolute value "),
+            ("\\left", ""), ("\\right", ""),
         ]
-        for (cmd, spoken) in replacements {
-            result = result.replacingOccurrences(of: cmd, with: spoken)
-        }
+        for (k,v) in delims { s = s.replacingOccurrences(of: k, with: v) }
 
-        // 7. Operators and symbols (after commands, so \leq doesn't get hit by < rule)
-        result = result.replacingOccurrences(of: "=", with: " equals ")
-        result = result.replacingOccurrences(of: "+", with: " plus ")
-        // Careful with minus: don't break negative numbers like -11
-        // Replace " - " (spaced minus) and "- " at start
-        result = result.replacingOccurrences(of: " - ", with: " minus ")
-        result = result.replacingOccurrences(of: "(", with: " open paren ")
-        result = result.replacingOccurrences(of: ")", with: " close paren ")
-
-        // Unicode symbols
-        let unicodeReplacements: [(String, String)] = [
-            ("∑", " sum "), ("∏", " product "), ("∫", " integral "),
-            ("∞", " infinity "), ("π", " pi "), ("θ", " theta "),
-            ("α", " alpha "), ("β", " beta "), ("γ", " gamma "),
-            ("≤", " less than or equal to "), ("≥", " greater than or equal to "),
-            ("≠", " not equal to "), ("≈", " approximately "),
-            ("√", " square root of "), ("×", " times "), ("÷", " divided by "),
-            ("−", " minus "),  // Unicode minus (U+2212)
+        // 7. LaTeX commands → spoken
+        let cmds: [(String,String)] = [
+            ("\\int"," integral "),("\\sum"," sum "),("\\prod"," product "),
+            ("\\cdot"," times "),("\\times"," times "),("\\div"," divided by "),
+            ("\\pm"," plus or minus "),("\\leq"," less than or equal to "),
+            ("\\geq"," greater than or equal to "),("\\neq"," not equal to "),
+            ("\\approx"," approximately "),("\\infty"," infinity "),
+            ("\\sin"," sine of "),("\\cos"," cosine of "),("\\tan"," tangent of "),
+            ("\\log"," log "),("\\ln"," natural log of "),
+            ("\\alpha"," alpha "),("\\beta"," beta "),("\\gamma"," gamma "),
+            ("\\delta"," delta "),("\\theta"," theta "),("\\pi"," pi "),
+            ("\\sigma"," sigma "),("\\lambda"," lambda "),("\\omega"," omega "),
+            ("\\Sigma"," Sigma "),("\\Delta"," Delta "),("\\Omega"," Omega "),
         ]
-        for (sym, spoken) in unicodeReplacements {
-            result = result.replacingOccurrences(of: sym, with: spoken)
+        for (k,v) in cmds { s = s.replacingOccurrences(of: k, with: v) }
+
+        // 8. Bare operators (AFTER LaTeX commands so \leq isn't hit by < rule)
+        s = s.replacingOccurrences(of: "=", with: " equals ")
+        s = s.replacingOccurrences(of: "+", with: " plus ")
+        s = s.replacingOccurrences(of: " - ", with: " minus ")
+        s = s.replacingOccurrences(of: ">", with: " greater than ")
+        s = s.replacingOccurrences(of: "<", with: " less than ")
+        s = s.replacingOccurrences(of: "(", with: " open paren ")
+        s = s.replacingOccurrences(of: ")", with: " close paren ")
+
+        // 9. Unicode symbols
+        let uni: [(String,String)] = [
+            ("∑"," sum "),("∏"," product "),("∫"," integral "),
+            ("∞"," infinity "),("π"," pi "),("θ"," theta "),
+            ("α"," alpha "),("β"," beta "),("γ"," gamma "),
+            ("≤"," less than or equal to "),("≥"," greater than or equal to "),
+            ("≠"," not equal to "),("≈"," approximately "),
+            ("√"," square root of "),("×"," times "),("÷"," divided by "),
+            ("−"," minus "),   // U+2212 unicode minus
+            ("\u{2062}"," "),  // invisible times — just a space, splitImplicit handles it
+        ]
+        for (k,v) in uni { s = s.replacingOccurrences(of: k, with: v) }
+
+        // 10. Strip remaining LaTeX artifacts
+        s = s.replacingOccurrences(of: "\\", with: "")
+        s = s.replacingOccurrences(of: "{", with: "")
+        s = s.replacingOccurrences(of: "}", with: "")
+
+        // 10b. Catch ^2 ^3 that only became visible after brace removal
+        s = s.replacingOccurrences(of: "^2", with: " squared")
+        s = s.replacingOccurrences(of: "^3", with: " cubed")
+        if let rx = try? NSRegularExpression(pattern: #"\^(\d)"#) {
+            s = rx.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: " to the power of $1")
         }
 
-        // 8. Clean up LaTeX artifacts
-        result = result.replacingOccurrences(of: "\\", with: "")
-        result = result.replacingOccurrences(of: "{", with: "")
-        result = result.replacingOccurrences(of: "}", with: "")
+        // 11. Split implicit multiplication  
+        s = splitImplicitMultiplication(s)
 
-        // 9.Split implicit multiplication ***
-        // "ax" → "a, x"   "2x" → "2 x"   "7x" → "7 x"   "rs" → "r, s"
-        // But don't split known words: "sin", "cos", "of", "the", "end", etc.
-        result = splitImplicitMultiplication(result)
+        // 12. Final whitespace cleanup
+        while s.contains("  ") { s = s.replacingOccurrences(of: "  ", with: " ") }
+        s = s.replacingOccurrences(of: ", ,", with: ",")
+        s = s.replacingOccurrences(of: ",,", with: ",")
+        return s.trimmingCharacters(in: CharacterSet(charactersIn: " ,"))
+    }
 
-        // 10. Final cleanup
-        result = result.replacingOccurrences(of: "  ", with: " ")
-        result = result.replacingOccurrences(of: ", ,", with: ",")
-        result = result.replacingOccurrences(of: ",,", with: ",")
+    // MARK: - HTML Entity Decoding
 
-        return result.trimmingCharacters(in: CharacterSet(charactersIn: " ,"))
+    private func decodeHTMLEntities(_ text: String) -> String {
+        var s = text
+        s = s.replacingOccurrences(of: "&amp;", with: "&")
+        s = s.replacingOccurrences(of: "&lt;", with: "<")
+        s = s.replacingOccurrences(of: "&gt;", with: ">")
+        s = s.replacingOccurrences(of: "&quot;", with: "\"")
+        s = s.replacingOccurrences(of: "&apos;", with: "'")
+        s = s.replacingOccurrences(of: "&#x2212;", with: "−")
+        s = s.replacingOccurrences(of: "&#x2013;", with: "–")
+        s = s.replacingOccurrences(of: "&#x00D7;", with: "×")
+        if let rx = try? NSRegularExpression(pattern: #"&#(\d+);"#) {
+            var r = s
+            for m in rx.matches(in: r, range: NSRange(r.startIndex..., in: r)).reversed() {
+                if let full = Range(m.range, in: r),
+                   let nR = Range(m.range(at: 1), in: r),
+                   let code = UInt32(r[nR]),
+                   let scalar = Unicode.Scalar(code) {
+                    r.replaceSubrange(full, with: String(scalar))
+                }
+            }
+            s = r
+        }
+        return s
+    }
+
+    // MARK: - Insert Spaces Around Operators
+
+    private func insertSpacesAroundOperators(_ text: String) -> String {
+        var s = text
+        let ops: [(String, String)] = [
+            (#"([a-zA-Z0-9\)])\-([a-zA-Z0-9\(])"#, "$1 - $2"),
+            (#"([a-zA-Z0-9\)])\=([a-zA-Z0-9\(])"#, "$1 = $2"),
+            (#"([a-zA-Z0-9\)])\+([a-zA-Z0-9\(])"#, "$1 + $2"),
+            (#"([a-zA-Z0-9\)])>([a-zA-Z0-9\(])"#,  "$1 > $2"),
+            (#"([a-zA-Z0-9\)])<([a-zA-Z0-9\(])"#,  "$1 < $2"),
+        ]
+        for (pat, rep) in ops {
+            if let rx = try? NSRegularExpression(pattern: pat) {
+                var prev = ""
+                while prev != s {
+                    prev = s
+                    s = rx.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: rep)
+                }
+            }
+        }
+        return s
     }
 
     // MARK: - Split Implicit Multiplication
     //
-    // "ax" in math means "a times x" but VoiceOver reads it as "axe".
-    // This method inserts spaces/commas between adjacent letters that
-    // represent separate variables, and between digits and letters.
-    //
-    // Rules:
-    //   - "ax" → "a, x"       (two single-letter variables)
-    //   - "2x" → "2 x"        (digit then letter)
-    //   - "7x" → "7 x"
-    //   - "abc" → "a, b, c"   (three variables)
-    //   - "sin" → "sin"       (known function, don't split)
-    //   - "equals" → "equals" (known word, don't split)
-    //   - "15" → "15"         (number, don't split)
+    //   "ax" → "a. times. x"   (periods become VoiceOver pauses)
+    //   "2x" → "2 times x"
 
     private func splitImplicitMultiplication(_ text: String) -> String {
-        // Known words that should NOT be split
-        let knownWords: Set<String> = [
-            "sin", "cos", "tan", "log", "ln", "lim", "mod", "max", "min", "abs", "det",
-            "equals", "plus", "minus", "times", "divided", "over", "by",
-            "fraction", "squared", "cubed", "root", "end",
-            "sum", "product", "integral", "limit", "approaches", "infinity",
-            "alpha", "beta", "gamma", "delta", "theta", "sigma", "lambda", "omega", "pi",
-            "epsilon", "phi", "psi", "mu", "tau",
-            "Sigma", "Delta", "Omega", "Gamma", "Theta", "Lambda", "Phi", "Psi",
-            "paren", "bracket", "brace", "open", "close",
-            "of", "from", "to", "the", "power", "sub", "natural",
-            "less", "than", "equal", "greater", "not", "approximately", "or",
-            "value", "absolute",
+        let known: Set<String> = [
+            "sin","cos","tan","log","ln","lim","mod","max","min","abs","det",
+            "equals","plus","minus","times","divided","over","by",
+            "fraction","squared","cubed","root","end",
+            "sum","product","integral","limit","approaches","infinity",
+            "alpha","beta","gamma","delta","theta","sigma","lambda","omega","pi",
+            "epsilon","phi","psi","mu","tau",
+            "paren","bracket","brace","open","close",
+            "of","from","to","the","power","sub","natural","negative",
+            "less","than","equal","greater","not","approximately","or",
+            "value","absolute",
         ]
 
-        // Split text into words (whitespace-separated)
-        let words = text.components(separatedBy: " ")
-        var processed: [String] = []
+        return text.components(separatedBy: " ").map { word -> String in
+            let t = word.trimmingCharacters(in: CharacterSet(charactersIn: ",."))
+            if t.isEmpty || known.contains(t.lowercased()) { return word }
+            if t.allSatisfy({ $0.isNumber || $0 == "." || $0 == "," }) { return word }
+            if t.count <= 1 { return word }
 
-        for word in words {
-            let trimmed = word.trimmingCharacters(in: CharacterSet(charactersIn: ",. "))
+            let chars = Array(t)
+            let hasLetters = chars.contains { $0.isLetter }
+            let hasDigits  = chars.contains { $0.isNumber }
+            let allLetters = chars.allSatisfy { $0.isLetter }
+            let suffix = word.hasSuffix(",") ? "," : ""
 
-            // Skip empty, known words, pure numbers
-            if trimmed.isEmpty {
-                processed.append(word)
-                continue
+            if allLetters && t.count <= 4 && !known.contains(t.lowercased()) {
+                // "ax" → "a, times, x"  — commas give VoiceOver natural pauses
+                return chars.map { String($0) }.joined(separator: ", times, ") + suffix
             }
-            if knownWords.contains(trimmed.lowercased()) {
-                processed.append(word)
-                continue
+            if hasDigits && hasLetters {
+                return splitDigitLetter(t) + suffix
             }
-            if trimmed.allSatisfy({ $0.isNumber || $0 == "." || $0 == "," }) {
-                processed.append(word)
-                continue
-            }
-            // Single character — fine as is
-            if trimmed.count <= 1 {
-                processed.append(word)
-                continue
-            }
-
-            // Check if this looks like implicit multiplication
-            let chars = Array(trimmed)
-            let hasLetters = chars.contains(where: { $0.isLetter })
-            let hasDigits = chars.contains(where: { $0.isNumber })
-            let allLetters = chars.allSatisfy({ $0.isLetter })
-
-            if allLetters && trimmed.count <= 4 && !knownWords.contains(trimmed.lowercased()) {
-                // Pure letters, short, not a known word → split: "ax" → "a, x"
-                // Preserve any trailing punctuation from original word
-                let suffix = word.hasSuffix(",") ? "," : ""
-                let split = chars.map { String($0) }.joined(separator: ", ")
-                processed.append(split + suffix)
-            } else if hasDigits && hasLetters {
-                // Mixed digits+letters like "2x", "7x", "15a" → split at digit-letter boundary
-                let suffix = word.hasSuffix(",") ? "," : ""
-                let split = splitDigitLetterBoundary(trimmed)
-                processed.append(split + suffix)
-            } else {
-                processed.append(word)
-            }
-        }
-
-        return processed.joined(separator: " ")
+            return word
+        }.joined(separator: " ")
     }
 
-    /// Split at boundaries between digits and letters: "2x" → "2, x", "15ab" → "15, a, b"
-    private func splitDigitLetterBoundary(_ text: String) -> String {
-        var result = ""
-        var prevWasDigit = false
-        var prevWasLetter = false
-
-        for char in text {
-            let isDigit = char.isNumber
-            let isLetter = char.isLetter
-
-            if isLetter && prevWasDigit {
-                result += ", " + String(char)
-            } else if isDigit && prevWasLetter {
-                result += ", " + String(char)
-            } else if isLetter && prevWasLetter {
-                // Two adjacent letters in a mixed token → separate them
-                result += ", " + String(char)
-            } else {
-                result += String(char)
-            }
-
-            prevWasDigit = isDigit
-            prevWasLetter = isLetter
+    private func splitDigitLetter(_ text: String) -> String {
+        var r = ""
+        var prevDigit = false, prevLetter = false
+        for c in text {
+            let d = c.isNumber, l = c.isLetter
+            if l && prevDigit { r += ", times, \(c)" }
+            else if d && prevLetter { r += " \(c)" }
+            else if l && prevLetter { r += ", times, \(c)" }
+            else { r += String(c) }
+            prevDigit = d; prevLetter = l
         }
-
-        return result
+        return r
     }
 
-    // MARK: - Add Pauses for Verbose Reading
+    // MARK: - Pauses for Verbose
 
     private func addPausesForSlowReading(_ text: String) -> String {
-        var result = text
-
-        let pauseAfter = [
-            "equals", "plus", "minus", "times", "divided by",
-            "over", "squared", "cubed", "to the power of",
-            "sub", "sum", "product", "integral",
-            "from", "to", "of",
-            "open paren", "close paren",
-            "open bracket", "close bracket",
-            "square root of", "root of",
-            "fraction", "end fraction",
-            "numerator", "denominator",
-            "limit", "approaches", "infinity",
-            "sine", "cosine", "tangent",
-            "log", "natural log",
-            "alpha", "beta", "gamma", "delta", "theta", "pi", "sigma", "lambda", "omega"
+        var r = text
+        let words = [
+            "equals","plus","minus","times","divided by","over",
+            "squared","cubed","to the power of","sub",
+            "sum","product","integral","from","to","of",
+            "open paren","close paren","open bracket","close bracket",
+            "square root of","root of","fraction","end fraction",
+            "limit","approaches","infinity",
+            "sine","cosine","tangent","log","natural log",
+            "greater than","less than",
+            "alpha","beta","gamma","delta","theta","pi","sigma","lambda","omega",
         ]
-
-        for word in pauseAfter {
-            result = result.replacingOccurrences(of: "\(word) ", with: "\(word), ")
-            if result.hasSuffix(word) { result += "," }
+        for w in words {
+            r = r.replacingOccurrences(of: "\(w) ", with: "\(w), ")
+            if r.hasSuffix(w) { r += "," }
         }
-
-        result = result.replacingOccurrences(of: ",,", with: ",")
-        result = result.replacingOccurrences(of: ", ,", with: ",")
-        result = result.replacingOccurrences(of: ",  ", with: ", ")
-
-        return result.trimmingCharacters(in: CharacterSet(charactersIn: ", "))
+        r = r.replacingOccurrences(of: ",,", with: ",")
+        r = r.replacingOccurrences(of: ", ,", with: ",")
+        r = r.replacingOccurrences(of: ",  ", with: ", ")
+        return r.trimmingCharacters(in: CharacterSet(charactersIn: ", "))
     }
 
-    // MARK: - Clean Answer Text
+    // MARK: - Exponent Helper
 
-    private func cleanAnswerFromText(_ text: String) -> String {
-        var cleaned = text
-        let patterns = [
-            #"[,.]?\s*(the\s+)?(sum|total|answer|result|area|volume|perimeter|value)\s+(is|are|=|equals)\s+[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?"#,
-            #"\s+is\s+[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#,
-            #"\s*(=|equals)\s*[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#,
-            #"[,\.]\s*[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#,
-            #"\s*(which|that|this)\s+(is|are|equals)\s+[\d,\.]+.*$"#
-        ]
-        for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-                cleaned = regex.stringByReplacingMatches(in: cleaned, range: NSRange(cleaned.startIndex..., in: cleaned), withTemplate: "")
-            }
-        }
-        return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    // MARK: - Extract AltText
-
-    func extractAltText(from mathml: String) -> String? {
-        let patterns = [
-            #"alttext=["']([^"']+)["']"#,
-            #"aria-label=["']([^"']+)["']"#
-        ]
-        for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-               let match = regex.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
-               let range = Range(match.range(at: 1), in: mathml) {
-                return String(mathml[range])
-            }
-        }
-        return nil
-    }
-
-    // MARK: - Parse MathML Structure
-
-    private func parseMathMLStructure(_ mathml: String) -> String {
-        var parts: [String] = []
-        if let t = parseMathMLFraction(mathml) { parts.append(t) }
-        if let t = parseMathMLRoot(mathml) { parts.append(t) }
-        parts.append(contentsOf: parseMathMLSuperscripts(mathml))
-        parts.append(contentsOf: parseMathMLSubscripts(mathml))
-        parts.append(contentsOf: parseMathMLSubSup(mathml))
-        parts.append(contentsOf: parseMathMLUnderOver(mathml))
-        if !parts.isEmpty { return parts.joined(separator: " ") }
-        return extractAllMathMLContent(mathml)
-    }
-
-    private func parseMathMLFraction(_ mathml: String) -> String? {
-        let pattern = #"<mfrac[^>]*>(.*?)</mfrac>"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators),
-              let match = regex.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
-              let range = Range(match.range(at: 1), in: mathml) else { return nil }
-        let content = String(mathml[range])
-        let rowPattern = #"<mrow[^>]*>(.*?)</mrow>"#
-        if let rowRegex = try? NSRegularExpression(pattern: rowPattern, options: .dotMatchesLineSeparators) {
-            let matches = rowRegex.matches(in: content, range: NSRange(content.startIndex..., in: content))
-            if matches.count >= 2,
-               let numRange = Range(matches[0].range(at: 1), in: content),
-               let denRange = Range(matches[1].range(at: 1), in: content) {
-                return "fraction, \(extractPlainText(String(content[numRange]))), over, \(extractPlainText(String(content[denRange]))), end fraction"
-            }
-        }
-        return nil
-    }
-
-    private func parseMathMLRoot(_ mathml: String) -> String? {
-        let sqrtPattern = #"<msqrt[^>]*>(.*?)</msqrt>"#
-        if let regex = try? NSRegularExpression(pattern: sqrtPattern, options: .dotMatchesLineSeparators),
-           let match = regex.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
-           let range = Range(match.range(at: 1), in: mathml) {
-            return "square root of, \(extractPlainText(String(mathml[range]))), end root"
-        }
-        let rootPattern = #"<mroot[^>]*>(.*?)</mroot>"#
-        if let regex = try? NSRegularExpression(pattern: rootPattern, options: .dotMatchesLineSeparators),
-           let match = regex.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
-           let range = Range(match.range(at: 1), in: mathml) {
-            return "root of, \(extractPlainText(String(mathml[range]))), end root"
-        }
-        return nil
-    }
-
-    private func parseMathMLSuperscripts(_ mathml: String) -> [String] {
-        var results: [String] = []
-        let pattern = #"<msup[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msup>"#
-        if let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) {
-            for match in regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)) {
-                if let baseRange = Range(match.range(at: 1), in: mathml),
-                   let expRange = Range(match.range(at: 2), in: mathml) {
-                    let base = convertSymbol(String(mathml[baseRange]).trimmingCharacters(in: .whitespaces))
-                    let exp = String(mathml[expRange]).trimmingCharacters(in: .whitespaces)
-                    results.append("\(base), \(convertExponent(exp))")
-                }
-            }
-        }
-        return results
-    }
-
-    private func parseMathMLSubscripts(_ mathml: String) -> [String] {
-        var results: [String] = []
-        let pattern = #"<msub[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msub>"#
-        if let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) {
-            for match in regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)) {
-                if let baseRange = Range(match.range(at: 1), in: mathml),
-                   let subRange = Range(match.range(at: 2), in: mathml) {
-                    results.append("\(convertSymbol(String(mathml[baseRange]).trimmingCharacters(in: .whitespaces))), sub, \(convertSymbol(String(mathml[subRange]).trimmingCharacters(in: .whitespaces)))")
-                }
-            }
-        }
-        return results
-    }
-
-    private func parseMathMLSubSup(_ mathml: String) -> [String] {
-        var results: [String] = []
-        let pattern = #"<msubsup[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msubsup>"#
-        if let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) {
-            for match in regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)) {
-                if let baseRange = Range(match.range(at: 1), in: mathml),
-                   let subRange = Range(match.range(at: 2), in: mathml),
-                   let supRange = Range(match.range(at: 3), in: mathml) {
-                    let base = convertSymbol(String(mathml[baseRange]).trimmingCharacters(in: .whitespaces))
-                    let sub = convertSymbol(String(mathml[subRange]).trimmingCharacters(in: .whitespaces))
-                    let sup = convertExponent(String(mathml[supRange]).trimmingCharacters(in: .whitespaces))
-                    results.append("\(base), sub, \(sub), \(sup)")
-                }
-            }
-        }
-        return results
-    }
-
-    private func parseMathMLUnderOver(_ mathml: String) -> [String] {
-        var results: [String] = []
-        if mathml.contains("∑") || mathml.contains("&#x2211;") { results.append("sum") }
-        if mathml.contains("∫") || mathml.contains("&#x222B;") { results.append("integral") }
-        if mathml.contains("∏") || mathml.contains("&#x220F;") { results.append("product") }
-        return results
-    }
-
-    private func extractAllMathMLContent(_ mathml: String) -> String {
-        var parts: [String] = []
-        let tagPatterns: [(String, (String) -> String)] = [
-            (#"<mi[^>]*>([^<]+)</mi>"#, { self.convertSymbol($0) }),
-            (#"<mn[^>]*>([^<]+)</mn>"#, { $0 }),
-            (#"<mo[^>]*>([^<]+)</mo>"#, { self.convertOperator($0) })
-        ]
-        for (pattern, transform) in tagPatterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-                for match in regex.matches(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)) {
-                    if let range = Range(match.range(at: 1), in: mathml) {
-                        let text = String(mathml[range]).trimmingCharacters(in: .whitespaces)
-                        if !text.isEmpty { parts.append(transform(text)) }
-                    }
-                }
-            }
-        }
-        return parts.joined(separator: " ")
-    }
-
-    private func extractPlainText(_ mathml: String) -> String {
-        var text = mathml
-        if let regex = try? NSRegularExpression(pattern: #"<[^>]+>"#) {
-            text = regex.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: " ")
-        }
-        text = text.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-        return convertLaTeXToSpeech(text.trimmingCharacters(in: .whitespaces))
-    }
-
-    // MARK: - Convert Exponent
-
-    private func convertExponent(_ exp: String) -> String {
+    private func exponent(_ exp: String) -> String {
         let t = exp.trimmingCharacters(in: .whitespaces)
         switch t {
         case "2": return "squared"
@@ -511,29 +327,149 @@ final class MathSpeechService: ObservableObject {
         }
     }
 
-    // MARK: - Symbol Conversions
+    // MARK: - Extract AltText
 
-    private func convertSymbol(_ symbol: String) -> String {
-        let greek: [String: String] = [
-            "α": "alpha", "β": "beta", "γ": "gamma", "δ": "delta",
-            "ε": "epsilon", "θ": "theta", "λ": "lambda", "μ": "mu",
-            "π": "pi", "σ": "sigma", "τ": "tau", "φ": "phi",
-            "ψ": "psi", "ω": "omega",
-            "Γ": "Gamma", "Δ": "Delta", "Θ": "Theta", "Λ": "Lambda",
-            "Σ": "Sigma", "Φ": "Phi", "Ψ": "Psi", "Ω": "Omega"
-        ]
-        return greek[symbol] ?? symbol
+    func extractAltText(from mathml: String) -> String? {
+        for attr in ["alttext", "aria-label"] {
+            let pat = "\(attr)=[\"']([^\"']+)[\"']"
+            if let rx = try? NSRegularExpression(pattern: pat, options: .caseInsensitive),
+               let m = rx.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
+               let r = Range(m.range(at: 1), in: mathml) {
+                return String(mathml[r])
+            }
+        }
+        return nil
     }
 
-    private func convertOperator(_ op: String) -> String {
-        let operators: [String: String] = [
-            "+": "plus", "-": "minus", "−": "minus",
-            "=": "equals", "×": "times", "·": "times",
-            "÷": "divided by", "<": "less than", ">": "greater than",
-            "≤": "less than or equal to", "≥": "greater than or equal to",
-            "≠": "not equal to", "≈": "approximately",
-            "∑": "sum", "∏": "product", "∫": "integral"
+    // MARK: - MathML Structure Parsing
+
+    private func parseMathMLStructure(_ mathml: String) -> String {
+        var parts: [String] = []
+        if let t = parseFrac(mathml) { parts.append(t) }
+        if let t = parseRoot(mathml) { parts.append(t) }
+        parts += parseSups(mathml)
+        parts += parseSubs(mathml)
+        parts += parseSubSups(mathml)
+        parts += parseUnderOver(mathml)
+        if !parts.isEmpty { return parts.joined(separator: " ") }
+        return extractAllContent(mathml)
+    }
+
+    private func parseFrac(_ ml: String) -> String? {
+        guard let rx = try? NSRegularExpression(pattern: #"<mfrac[^>]*>(.*?)</mfrac>"#, options: .dotMatchesLineSeparators),
+              let m = rx.firstMatch(in: ml, range: NSRange(ml.startIndex..., in: ml)),
+              let r = Range(m.range(at: 1), in: ml) else { return nil }
+        let c = String(ml[r])
+        guard let rr = try? NSRegularExpression(pattern: #"<mrow[^>]*>(.*?)</mrow>"#, options: .dotMatchesLineSeparators) else { return nil }
+        let ms = rr.matches(in: c, range: NSRange(c.startIndex..., in: c))
+        guard ms.count >= 2, let n = Range(ms[0].range(at: 1), in: c), let d = Range(ms[1].range(at: 1), in: c) else { return nil }
+        return "fraction, \(plainText(String(c[n]))), over, \(plainText(String(c[d]))), end fraction"
+    }
+
+    private func parseRoot(_ ml: String) -> String? {
+        if let rx = try? NSRegularExpression(pattern: #"<msqrt[^>]*>(.*?)</msqrt>"#, options: .dotMatchesLineSeparators),
+           let m = rx.firstMatch(in: ml, range: NSRange(ml.startIndex..., in: ml)),
+           let r = Range(m.range(at: 1), in: ml) {
+            return "square root of, \(plainText(String(ml[r]))), end root"
+        }
+        return nil
+    }
+
+    private func parseSups(_ ml: String) -> [String] {
+        var out: [String] = []
+        let pat = #"<msup[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msup>"#
+        if let rx = try? NSRegularExpression(pattern: pat, options: .dotMatchesLineSeparators) {
+            for m in rx.matches(in: ml, range: NSRange(ml.startIndex..., in: ml)) {
+                if let b = Range(m.range(at: 1), in: ml), let e = Range(m.range(at: 2), in: ml) {
+                    out.append("\(sym(String(ml[b]))) \(exponent(String(ml[e]).trimmingCharacters(in: .whitespaces)))")
+                }
+            }
+        }
+        return out
+    }
+
+    private func parseSubs(_ ml: String) -> [String] {
+        var out: [String] = []
+        let pat = #"<msub[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msub>"#
+        if let rx = try? NSRegularExpression(pattern: pat, options: .dotMatchesLineSeparators) {
+            for m in rx.matches(in: ml, range: NSRange(ml.startIndex..., in: ml)) {
+                if let b = Range(m.range(at: 1), in: ml), let s = Range(m.range(at: 2), in: ml) {
+                    out.append("\(sym(String(ml[b]))), sub, \(sym(String(ml[s])))")
+                }
+            }
+        }
+        return out
+    }
+
+    private func parseSubSups(_ ml: String) -> [String] {
+        var out: [String] = []
+        let pat = #"<msubsup[^>]*>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*<m[ion][^>]*>([^<]*)</m[ion]>\s*</msubsup>"#
+        if let rx = try? NSRegularExpression(pattern: pat, options: .dotMatchesLineSeparators) {
+            for m in rx.matches(in: ml, range: NSRange(ml.startIndex..., in: ml)) {
+                if let b = Range(m.range(at: 1), in: ml), let sb = Range(m.range(at: 2), in: ml), let sp = Range(m.range(at: 3), in: ml) {
+                    out.append("\(sym(String(ml[b]))), sub, \(sym(String(ml[sb]))), \(exponent(String(ml[sp]).trimmingCharacters(in: .whitespaces)))")
+                }
+            }
+        }
+        return out
+    }
+
+    private func parseUnderOver(_ ml: String) -> [String] {
+        var r: [String] = []
+        if ml.contains("∑") || ml.contains("&#x2211;") { r.append("sum") }
+        if ml.contains("∫") || ml.contains("&#x222B;") { r.append("integral") }
+        if ml.contains("∏") || ml.contains("&#x220F;") { r.append("product") }
+        return r
+    }
+
+    private func extractAllContent(_ ml: String) -> String {
+        var parts: [String] = []
+        let tags: [(String, (String)->String)] = [
+            (#"<mi[^>]*>([^<]+)</mi>"#, { self.sym($0) }),
+            (#"<mn[^>]*>([^<]+)</mn>"#, { $0 }),
+            (#"<mo[^>]*>([^<]+)</mo>"#, { self.op($0) }),
         ]
-        return operators[op] ?? op
+        for (pat, fn) in tags {
+            if let rx = try? NSRegularExpression(pattern: pat, options: .caseInsensitive) {
+                for m in rx.matches(in: ml, range: NSRange(ml.startIndex..., in: ml)) {
+                    if let r = Range(m.range(at: 1), in: ml) {
+                        let t = String(ml[r]).trimmingCharacters(in: .whitespaces)
+                        if !t.isEmpty { parts.append(fn(t)) }
+                    }
+                }
+            }
+        }
+        return parts.joined(separator: " ")
+    }
+
+    private func plainText(_ ml: String) -> String {
+        var t = ml
+        if let rx = try? NSRegularExpression(pattern: #"<[^>]+>"#) {
+            t = rx.stringByReplacingMatches(in: t, range: NSRange(t.startIndex..., in: t), withTemplate: " ")
+        }
+        return convertLaTeXToSpeech(t.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression).trimmingCharacters(in: .whitespaces))
+    }
+
+    private func sym(_ s: String) -> String {
+        let g: [String:String] = [
+            "α":"alpha","β":"beta","γ":"gamma","δ":"delta","ε":"epsilon",
+            "θ":"theta","λ":"lambda","μ":"mu","π":"pi","σ":"sigma",
+            "τ":"tau","φ":"phi","ψ":"psi","ω":"omega",
+            "Γ":"Gamma","Δ":"Delta","Θ":"Theta","Λ":"Lambda",
+            "Σ":"Sigma","Φ":"Phi","Ψ":"Psi","Ω":"Omega",
+        ]
+        return g[s.trimmingCharacters(in: .whitespaces)] ?? s.trimmingCharacters(in: .whitespaces)
+    }
+
+    private func op(_ o: String) -> String {
+        let m: [String:String] = [
+            "+":"plus","-":"minus","−":"minus","=":"equals",
+            "×":"times","·":"times","÷":"divided by",
+            "<":"less than",">":"greater than",
+            "≤":"less than or equal to","≥":"greater than or equal to",
+            "≠":"not equal to","≈":"approximately",
+            "∑":"sum","∏":"product","∫":"integral",
+        ]
+        return m[o] ?? o
     }
 }
