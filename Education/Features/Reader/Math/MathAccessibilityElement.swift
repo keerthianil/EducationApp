@@ -71,7 +71,7 @@ struct MathCATView: View {
 
             Color.clear
                 .contentShape(Rectangle())
-                .onTapGesture { openExploration() }
+                .onTapGesture(count: 2) { openExploration() }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Math equation")
@@ -231,8 +231,21 @@ struct MathMLLargeRenderer: UIViewRepresentable {
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
             <style>
             body{margin:0;padding:20px;display:flex;align-items:center;justify-content:center;min-height:100vh;background:transparent;box-sizing:border-box}
-            .eq{font-size:clamp(36px, 12vw, 80px);color:#121417;text-align:center}
-            </style></head>
+            .eq{font-size:64px;color:#121417;text-align:center}
+            </style>
+            <script>
+            window.onload = function() {
+                var e = document.querySelector('.eq');
+                if (!e) return;
+                var cw = document.body.clientWidth * 0.92;
+                var sizes = [64, 56, 48, 40, 36, 32, 28, 24, 20];
+                for (var i = 0; i < sizes.length; i++) {
+                    e.style.fontSize = sizes[i] + 'px';
+                    if (e.scrollWidth <= cw) break;
+                }
+            };
+            </script>
+            </head>
             <body><div class="eq">\(latex ?? "")</div></body></html>
             """
             w.loadHTMLString(html, baseURL: nil)
@@ -257,8 +270,22 @@ struct MathMLLargeRenderer: UIViewRepresentable {
         <style>
         *{-webkit-user-select:none}
         html,body{margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:transparent;overflow:hidden}
-        math{display:block;font-size:clamp(36px, 12vw, 80px);color:#121417;max-width:95vw;padding:16px}
-        </style></head>
+        math{display:block;font-size:64px;color:#121417;max-width:95vw;padding:16px;transform-origin:center center}
+        </style>
+        <script>
+        window.onload = function() {
+            var m = document.querySelector('math');
+            if (!m) return;
+            var cw = document.body.clientWidth * 0.92;
+            var ch = document.body.clientHeight * 0.7;
+            var sizes = [64, 56, 48, 40, 36, 32, 28, 24, 20];
+            for (var i = 0; i < sizes.length; i++) {
+                m.style.fontSize = sizes[i] + 'px';
+                if (m.scrollWidth <= cw && m.scrollHeight <= ch) break;
+            }
+        };
+        </script>
+        </head>
         <body>\(clean)</body></html>
         """
         w.loadHTMLString(html, baseURL: nil)

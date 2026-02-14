@@ -47,23 +47,25 @@ final class MathSpeechService: ObservableObject {
     private func convertLaTeXToSpeech(_ text: String) -> String {
         var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        // 0. Decode HTML entities FIRST
+        // 0. Decode HTML entities FIRST  (r&gt;s → r>s,  &#x2212; → −)
         s = decodeHTMLEntities(s)
 
         // 1. Insert spaces around bare operators
         s = insertSpacesAroundOperators(s)
 
         // 2. Complex structures (fractions, roots, integrals, sums)
+    
+        let nb = #"(?:[^{}]|\{[^}]*\})*"#  // matches content with one level of nested braces
         let complex: [(String, String)] = [
-            (#"\\binom\s*\{([^}]*)\}\s*\{([^}]*)\}"#, "$1 choose $2"),
-            (#"\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}"#, "fraction, $1, over, $2, end fraction"),
-            (#"\\int\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "integral from $1 to $2 of"),
+            (#"\\binom\s*\{("# + nb + #")\}\s*\{("# + nb + #")\}"#, "$1 choose $2"),
+            (#"\\frac\s*\{("# + nb + #")\}\s*\{("# + nb + #")\}"#, "fraction, $1, over, $2, end fraction"),
+            (#"\\int\s*_\s*\{("# + nb + #")\}\s*\^\s*\{("# + nb + #")\}"#, "integral from $1 to $2 of"),
             (#"\\int\s*_\s*(\w)\s*\^\s*(\w)"#, "integral from $1 to $2 of"),
-            (#"\\sum\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "sum from $1 to $2 of"),
-            (#"\\prod\s*_\s*\{([^}]*)\}\s*\^\s*\{([^}]*)\}"#, "product from $1 to $2 of"),
-            (#"\\lim\s*_\s*\{([^}]*?)\\to\s*([^}]*)\}"#, "limit as $1 approaches $2 of"),
-            (#"\\sqrt\s*\[([^\]]+)\]\s*\{([^}]+)\}"#, "$1 th root of $2 end root"),
-            (#"\\sqrt\s*\{([^}]+)\}"#, "square root of $1 end root"),
+            (#"\\sum\s*_\s*\{("# + nb + #")\}\s*\^\s*\{("# + nb + #")\}"#, "sum from $1 to $2 of"),
+            (#"\\prod\s*_\s*\{("# + nb + #")\}\s*\^\s*\{("# + nb + #")\}"#, "product from $1 to $2 of"),
+            (#"\\lim\s*_\s*\{("# + nb + #"?)\\to\s*("# + nb + #")\}"#, "limit as $1 approaches $2 of"),
+            (#"\\sqrt\s*\[([^\]]+)\]\s*\{("# + nb + #")\}"#, "$1 th root of $2 end root"),
+            (#"\\sqrt\s*\{("# + nb + #")\}"#, "square root of $1 end root"),
         ]
         for (pat, rep) in complex {
             if let rx = try? NSRegularExpression(pattern: pat) {
@@ -71,7 +73,7 @@ final class MathSpeechService: ObservableObject {
             }
         }
 
-        // 3. Superscripts with braces
+        // 3. Superscripts with braces 
         let supPat = #"([a-zA-Z0-9\)\]])\s*\^\s*\{([^}]+)\}"#
         if let rx = try? NSRegularExpression(pattern: supPat) {
             var t = s
@@ -167,13 +169,14 @@ final class MathSpeechService: ObservableObject {
             s = rx.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: " to the power of $1")
         }
 
-        // 11. Split implicit multiplication  
+        // 11. Split implicit multiplication  (ax → a times x)
         s = splitImplicitMultiplication(s)
 
         // 12. Final whitespace cleanup
         while s.contains("  ") { s = s.replacingOccurrences(of: "  ", with: " ") }
         s = s.replacingOccurrences(of: ", ,", with: ",")
         s = s.replacingOccurrences(of: ",,", with: ",")
+        
         return s.trimmingCharacters(in: CharacterSet(charactersIn: " ,"))
     }
 
@@ -235,6 +238,7 @@ final class MathSpeechService: ObservableObject {
     private func splitImplicitMultiplication(_ text: String) -> String {
         let known: Set<String> = [
             "sin","cos","tan","log","ln","lim","mod","max","min","abs","det",
+            "frac","sqrt","binom",
             "equals","plus","minus","times","divided","over","by",
             "fraction","squared","cubed","root","end",
             "sum","product","integral","limit","approaches","infinity",
