@@ -2,6 +2,9 @@
 //  DashboardFlow3View.swift
 //  Education
 //
+//  CHANGED: Removed confusing dual navigation (top tabs + bottom tabs).
+//  Now uses same Home / All Files top tabs as Flow 2.
+//  All original card styling and layout preserved.
 //
 
 import SwiftUI
@@ -14,9 +17,8 @@ struct DashboardFlow3View: View {
     @EnvironmentObject var speech: SpeechService
     @EnvironmentObject var mathSpeech: MathSpeechService
     
-    @State private var selectedTab: Flow3Tab = .upload
-    @State private var selectedBottomTab: Flow3BottomTab = .home
-    @State private var showHamburgerMenu = false
+    // CHANGED: Single tab enum replacing the old dual-tab system
+    @State private var selectedTab: SimpleTab = .home
     @State private var selectedLesson: LessonIndexItem?
     @State private var showUpload = false
     @State private var navigateToFlowSelection = false
@@ -29,29 +31,13 @@ struct DashboardFlow3View: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dismiss) private var dismiss
     
-    enum Flow3Tab: String, CaseIterable {
-        case upload = "Upload"
-        case uploadedByTeacher = "Uploaded by Teacher"
-        
-        static var allCases: [Flow3Tab] {
-            return [.upload, .uploadedByTeacher]
-        }
-    }
-    
-    enum Flow3BottomTab: CaseIterable {
+    // CHANGED: Simple 2-tab enum (was: separate Flow3Tab + Flow3BottomTab)
+    enum SimpleTab: CaseIterable {
         case home, allFiles
-        
         var title: String {
             switch self {
             case .home: return "Home"
             case .allFiles: return "All files"
-            }
-        }
-        
-        var icon: String {
-            switch self {
-            case .home: return "house"
-            case .allFiles: return "doc.on.doc"
             }
         }
     }
@@ -64,40 +50,38 @@ struct DashboardFlow3View: View {
         horizontalSizeClass == .regular ? 800 : .infinity
     }
     
-    // Get teacher-uploaded files
     private var teacherFiles: [LessonIndexItem] {
         lessonStore.recent.filter { $0.teacher != nil }
     }
     
     var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
+        // CHANGED: Removed ZStack wrapper and bottom tab bar
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
                 topBar
+                
+                // CHANGED: Same tab style as Flow 2
                 tabBar
+                    .padding(.bottom, 16)
                 
-                ScrollView {
-                    VStack(spacing: 0) {
-                        if selectedBottomTab == .allFiles {
-                            allFilesBottomTabContent
-                        } else {
-                            switch selectedTab {
-                            case .upload:
-                                uploadTabContent
-                            case .uploadedByTeacher:
-                                uploadedByTeacherTabContent
-                            }
-                        }
-                    }
-                    .frame(maxWidth: contentMaxWidth)
-                    .frame(maxWidth: .infinity)
-                    .padding(.bottom, 100)
+                if selectedTab == .home {
+                    homeTabContent
+                } else {
+                    allFilesContent
+                        .padding(.horizontal, horizontalPadding)
+                        .padding(.bottom, 20)
                 }
-                .background(Color(hex: "#F7FAFC"))
-                
-                Spacer(minLength: 0)
-                
-                bottomTabBar
             }
+            .frame(maxWidth: contentMaxWidth)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 40)
+        }
+        .background(Color(hex: "#F7FAFC"))
+        // CHANGED: Removed .safeAreaInset that pushed heading down
+        .sheet(isPresented: $showUpload) {
+            UploadSheetView(uploadManager: uploadManager)
+                .environmentObject(lessonStore)
+                .environmentObject(haptics)
         }
         .onAppear {
             uploadManager.lessonStore = lessonStore
@@ -105,17 +89,11 @@ struct DashboardFlow3View: View {
             previousCompletedCount = lessonStore.downloaded.count
             InteractionLogger.shared.setCurrentScreen("DashboardFlow3View")
             
-            // --- CHANGED: Announce title for VoiceOver ---
             if UIAccessibility.isVoiceOverRunning {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Scenario 2")
                 }
             }
-        }
-        .sheet(isPresented: $showUpload) {
-            UploadSheetView(uploadManager: uploadManager)
-                .environmentObject(lessonStore)
-                .environmentObject(haptics)
         }
         .fullScreenCover(item: $selectedLesson) { lesson in
             NavigationStack {
@@ -139,22 +117,11 @@ struct DashboardFlow3View: View {
         .onChange(of: lessonStore.downloaded.count) { _, newCount in
             previousCompletedCount = newCount
         }
-        .onChange(of: selectedTab) { oldTab, newTab in
+        .onChange(of: selectedTab) { _, newTab in
             InteractionLogger.shared.log(
-                event: .tabChange,
-                objectType: .tab,
-                label: newTab.rawValue,
-                location: .zero,
-                additionalInfo: "Flow 3 top tab changed"
-            )
-        }
-        .onChange(of: selectedBottomTab) { oldTab, newTab in
-            InteractionLogger.shared.log(
-                event: .tabChange,
-                objectType: .tab,
-                label: newTab.title,
-                location: .zero,
-                additionalInfo: "Flow 3 bottom tab changed"
+                event: .tabChange, objectType: .tab,
+                label: newTab.title, location: .zero,
+                additionalInfo: "Flow 3 tab changed"
             )
         }
         .onThreeFingerSwipeBack {
@@ -169,17 +136,12 @@ struct DashboardFlow3View: View {
         )
     }
     
-    // MARK: - Top Bar (with back button)
+    // MARK: - Top Bar (original style)
     private var topBar: some View {
         HStack {
             Button {
                 haptics.tapSelection()
-                InteractionLogger.shared.log(
-                    event: .tap,
-                    objectType: .button,
-                    label: "Back to Flows",
-                    location: .zero
-                )
+                InteractionLogger.shared.log(event: .tap, objectType: .button, label: "Back to Flows", location: .zero)
                 InteractionLogger.shared.endSession()
                 navigateToFlowSelection = true
             } label: {
@@ -192,8 +154,7 @@ struct DashboardFlow3View: View {
             
             Spacer()
             
-            Spacer()
-                .frame(width: 48)
+            Spacer().frame(width: 48)
         }
         .overlay(
             Text("StemAlly")
@@ -205,12 +166,11 @@ struct DashboardFlow3View: View {
         .padding(.horizontal, 16)
         .padding(.top, 16)
         .padding(.bottom, 8)
-        .background(Color(hex: "#F7FAFC"))
     }
     
-    // MARK: - Tab Bar
+    // MARK: - Tab Bar (CHANGED: replaces old dual-tab system)
     private var tabBar: some View {
-        let allTabs = Flow3Tab.allCases
+        let allTabs = SimpleTab.allCases
         let tabCount = allTabs.count
         
         return HStack(spacing: 0) {
@@ -219,15 +179,12 @@ struct DashboardFlow3View: View {
                 
                 Button {
                     haptics.tapSelection()
-                    InteractionLogger.shared.logTap(
-                        objectType: .tab,
-                        label: "Tab: \(tab.rawValue)"
-                    )
+                    InteractionLogger.shared.logTap(objectType: .tab, label: "Tab: \(tab.title)")
                     selectedTab = tab
                 } label: {
                     VStack(spacing: 0) {
-                        Text(tab.rawValue)
-                            .font(.custom("Arial", size: tab == .uploadedByTeacher ? 13 : 15).weight(.bold))
+                        Text(tab.title)
+                            .font(.custom("Arial", size: 15).weight(.bold))
                             .foregroundColor(isSelected ? ColorTokens.primary : Color(hex: "#8B919C"))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
@@ -241,7 +198,7 @@ struct DashboardFlow3View: View {
                 }
                 .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(tab.rawValue)
+                .accessibilityLabel(tab.title)
                 .accessibilityValue(isSelected ? "selected" : "")
                 .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
                 .accessibilityHint("Tab \(index + 1) of \(tabCount)")
@@ -250,17 +207,16 @@ struct DashboardFlow3View: View {
         .padding(.horizontal, 8)
         .background(Color.white)
         .overlay(
-            Rectangle()
-                .fill(Color(hex: "#CFDBE8"))
-                .frame(height: 1),
+            Rectangle().fill(Color(hex: "#CFDBE8")).frame(height: 1),
             alignment: .bottom
         )
         .accessibilityElement(children: .contain)
     }
     
-    // MARK: - Upload Tab Content
-    private var uploadTabContent: some View {
+    // MARK: - Home Tab Content (original layout — upload + teacher + recent)
+    private var homeTabContent: some View {
         VStack(spacing: 16) {
+            // Upload section (original Flow 3 style)
             Text("Upload from Device")
                 .font(.custom("Arial", size: 18).weight(.bold))
                 .foregroundColor(Color(hex: "#0D141C"))
@@ -279,13 +235,9 @@ struct DashboardFlow3View: View {
                         .font(.custom("Arial", size: 14))
                         .foregroundColor(Color(hex: "#0D141C"))
                     
-                    // --- CHANGED: Browse Files disabled ---
                     Button("Browse Files") {
                         haptics.tapSelection()
-                        InteractionLogger.shared.logTap(
-                            objectType: .button,
-                            label: "Browse Files"
-                        )
+                        InteractionLogger.shared.logTap(objectType: .button, label: "Browse Files")
                         showUpload = true
                     }
                     .font(.custom("Arial", size: 14).weight(.bold))
@@ -307,6 +259,7 @@ struct DashboardFlow3View: View {
             }
             .padding(16)
             
+            // Processing files
             if !lessonStore.processing.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(lessonStore.processing) { file in
@@ -316,6 +269,7 @@ struct DashboardFlow3View: View {
                 .padding(.horizontal, horizontalPadding)
             }
             
+            // Uploaded files
             if !lessonStore.downloaded.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Uploaded")
@@ -327,10 +281,7 @@ struct DashboardFlow3View: View {
                     ForEach(lessonStore.downloaded.prefix(3)) { item in
                         Flow3UploadedCard(item: item) {
                             haptics.tapSelection()
-                            InteractionLogger.shared.logTap(
-                                objectType: .fileCard,
-                                label: "Uploaded: \(item.title)"
-                            )
+                            InteractionLogger.shared.logTap(objectType: .fileCard, label: "Uploaded: \(item.title)")
                             selectedLesson = item
                         }
                         .padding(.horizontal, horizontalPadding)
@@ -338,10 +289,45 @@ struct DashboardFlow3View: View {
                 }
             }
             
+            // Teacher files (original grid style)
+            uploadedByTeacherSection
+            
+            // Recent upload history
             recentUploadHistorySection
         }
     }
     
+    // MARK: - Uploaded by Teacher (original grid layout)
+    @ViewBuilder
+    private var uploadedByTeacherSection: some View {
+        if !teacherFiles.isEmpty {
+            VStack(spacing: 16) {
+                Text("Uploaded by Teacher")
+                    .font(.custom("Arial", size: 18).weight(.bold))
+                    .foregroundColor(Color(hex: "#0D141C"))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.top, 8)
+                    .accessibilityAddTraits(.isHeader)
+                
+                LazyVGrid(columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12)
+                ], spacing: 12) {
+                    ForEach(teacherFiles) { item in
+                        Flow3TeacherFileCard(item: item) {
+                            haptics.tapSelection()
+                            InteractionLogger.shared.logTap(objectType: .card, label: "Teacher: \(item.title)")
+                            selectedLesson = item
+                        }
+                    }
+                }
+                .padding(.horizontal, horizontalPadding)
+            }
+        }
+    }
+    
+    // MARK: - Recent Upload History (original style)
     private var recentUploadHistorySection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Recent Upload History")
@@ -354,10 +340,7 @@ struct DashboardFlow3View: View {
             ForEach(lessonStore.recent.prefix(5)) { item in
                 Flow3HistoryRow(item: item) {
                     haptics.tapSelection()
-                    InteractionLogger.shared.logTap(
-                        objectType: .listRow,
-                        label: "History: \(item.title)"
-                    )
+                    InteractionLogger.shared.logTap(objectType: .listRow, label: "History: \(item.title)")
                     selectedLesson = item
                 }
                 .padding(.horizontal, horizontalPadding)
@@ -365,47 +348,8 @@ struct DashboardFlow3View: View {
         }
     }
     
-    // MARK: - Uploaded by Teacher Tab
-    private var uploadedByTeacherTabContent: some View {
-        VStack(spacing: 16) {
-            if teacherFiles.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 48))
-                        .foregroundColor(Color(hex: "#989CA6"))
-                        .accessibilityHidden(true)
-                    
-                    Text("No files from teacher yet")
-                        .font(.custom("Arial", size: 17))
-                        .foregroundColor(Color(hex: "#61758A"))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 60)
-            } else {
-                LazyVGrid(columns: [
-                    GridItem(.flexible(), spacing: 12),
-                    GridItem(.flexible(), spacing: 12)
-                ], spacing: 12) {
-                    ForEach(teacherFiles) { item in
-                        Flow3TeacherFileCard(item: item) {
-                            haptics.tapSelection()
-                            InteractionLogger.shared.logTap(
-                                objectType: .card,
-                                label: "Teacher: \(item.title)"
-                            )
-                            selectedLesson = item
-                        }
-                    }
-                }
-                .padding(.horizontal, horizontalPadding)
-                .padding(.top, 16)
-            }
-        }
-    }
-
-    // MARK: - Bottom Tab: All Files
-    private var allFilesBottomTabContent: some View {
-        // Show both teacher PDFs and student-uploaded PDFs
+    // MARK: - All Files (CHANGED: now in tab instead of bottom bar)
+    private var allFilesContent: some View {
         let allFilesById = (lessonStore.downloaded + teacherFiles).reduce(into: [String: LessonIndexItem]()) { acc, item in
             acc[item.id] = acc[item.id] ?? item
         }
@@ -416,7 +360,6 @@ struct DashboardFlow3View: View {
                 .font(.custom("Arial", size: 18).weight(.bold))
                 .foregroundColor(Color(hex: "#0D141C"))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, horizontalPadding)
                 .padding(.top, 16)
                 .accessibilityAddTraits(.isHeader)
 
@@ -437,71 +380,18 @@ struct DashboardFlow3View: View {
                     ForEach(allFiles) { item in
                         Flow3UploadedCard(item: item) {
                             haptics.tapSelection()
-                            InteractionLogger.shared.logTap(
-                                objectType: .fileCard,
-                                label: "All Files: \(item.title)"
-                            )
+                            InteractionLogger.shared.logTap(objectType: .fileCard, label: "All Files: \(item.title)")
                             selectedLesson = item
                         }
-                        .padding(.horizontal, horizontalPadding)
                     }
                 }
             }
         }
-    }
-    
-    // MARK: - Bottom Tab Bar
-    private var bottomTabBar: some View {
-        let allTabs = Flow3BottomTab.allCases
-        let tabCount = allTabs.count
-        
-        return HStack(spacing: 0) {
-            ForEach(Array(allTabs.enumerated()), id: \.element) { index, tab in
-                let isSelected = (selectedBottomTab == tab)
-                
-                Button {
-                    haptics.tapSelection()
-                    InteractionLogger.shared.logTap(
-                        objectType: .tab,
-                        label: "Bottom Tab: \(tab.title)"
-                    )
-                    selectedBottomTab = tab
-                    if tab == .home {
-                        selectedTab = .upload
-                    }
-                } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: isSelected ? "\(tab.icon).fill" : tab.icon)
-                            .font(.system(size: 24))
-                            .foregroundColor(isSelected ? ColorTokens.primary : Color(hex: "#61758A"))
-                        
-                        Text(tab.title)
-                            .font(.custom("Arial", size: 12))
-                            .foregroundColor(isSelected ? ColorTokens.primary : Color(hex: "#61758A"))
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(tab.title)
-                .accessibilityValue(isSelected ? "selected" : "")
-                .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
-                .accessibilityHint("Tab \(index + 1) of \(tabCount)")
-            }
-        }
-        .padding(.top, 8)
-        .padding(.bottom, 20)
-        .background(Color.white)
-        .overlay(
-            Rectangle()
-                .fill(Color(hex: "#E5E8EB"))
-                .frame(height: 1),
-            alignment: .top
-        )
-        .accessibilityElement(children: .contain)
     }
 }
 
-// MARK: - Flow 3 Teacher File Card
+// MARK: - Original Flow 3 Card Components (unchanged)
+
 private struct Flow3TeacherFileCard: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -559,7 +449,6 @@ private struct Flow3TeacherFileCard: View {
     }
 }
 
-// MARK: - Flow 3 Processing Card
 private struct Flow3ProcessingCard: View {
     let processingFile: ProcessingFile
     
@@ -569,44 +458,29 @@ private struct Flow3ProcessingCard: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: "#FEDFDE"))
                     .frame(width: 48, height: 48)
-                
-                Image("pdf-icon-red")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
+                Image("pdf-icon-red").resizable().scaledToFit().frame(width: 24, height: 24)
             }
             .accessibilityHidden(true)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text("Processing...")
-                    .font(.custom("Arial", size: 13))
-                    .foregroundColor(Color(hex: "#8B919C"))
-                
+                    .font(.custom("Arial", size: 13)).foregroundColor(Color(hex: "#8B919C"))
                 Text(processingFile.item.title)
-                    .font(.custom("Arial", size: 16))
-                    .foregroundColor(Color(hex: "#0D141C"))
-                
+                    .font(.custom("Arial", size: 16)).foregroundColor(Color(hex: "#0D141C"))
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Rectangle().fill(Color(hex: "#E5E8EB")).frame(height: 4)
                         Rectangle().fill(ColorTokens.primary)
                             .frame(width: geo.size.width * processingFile.progress, height: 4)
-                    }
-                    .cornerRadius(2)
-                }
-                .frame(height: 4)
-                
+                    }.cornerRadius(2)
+                }.frame(height: 4)
                 Text("\(Int(processingFile.progress * 100))% Complete")
-                    .font(.custom("Arial", size: 11))
-                    .foregroundColor(Color(hex: "#8B919C"))
+                    .font(.custom("Arial", size: 11)).foregroundColor(Color(hex: "#8B919C"))
             }
-            
             Spacer()
-            
             ProgressView().scaleEffect(0.8).accessibilityHidden(true)
         }
-        .padding(12)
-        .background(Color.white)
+        .padding(12).background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         .accessibilityElement(children: .ignore)
@@ -614,7 +488,6 @@ private struct Flow3ProcessingCard: View {
     }
 }
 
-// MARK: - Flow 3 Uploaded Card
 private struct Flow3UploadedCard: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -623,37 +496,18 @@ private struct Flow3UploadedCard: View {
         Button(action: onTap) {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(hex: "#FEDFDE"))
-                        .frame(width: 48, height: 48)
-                    
-                    Image("pdf-icon-red")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                }
-                .accessibilityHidden(true)
+                    RoundedRectangle(cornerRadius: 8).fill(Color(hex: "#FEDFDE")).frame(width: 48, height: 48)
+                    Image("pdf-icon-red").resizable().scaledToFit().frame(width: 24, height: 24)
+                }.accessibilityHidden(true)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.title)
-                        .font(.custom("Arial", size: 16))
-                        .foregroundColor(Color(hex: "#0D141C"))
-                    
-                    Text(formatMeta(item))
-                        .font(.custom("Arial", size: 13))
-                        .foregroundColor(Color(hex: "#8B919C"))
+                    Text(item.title).font(.custom("Arial", size: 16)).foregroundColor(Color(hex: "#0D141C"))
+                    Text(formatMeta(item)).font(.custom("Arial", size: 13)).foregroundColor(Color(hex: "#8B919C"))
                 }
-                
                 Spacer()
-                
-                Image("tick-mark")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
-                    .accessibilityHidden(true)
+                Image("tick-mark").resizable().scaledToFit().frame(width: 24, height: 24).accessibilityHidden(true)
             }
-            .padding(12)
-            .background(ColorTokens.uploadedFileCardBackground)
+            .padding(12).background(ColorTokens.uploadedFileCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
@@ -666,12 +520,10 @@ private struct Flow3UploadedCard: View {
     private func formatMeta(_ item: LessonIndexItem) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
-        let timeAgo = formatter.localizedString(for: item.createdAt, relativeTo: Date())
-        return "\(timeAgo), 1.5MB"
+        return "\(formatter.localizedString(for: item.createdAt, relativeTo: Date())), 1.5MB"
     }
 }
 
-// MARK: - Flow 3 History Row
 private struct Flow3HistoryRow: View {
     let item: LessonIndexItem
     let onTap: () -> Void
@@ -680,31 +532,23 @@ private struct Flow3HistoryRow: View {
         Button(action: onTap) {
             HStack(spacing: 16) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(hex: "#FEDFDE"))
-                        .frame(width: 48, height: 48)
-                    
-                    Image("pdf-icon-red")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                }
-                .accessibilityHidden(true)
+                    RoundedRectangle(cornerRadius: 8).fill(Color(hex: "#FEDFDE")).frame(width: 48, height: 48)
+                    Image("pdf-icon-red").resizable().scaledToFit().frame(width: 24, height: 24)
+                }.accessibilityHidden(true)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.title)
                         .font(.custom("Inter", size: 16).weight(.medium))
                         .foregroundColor(Color(hex: "#0D141C"))
-                    
-                    Text(formatDate(item.createdAt))
+                    let f = DateFormatter()
+                    let _ = f.dateFormat = "yyyy-MM-dd"
+                    Text(f.string(from: item.createdAt))
                         .font(.custom("Inter", size: 14))
                         .foregroundColor(Color(hex: "#4D7399"))
                 }
-                
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16).padding(.vertical, 8)
             .frame(height: 72)
             .background(Color(hex: "#F7FAFC"))
         }
@@ -714,15 +558,9 @@ private struct Flow3HistoryRow: View {
         .accessibilityHint("Double tap to open")
         .accessibilityAddTraits(.isButton)
     }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
-    }
 }
 
-// MARK: - Reader Container
+// MARK: - Reader Container (unchanged)
 private struct Flow3ReaderContainer: View {
     @EnvironmentObject var lessonStore: LessonStore
     @EnvironmentObject var speech: SpeechService
@@ -748,6 +586,5 @@ private struct Flow3ReaderContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        // NO document logging here
     }
 }

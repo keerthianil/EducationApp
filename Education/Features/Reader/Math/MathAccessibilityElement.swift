@@ -2,723 +2,403 @@
 //  MathAccessibilityElement.swift
 //  Education
 //
-//  Math Mode Flow:
-//    1. Double-tap (inactive)  → enter math mode → announce instructions
-//    2. User CAN interrupt instructions with rotor/swipes at any time
-//    3. Double-tap (math mode) → read entire equation
-//    4. Rotor twist → VO shows level name; swipe up/down → VO reads part via accessibilityValue
-//    5. 3-finger swipe fallback works for level/part navigation (with queued announcements)
-//    6. Two-finger scrub (Z-gesture) → exit math mode
-//
-//  Rotor reading mechanics:
-//    - Rotor predicate updates state, returns self as target
-//    - VO re-focuses on self and reads accessibilityValue (the current part)
-//    - NO queued announcement needed for rotor — VO handles it
-//    - 3-finger swipes DO need queued announcements since VO doesn't auto-read after accessibilityScroll
+//  Math accessibility:
+//    1. Inline: "Math equation. [text]. Double tap to explore"
+//    2. Tap/double-tap → full-screen view (equation fills screen)
+//    3. VO announces equation + short instructions on entry
+//    4. Custom rotor "Equation parts" works ANYWHERE on screen
+//    5. Back button + 3-finger swipe + 2-finger scrub to exit
+//    6. No visible text/heading — clean screen, just the equation
 //
 
 import UIKit
 import SwiftUI
 import WebKit
 
-// MARK: - MathPart (kept for compatibility)
+// MARK: - Supporting Types
 
 struct MathPart {
     let text: String
     let level: MathNavigationLevel
     let children: [MathPart]
-
     init(text: String, level: MathNavigationLevel = .term, children: [MathPart] = []) {
-        self.text = text
-        self.level = level
-        self.children = children
+        self.text = text; self.level = level; self.children = children
     }
 }
 
 enum MathNavigationLevel: String, CaseIterable {
     case character = "Character"
-    case symbol = "Symbol"
-    case term = "Term"
+    case symbol    = "Symbol"
+    case term      = "Term"
     case structure = "Structure"
-
-    var next: MathNavigationLevel {
-        switch self {
-        case .character: return .symbol
-        case .symbol: return .term
-        case .term: return .structure
-        case .structure: return .character
-        }
-    }
-
-    var previous: MathNavigationLevel {
-        switch self {
-        case .character: return .structure
-        case .symbol: return .character
-        case .term: return .symbol
-        case .structure: return .term
-        }
-    }
 }
-
-// MARK: - Math Mode State
-
-private enum MathModeState {
-    case inactive
-    case exploringReady   // Instructions announced; waiting for user action
-    case reading          // Reading full equation aloud
-    case navigating       // User navigating via rotor or swipes
-}
-
-// MARK: - MathCAT Accessibility Container
-
-class MathCATAccessibilityContainer: UIView {
-
-    var fullEquationText: String = "equation" {
-        didSet { parseEquationForNavigation() }
-    }
-
-    var mathML: String = ""
-    var mathParts: [MathPart] = []
-
-    var onEnterMathMode: (() -> Void)?
-    var onExitMathMode: (() -> Void)?
-    var onDismissScreen: (() -> Void)?
-
-    // MARK: - State
-    private var state: MathModeState = .inactive
-    private var currentLevel: MathNavigationLevel = .term
-    private var navigationParts: [[String]] = [[], [], [], []]
-    private var currentIndex: Int = 0
-
-    // MARK: - Haptics
-    private let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
-    private let selectionGenerator = UISelectionFeedbackGenerator()
-
-    // MARK: - Announcement Queue
-    private var isAnnouncing = false
-    private var announcementQueue: [String] = []
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupAccessibility()
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupAccessibility()
-    }
-
-    private func setupAccessibility() {
-        isAccessibilityElement = true
-        accessibilityTraits = [.staticText]
-        impactGenerator.prepare()
-        selectionGenerator.prepare()
-    }
-
-    // MARK: - Accessibility Properties
-    //
-    // KEY INSIGHT: When rotor predicate returns self, VO reads label + value.
-    // So in .navigating state:
-    //   label = nil  (don't repeat noise)
-    //   value = current part  (VO reads this)
-    // This avoids double-reading.
-
-    override var accessibilityLabel: String? {
-        get {
-            switch state {
-            case .inactive:
-                return "Math equation"
-            case .exploringReady:
-                return "Math mode active"
-            case .reading:
-                return nil  // Don't interfere with reading
-            case .navigating:
-                return nil  // Let VO just read the value
-            }
-        }
-        set { }
-    }
-
-    override var accessibilityHint: String? {
-        get {
-            switch state {
-            case .inactive:
-                return "Double tap to explore"
-            case .exploringReady:
-                return "Double tap to read equation. Two finger scrub to exit."
-            case .reading:
-                return nil
-            case .navigating:
-                return nil  // Don't repeat hints on every swipe
-            }
-        }
-        set { }
-    }
-
-    override var accessibilityValue: String? {
-        get {
-            if state == .navigating {
-                let parts = getPartsForCurrentLevel()
-                if currentIndex < parts.count {
-                    return parts[currentIndex]
-                }
-            }
-            return nil
-        }
-        set { }
-    }
-
-    // MARK: - Double Tap
-
-    override func accessibilityActivate() -> Bool {
-        switch state {
-        case .inactive:
-            enterMathMode()
-            return true
-        case .exploringReady, .navigating:
-            readFullEquation()
-            return true
-        case .reading:
-            return true
-        }
-    }
-
-    // MARK: - Enter Math Mode
-
-    private func enterMathMode() {
-        state = .exploringReady
-        currentIndex = 0
-        currentLevel = .term
-
-        impactGenerator.impactOccurred(intensity: 1.0)
-        onEnterMathMode?()
-
-        // Install rotors so they're available immediately
-        accessibilityCustomRotors = buildMathRotors()
-
-        InteractionLogger.shared.log(
-            event: .mathModeEnter,
-            objectType: .mathEquation,
-            label: "Math Mode Entered",
-            location: .zero
-        )
-
-        // Instructions. User can interrupt anytime via rotor or swipes.
-        let instructions =
-            "Math mode active. " +
-            "Double tap to read the full equation. " +
-            "Use the rotor to select a navigation level: character, symbol, term, or structure. " +
-            "Then swipe up or down to move through parts. " +
-            "Two finger scrub to exit math mode."
-        queueAnnouncement(instructions)
-    }
-
-    // MARK: - Read Full Equation
-
-    private func readFullEquation() {
-        state = .reading
-
-        // Clear pending (e.g. instructions) so equation reads NOW
-        announcementQueue.removeAll()
-        isAnnouncing = false
-
-        impactGenerator.impactOccurred(intensity: 0.8)
-
-        InteractionLogger.shared.log(
-            event: .doubleTap,
-            objectType: .mathEquation,
-            label: "Read Full Equation",
-            location: .zero,
-            additionalInfo: String(fullEquationText.prefix(80))
-        )
-
-        let equationText = prepareTextForReading(fullEquationText)
-        queueAnnouncement(equationText.isEmpty ? "Equation" : equationText)
-
-        // After reading, transition to navigating
-        let duration = Double(equationText.count) * 0.05 + 1.5
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
-            guard let self = self, self.state == .reading else { return }
-            self.state = .navigating
-        }
-    }
-
-    // MARK: - Exit Math Mode
-
-    private func exitMathMode() {
-        state = .inactive
-        currentIndex = 0
-        accessibilityCustomRotors = []
-
-        impactGenerator.impactOccurred(intensity: 0.5)
-        onExitMathMode?()
-
-        InteractionLogger.shared.log(
-            event: .mathModeExit,
-            objectType: .mathEquation,
-            label: "Math Mode Exited",
-            location: .zero
-        )
-
-        announcementQueue.removeAll()
-        isAnnouncing = false
-        queueAnnouncement("Exited math mode")
-    }
-
-    // MARK: - Announcement Queue (used by 3-finger swipes and instructions, NOT by rotor)
-
-    private func queueAnnouncement(_ text: String) {
-        announcementQueue.append(text)
-        processAnnouncementQueue()
-    }
-
-    private func processAnnouncementQueue() {
-        guard !isAnnouncing, let announcement = announcementQueue.first else { return }
-        isAnnouncing = true
-        announcementQueue.removeFirst()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            UIAccessibility.post(notification: .announcement, argument: announcement)
-            let dur = Double(announcement.count) * 0.045 + 0.3
-            DispatchQueue.main.asyncAfter(deadline: .now() + dur) { [weak self] in
-                self?.isAnnouncing = false
-                self?.processAnnouncementQueue()
-            }
-        }
-    }
-
-    /// Stop pending instruction announcements when user starts interacting
-    private func interruptAnnouncements() {
-        announcementQueue.removeAll()
-    }
-
-    // MARK: - Custom Rotors
-    //
-    // HOW THIS WORKS:
-    //   - User twists rotor → VO shows "Character" / "Symbol" / "Term" / "Structure"
-    //   - User swipes up/down → predicate fires → we update currentIndex
-    //   - Predicate returns self as target → VO re-focuses on self → reads accessibilityValue
-    //   - accessibilityValue returns parts[currentIndex] → user hears the part
-    //   - NO queued announcement → no double-reading
-
-    private func buildMathRotors() -> [UIAccessibilityCustomRotor] {
-        return MathNavigationLevel.allCases.map { level in
-            UIAccessibilityCustomRotor(name: level.rawValue) { [weak self] predicate in
-                guard let self = self,
-                      self.state != .inactive else { return nil }
-
-                // User is interacting — interrupt any pending instructions
-                self.interruptAnnouncements()
-                self.state = .navigating
-
-                // Switch level if needed
-                if self.currentLevel != level {
-                    self.currentLevel = level
-                    self.currentIndex = 0
-                    self.impactGenerator.impactOccurred(intensity: 0.7)
-
-                    InteractionLogger.shared.log(
-                        event: .mathLevelChange,
-                        objectType: .mathEquation,
-                        label: "Rotor: \(level.rawValue)",
-                        location: .zero,
-                        rotorFunction: self.mapLevelToRotor(level)
-                    )
-
-                    // Return self — VO will read value (first part at new level)
-                    return UIAccessibilityCustomRotorItemResult(targetElement: self, targetRange: nil)
-                }
-
-                // Navigate within level
-                let parts = self.getPartsForCurrentLevel()
-                guard !parts.isEmpty else { return nil }
-
-                let forward = predicate.searchDirection == .next
-
-                if forward {
-                    guard self.currentIndex < parts.count - 1 else {
-                        self.impactGenerator.impactOccurred(intensity: 0.3)
-                        // Boundary — queue announcement since we return nil (VO won't re-read)
-                        self.queueAnnouncement("End of equation")
-                        return nil
-                    }
-                    self.currentIndex += 1
-                } else {
-                    guard self.currentIndex > 0 else {
-                        self.impactGenerator.impactOccurred(intensity: 0.3)
-                        self.queueAnnouncement("Beginning of equation")
-                        return nil
-                    }
-                    self.currentIndex -= 1
-                }
-
-                self.selectionGenerator.selectionChanged()
-
-                InteractionLogger.shared.log(
-                    event: .mathNavigate,
-                    objectType: .mathEquation,
-                    label: "Rotor Navigate",
-                    location: .zero,
-                    additionalInfo: "\(level.rawValue) \(self.currentIndex + 1)/\(parts.count): \(parts[self.currentIndex])"
-                )
-
-                // Return self — VO reads accessibilityValue (the part)
-                return UIAccessibilityCustomRotorItemResult(targetElement: self, targetRange: nil)
-            }
-        }
-    }
-
-    // MARK: - 3-Finger Swipe Fallback
-    //
-    // Unlike rotor, accessibilityScroll does NOT re-read the element.
-    // So we MUST queue announcements here.
-
-    override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
-        guard state != .inactive else { return false }
-
-        interruptAnnouncements()
-        state = .navigating
-
-        switch direction {
-        case .up:
-            changeLevelUp()
-            return true
-        case .down:
-            changeLevelDown()
-            return true
-        case .right:
-            if currentIndex == 0 {
-                exitMathMode()
-                return false // let parent handle back
-            }
-            navigatePrevious()
-            return true
-        case .left:
-            navigateNext()
-            return true
-        default:
-            return false
-        }
-    }
-
-    // MARK: - Level Navigation (3-finger swipe — needs announcements)
-
-    private func changeLevelUp() {
-        currentLevel = currentLevel.next
-        currentIndex = 0
-        impactGenerator.impactOccurred(intensity: 0.7)
-        let parts = getPartsForCurrentLevel()
-        let firstPart = parts.isEmpty ? "" : ". \(parts[0])"
-        queueAnnouncement("\(currentLevel.rawValue) level\(firstPart)")
-    }
-
-    private func changeLevelDown() {
-        currentLevel = currentLevel.previous
-        currentIndex = 0
-        impactGenerator.impactOccurred(intensity: 0.7)
-        let parts = getPartsForCurrentLevel()
-        let firstPart = parts.isEmpty ? "" : ". \(parts[0])"
-        queueAnnouncement("\(currentLevel.rawValue) level\(firstPart)")
-    }
-
-    // MARK: - Part Navigation (3-finger swipe — needs announcements)
-
-    private func navigateNext() {
-        let parts = getPartsForCurrentLevel()
-        guard !parts.isEmpty else { queueAnnouncement("No parts at this level"); return }
-        if currentIndex < parts.count - 1 {
-            currentIndex += 1
-            selectionGenerator.selectionChanged()
-            queueAnnouncement(parts[currentIndex])
-        } else {
-            impactGenerator.impactOccurred(intensity: 0.3)
-            queueAnnouncement("End of equation")
-        }
-    }
-
-    private func navigatePrevious() {
-        let parts = getPartsForCurrentLevel()
-        guard !parts.isEmpty else { queueAnnouncement("No parts at this level"); return }
-        if currentIndex > 0 {
-            currentIndex -= 1
-            selectionGenerator.selectionChanged()
-            queueAnnouncement(parts[currentIndex])
-        } else {
-            impactGenerator.impactOccurred(intensity: 0.3)
-            queueAnnouncement("Beginning of equation")
-        }
-    }
-
-    private func getPartsForCurrentLevel() -> [String] {
-        switch currentLevel {
-        case .character: return navigationParts[0]
-        case .symbol: return navigationParts[1]
-        case .term: return navigationParts[2]
-        case .structure: return navigationParts[3]
-        }
-    }
-
-    private func mapLevelToRotor(_ level: MathNavigationLevel) -> RotorFunction {
-        switch level {
-        case .character: return .characters
-        case .symbol, .term, .structure: return .mathNavigation
-        }
-    }
-
-    // MARK: - Parse Equation for Navigation
-
-    private func parseEquationForNavigation() {
-        let text = fullEquationText
-        guard !text.isEmpty && text != "equation" else {
-            navigationParts = [["equation"], ["equation"], ["equation"], ["equation"]]
-            return
-        }
-
-        // Character: each non-whitespace, non-comma char
-        var characters: [String] = []
-        for char in text where !char.isWhitespace && char != "," {
-            characters.append(String(char))
-        }
-
-        // Symbol: space-separated tokens
-        let symbols = text.components(separatedBy: " ")
-            .flatMap { $0.components(separatedBy: ",") }
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-
-        // Term: comma-separated chunks
-        let terms = text.components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-
-        // Structure: group by math keywords
-        var structures: [String] = []
-        let keywords = ["fraction", "square root", "integral", "sum", "product", "limit", "end"]
-        var buf = ""
-        var inStruct = false
-
-        for term in terms {
-            let lower = term.lowercased()
-            if keywords.contains(where: { lower.contains($0) && !lower.contains("end") }) {
-                if !buf.isEmpty && !inStruct {
-                    structures.append(buf.trimmingCharacters(in: .whitespaces))
-                }
-                buf = term; inStruct = true
-            } else if lower.contains("end") && inStruct {
-                buf += ", " + term
-                structures.append(buf.trimmingCharacters(in: .whitespaces))
-                buf = ""; inStruct = false
-            } else if inStruct {
-                buf += ", " + term
-            } else {
-                buf += (buf.isEmpty ? "" : ", ") + term
-            }
-        }
-        if !buf.isEmpty { structures.append(buf.trimmingCharacters(in: .whitespaces)) }
-        if structures.isEmpty { structures = [text] }
-
-        navigationParts = [
-            characters.isEmpty ? ["equation"] : characters,
-            symbols.isEmpty ? ["equation"] : symbols,
-            terms.isEmpty ? ["equation"] : terms,
-            structures
-        ]
-    }
-
-    // MARK: - Prepare Text for Reading
-
-    private func prepareTextForReading(_ text: String) -> String {
-        var cleaned = text
-        for prefix in ["Equation: ", "Equation:", "equation: ", "equation:", "Math: ", "Math:"] {
-            if cleaned.hasPrefix(prefix) { cleaned = String(cleaned.dropFirst(prefix.count)) }
-        }
-
-        let patterns = [
-            #"[,.]?\s*(the\s+)?(sum|total|answer|result|area|volume|perimeter|value)\s+(is|are|=|equals)\s+[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?"#,
-            #"\s+is\s+[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#,
-            #"\s*(=|equals)\s*[\d,\.]+\s*(square\s*)?(units|meters|feet|cm|mm|inches|m|ft)?\.?$"#
-        ]
-        for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-                cleaned = regex.stringByReplacingMatches(in: cleaned, range: NSRange(cleaned.startIndex..., in: cleaned), withTemplate: "")
-            }
-        }
-
-        cleaned = cleaned.replacingOccurrences(of: "  ", with: " ")
-            .replacingOccurrences(of: ", ,", with: ",")
-            .replacingOccurrences(of: ",,", with: ",")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        while cleaned.hasSuffix(",") || cleaned.hasSuffix(";") {
-            cleaned = String(cleaned.dropLast()).trimmingCharacters(in: .whitespaces)
-        }
-        return (cleaned.lowercased() == "equation" || cleaned.isEmpty) ? "" : cleaned
-    }
-
-    // MARK: - Escape (Z-scrub)
-
-    override func accessibilityPerformEscape() -> Bool {
-        if state != .inactive { exitMathMode(); return true }
-        return false
-    }
-}
-
-// MARK: - Substantial Math Detection
-// Used by ParagraphBlockView to decide: inline text vs MathCAT block
 
 enum MathComplexity {
-    /// Check if math content is complex enough to warrant its own MathCAT block.
-    /// Returns true for expressions like "2x² + 7x - 15 = 0".
-    /// Returns false for simple values like "-11", "x", "15".
     static func isSubstantial(latex: String?, mathml: String?) -> Bool {
-        // Check LaTeX
-        if let latex = latex, !latex.isEmpty {
-            let ops = ["+", "=", "\\frac", "\\sqrt", "^{", "\\sum", "\\int", "\\times", "\\cdot", "\\div", "\\leq", "\\geq"]
-            let opCount = ops.filter { latex.contains($0) }.count
-            if opCount >= 2 { return true }
-            // Long expression with at least one operator
-            if latex.count > 12 && opCount >= 1 { return true }
-        }
-
-        // Check MathML alttext
-        if let mathml = mathml, !mathml.isEmpty {
-            let altPatterns = [#"alttext=["']([^"']+)["']"#, #"aria-label=["']([^"']+)["']"#]
-            for pattern in altPatterns {
-                if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-                   let match = regex.firstMatch(in: mathml, range: NSRange(mathml.startIndex..., in: mathml)),
-                   let range = Range(match.range(at: 1), in: mathml) {
-                    let alt = String(mathml[range]).lowercased()
-                    let words = ["plus", "minus", "equals", "fraction", "squared", "cubed", "times", "divided", "over"]
-                    let wordCount = words.filter { alt.contains($0) }.count
-                    if wordCount >= 2 { return true }
-                }
-            }
-        }
-
-        return false
+        guard let l = latex, !l.isEmpty else { return false }
+        let ops = ["+", "=", "\\frac", "\\sqrt", "^{", "\\times", "\\cdot"]
+        return ops.filter { l.contains($0) }.count >= 2
     }
 }
 
-// MARK: - SwiftUI Wrapper
+// MARK: - MathCATView  (inline equation — tap opens explorer)
 
-struct MathCATView: UIViewRepresentable {
+struct MathCATView: View {
     let mathml: String?
     let latex: String?
     let fullSpokenText: String
     let mathParts: [MathPart]
     let displayType: String?
-
     var onEnterMathMode: (() -> Void)?
     var onExitMathMode: (() -> Void)?
-    var onDismissScreen: (() -> Void)?
 
-    func makeUIView(context: Context) -> MathCATAccessibilityContainer {
-        let container = MathCATAccessibilityContainer()
-        container.backgroundColor = .clear
+    @State private var showExploration = false
 
-        let webView = createMathWebView()
-        webView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(webView)
-        NSLayoutConstraint.activate([
-            webView.topAnchor.constraint(equalTo: container.topAnchor),
-            webView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            webView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: container.bottomAnchor)
-        ])
-
-        applyProperties(to: container)
-        return container
+    private func openExploration() {
+        onEnterMathMode?()
+        InteractionLogger.shared.log(
+            event: .mathModeEnter, objectType: .mathEquation,
+            label: "Open Math Exploration", location: .zero,
+            additionalInfo: String(fullSpokenText.prefix(80))
+        )
+        showExploration = true
     }
 
-    func updateUIView(_ container: MathCATAccessibilityContainer, context: Context) {
-        applyProperties(to: container)
-        if let webView = container.subviews.first(where: { $0 is WKWebView }) as? WKWebView {
-            loadMathContent(into: webView)
+    var body: some View {
+        ZStack {
+            MathMLInlineRenderer(mathml: mathml, latex: latex, displayType: displayType)
+                .allowsHitTesting(false)
+
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { openExploration() }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Math equation")
+        .accessibilityHint("Double tap to enter math mode")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default) { openExploration() }
+        .fullScreenCover(isPresented: $showExploration) {
+            MathExplorationView(
+                mathml: mathml, latex: latex,
+                fullSpokenText: fullSpokenText,
+                onDismiss: {
+                    showExploration = false
+                    onExitMathMode?()
+                    InteractionLogger.shared.log(event: .mathModeExit, objectType: .mathEquation, label: "Closed Math Exploration", location: .zero)
+                }
+            )
         }
     }
+}
 
-    private func applyProperties(to container: MathCATAccessibilityContainer) {
-        container.fullEquationText = fullSpokenText
-        container.mathML = mathml ?? ""
-        container.mathParts = mathParts
-        container.onEnterMathMode = onEnterMathMode
-        container.onExitMathMode = onExitMathMode
-        container.onDismissScreen = onDismissScreen
+// MARK: - MathMLInlineRenderer  (visual only)
+
+struct MathMLInlineRenderer: UIViewRepresentable {
+    let mathml: String?
+    let latex: String?
+    let displayType: String?
+
+    func makeUIView(context: Context) -> WKWebView {
+        let w = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        w.isOpaque = false; w.backgroundColor = .clear
+        w.scrollView.isScrollEnabled = false
+        w.isUserInteractionEnabled = false
+        w.isAccessibilityElement = false
+        w.accessibilityElementsHidden = true
+        loadHTML(w)
+        return w
     }
 
-    private func createMathWebView() -> WKWebView {
-        let config = WKWebViewConfiguration()
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.isOpaque = false
-        webView.backgroundColor = .clear
-        webView.scrollView.isScrollEnabled = false
-        webView.scrollView.backgroundColor = .clear
-        webView.isAccessibilityElement = false
-        webView.accessibilityElementsHidden = true
-        loadMathContent(into: webView)
-        return webView
+    func updateUIView(_ w: WKWebView, context: Context) { loadHTML(w) }
+
+    private func loadHTML(_ w: WKWebView) {
+        guard let ml = mathml, !ml.isEmpty else {
+            w.loadHTMLString("<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><style>body{margin:8px;font-size:16px;background:transparent}</style></head><body>\(latex ?? "")</body></html>", baseURL: nil)
+            return
+        }
+        let clean = cleanML(ml)
+        let isBlock = displayType?.lowercased() == "block" || displayType?.lowercased() == "display"
+        let st = isBlock ? "display:block;margin:12px 0;" : "display:inline-block;"
+        w.loadHTMLString("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0,maximum-scale=1.0\"><style>*{-webkit-user-select:none}body{margin:0;padding:8px;background:transparent}math{\(st)font-size:18px;color:#121417}</style></head><body>\(clean)</body></html>", baseURL: nil)
     }
 
-    private func loadMathContent(into webView: WKWebView) {
-        guard let mathml = mathml, !mathml.isEmpty else {
-            webView.loadHTMLString(createFallbackHTML(), baseURL: nil)
+    private func cleanML(_ ml: String) -> String {
+        var c = ml.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !c.hasPrefix("<math") {
+            if let s = c.range(of: "<math", options: .caseInsensitive),
+               let e = c.range(of: "</math>", options: [.caseInsensitive, .backwards]) {
+                c = String(c[s.lowerBound..<e.upperBound])
+            } else { c = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\(c)</math>" }
+        }
+        if !c.contains("xmlns="), let r = c.range(of: "<math", options: .caseInsensitive) {
+            c = c.replacingCharacters(in: r, with: "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"")
+        }
+        return c
+    }
+}
+
+// MARK: - MathExplorationView  (full screen — no visible text)
+
+struct MathExplorationView: View {
+    let mathml: String?
+    let latex: String?
+    let fullSpokenText: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        // The full-screen rotor UIView is the ENTIRE background.
+        // This ensures swipe up/down works no matter where the user touches.
+        ZStack {
+            // Full-screen rotor element (handles all VO interaction)
+            MathFullScreenRotorView(
+                fullSpokenText: fullSpokenText,
+                onDismiss: onDismiss
+            )
+            .ignoresSafeArea()
+
+            // Visual equation centered on screen (not interactive, not accessible)
+            VStack {
+                Spacer()
+                MathMLLargeRenderer(mathml: mathml, latex: latex)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 16)
+                    .accessibilityHidden(true)
+                Spacer()
+            }
+
+            // Back button (top-left, above everything)
+            VStack {
+                HStack {
+                    Button {
+                        onDismiss()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 18, weight: .semibold))
+                            Text("Back")
+                                .font(.custom("Arial", size: 17))
+                        }
+                        .foregroundColor(ColorTokens.primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                    .accessibilityLabel("Back")
+                    .accessibilityHint("Return to document")
+                    Spacer()
+                }
+                .padding(.top, 8)
+                Spacer()
+            }
+        }
+        .background(Color.white)
+        .onThreeFingerSwipeBack { onDismiss() }
+        .accessibilityAction(.escape) { onDismiss() }
+        .onAppear {
+            if UIAccessibility.isVoiceOverRunning {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    let msg = "Math mode. Double tap to hear the equation. Use Equation Parts rotor and swipe up or down to navigate. Two finger scrub to go back."
+                    UIAccessibility.post(notification: .announcement, argument: msg)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - MathMLLargeRenderer  (large visual equation — fills available space)
+
+struct MathMLLargeRenderer: UIViewRepresentable {
+    let mathml: String?
+    let latex: String?
+
+    func makeUIView(context: Context) -> WKWebView {
+        let w = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        w.isOpaque = false; w.backgroundColor = .clear
+        w.scrollView.isScrollEnabled = false
+        w.isUserInteractionEnabled = false
+        w.isAccessibilityElement = false
+        w.accessibilityElementsHidden = true
+        loadHTML(w)
+        return w
+    }
+
+    func updateUIView(_ w: WKWebView, context: Context) { loadHTML(w) }
+
+    private func loadHTML(_ w: WKWebView) {
+        guard let ml = mathml, !ml.isEmpty else {
+            let html = """
+            <!DOCTYPE html><html><head>
+            <meta name="viewport" content="width=device-width,initial-scale=1.0">
+            <style>
+            body{margin:0;padding:20px;display:flex;align-items:center;justify-content:center;min-height:100vh;background:transparent;box-sizing:border-box}
+            .eq{font-size:clamp(36px, 12vw, 80px);color:#121417;text-align:center}
+            </style></head>
+            <body><div class="eq">\(latex ?? "")</div></body></html>
+            """
+            w.loadHTMLString(html, baseURL: nil)
             return
         }
 
-        let cleaned = cleanMathML(mathml)
-        let isDisplay = displayType?.lowercased() == "block" || displayType?.lowercased() == "display"
-        let style = isDisplay ? "display: block; margin: 12px 0;" : "display: inline-block;"
+        var clean = ml.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !clean.hasPrefix("<math") {
+            if let s = clean.range(of: "<math", options: .caseInsensitive),
+               let e = clean.range(of: "</math>", options: [.caseInsensitive, .backwards]) {
+                clean = String(clean[s.lowerBound..<e.upperBound])
+            } else { clean = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\(clean)</math>" }
+        }
+        if !clean.contains("xmlns="), let r = clean.range(of: "<math", options: .caseInsensitive) {
+            clean = clean.replacingCharacters(in: r, with: "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"")
+        }
 
         let html = """
-        <!DOCTYPE html>
-        <html lang="en"><head>
+        <!DOCTYPE html><html><head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
         <style>
-        * { -webkit-user-select: none; user-select: none; pointer-events: none; }
-        body { margin: 0; padding: 8px; background: transparent; font-family: -apple-system; }
-        math { \(style) font-size: 18px; color: #121417; }
-        @media (prefers-color-scheme: dark) { math { color: #FFF; } }
-        </style>
-        </head><body aria-hidden="true" role="presentation" inert>\(cleaned)</body></html>
+        *{-webkit-user-select:none}
+        html,body{margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:transparent;overflow:hidden}
+        math{display:block;font-size:clamp(36px, 12vw, 80px);color:#121417;max-width:95vw;padding:16px}
+        </style></head>
+        <body>\(clean)</body></html>
         """
-        webView.loadHTMLString(html, baseURL: nil)
+        w.loadHTMLString(html, baseURL: nil)
+    }
+}
+
+// MARK: - MathFullScreenRotorView (fills entire screen — rotor works everywhere)
+
+struct MathFullScreenRotorView: UIViewRepresentable {
+    let fullSpokenText: String
+    let onDismiss: () -> Void
+
+    func makeUIView(context: Context) -> MathFullScreenRotorUIView {
+        let v = MathFullScreenRotorUIView()
+        v.fullEquationText = fullSpokenText
+        v.onDismiss = onDismiss
+        v.buildParts()
+        return v
     }
 
-    private func createFallbackHTML() -> String {
-        """
-        <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>* { pointer-events: none; } body { margin: 8px; font-family: -apple-system; font-size: 16px; background: transparent; }</style>
-        </head><body aria-hidden="true" inert>\(latex ?? "Equation")</body></html>
-        """
+    func updateUIView(_ v: MathFullScreenRotorUIView, context: Context) {
+        v.fullEquationText = fullSpokenText
+        v.onDismiss = onDismiss
+        v.buildParts()
+    }
+}
+
+class MathFullScreenRotorUIView: UIView {
+    var fullEquationText: String = "equation"
+    var onDismiss: (() -> Void)?
+
+    private var parts: [String] = []
+    private var currentIndex: Int = 0
+    private let impact = UIImpactFeedbackGenerator(style: .medium)
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isAccessibilityElement = true
+        accessibilityTraits = .staticText
+        backgroundColor = .clear
+        impact.prepare()
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    // MARK: - Accessibility
+
+    override var accessibilityLabel: String? {
+        get { "Math mode" }
+        set {}
     }
 
-    /// Extract <math>...</math> from LaTeXML table wrappers.
-    private func cleanMathML(_ mathml: String) -> String {
-        var cleaned = mathml.trimmingCharacters(in: .whitespacesAndNewlines)
+    override var accessibilityHint: String? {
+        get { "Double tap to hear equation. Use Equation Parts rotor and swipe up or down." }
+        set {}
+    }
 
-        if !cleaned.hasPrefix("<math") {
-            let open = #"<math\b[^>]*>"#
-            let close = #"</math\s*>"#
-            if let oRe = try? NSRegularExpression(pattern: open, options: .caseInsensitive),
-               let cRe = try? NSRegularExpression(pattern: close, options: .caseInsensitive),
-               let oM = oRe.firstMatch(in: cleaned, range: NSRange(cleaned.startIndex..., in: cleaned)),
-               let cM = cRe.matches(in: cleaned, range: NSRange(cleaned.startIndex..., in: cleaned)).last,
-               let oR = Range(oM.range, in: cleaned),
-               let cR = Range(cM.range, in: cleaned) {
-                cleaned = String(cleaned[oR.lowerBound..<cR.upperBound])
+    // MARK: - Custom Rotor
+
+    override var accessibilityCustomRotors: [UIAccessibilityCustomRotor]? {
+        get { [makeRotor()] }
+        set {}
+    }
+
+    private func makeRotor() -> UIAccessibilityCustomRotor {
+        UIAccessibilityCustomRotor(name: "Equation parts") { [weak self] predicate in
+            guard let self = self, !self.parts.isEmpty else { return nil }
+
+            if predicate.searchDirection == .next {
+                if self.currentIndex < self.parts.count - 1 {
+                    self.currentIndex += 1
+                    self.impact.impactOccurred(intensity: 0.5)
+                } else {
+                    self.impact.impactOccurred(intensity: 0.3)
+                    self.announce("End of equation")
+                    return UIAccessibilityCustomRotorItemResult(targetElement: self, targetRange: nil)
+                }
             } else {
-                cleaned = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\(cleaned)</math>"
+                if self.currentIndex > 0 {
+                    self.currentIndex -= 1
+                    self.impact.impactOccurred(intensity: 0.5)
+                } else {
+                    self.impact.impactOccurred(intensity: 0.3)
+                    self.announce("Beginning of equation")
+                    return UIAccessibilityCustomRotorItemResult(targetElement: self, targetRange: nil)
+                }
             }
-        }
 
-        if !cleaned.contains("xmlns=") {
-            cleaned = cleaned.replacingOccurrences(
-                of: "<math",
-                with: "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"",
-                options: .caseInsensitive,
-                range: cleaned.range(of: "<math", options: .caseInsensitive)
+            let part = self.parts[self.currentIndex]
+            let pos = "\(self.currentIndex + 1) of \(self.parts.count)"
+            self.announce("\(part). \(pos)")
+
+            InteractionLogger.shared.log(
+                event: .mathNavigate, objectType: .mathEquation,
+                label: part, location: .zero,
+                additionalInfo: "Part \(pos)"
             )
+
+            return UIAccessibilityCustomRotorItemResult(targetElement: self, targetRange: nil)
         }
-        return cleaned
+    }
+
+    // MARK: - Double Tap → Read Full Equation
+
+    override func accessibilityActivate() -> Bool {
+        impact.impactOccurred(intensity: 0.8)
+        InteractionLogger.shared.log(
+            event: .doubleTap, objectType: .mathEquation,
+            label: "Read Equation", location: .zero,
+            additionalInfo: String(fullEquationText.prefix(80))
+        )
+        announce(fullEquationText)
+        return true
+    }
+
+    // MARK: - Escape
+
+    override func accessibilityPerformEscape() -> Bool {
+        onDismiss?()
+        return true
+    }
+
+    override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
+        return false // let 3-finger swipe pass through
+    }
+
+    // MARK: - Parts
+
+    func buildParts() {
+        let text = fullEquationText
+        guard !text.isEmpty && text != "equation" else { parts = ["equation"]; return }
+        let p = text.components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        parts = p.isEmpty ? [text] : p
+        currentIndex = 0
+    }
+
+    private func announce(_ text: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            UIAccessibility.post(notification: .announcement, argument: text)
+        }
     }
 }
