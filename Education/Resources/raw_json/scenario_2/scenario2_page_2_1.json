@@ -4,7 +4,7 @@
     {
       "type": "paragraph",
       "attrs": { "contentType": "body_text" },
-      "content": [{ "type": "text", "text": "Find the area of the square." }]
+      "content": [{ "type": "text", "text": "Question 1. Find the area of the square." }]
     },
     {
       "type": "svgNode",

@@ -9,7 +9,7 @@
     {
       "type": "paragraph",
       "attrs": { "contentType": "body_text" },
-      "content": [{ "type": "text", "text": "Find the area of the rectangle below." }]
+      "content": [{ "type": "text", "text": "Question 1. Find the area of the rectangle below." }]
     },
     {
       "type": "svgNode",

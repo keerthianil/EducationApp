@@ -332,7 +332,7 @@ private struct DocumentMathCATView: View {
             onEnterMathMode: { haptics.mathStart() },
             onExitMathMode: { haptics.mathEnd() }
         )
-        .frame(height: 60)
+        .frame(minHeight: 80, maxHeight: 120)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
