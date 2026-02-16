@@ -13,6 +13,7 @@ struct DashboardFlow2View: View {
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var speech: SpeechService
     @EnvironmentObject var mathSpeech: MathSpeechService
+    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverEnabled
     
     @State private var showUpload = false
     @State private var selectedLesson: LessonIndexItem?
@@ -61,6 +62,7 @@ struct DashboardFlow2View: View {
                     uploadSection
                         .padding(.horizontal, horizontalPadding)
                         .padding(.bottom, 20)
+                        .accessibilityHidden(isVoiceOverEnabled)
                     
                     processingSection
                         .padding(.bottom, 12)

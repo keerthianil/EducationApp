@@ -33,6 +33,7 @@ struct DashboardView: View {
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var speech: SpeechService
     @EnvironmentObject var mathSpeech: MathSpeechService
+    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverEnabled
 
     @State private var showUpload = false
     @State private var selectedLesson: LessonIndexItem?
@@ -226,6 +227,7 @@ struct DashboardView: View {
             iPadUploadPanel
                 .padding(.horizontal, 24)
                 .padding(.bottom, 20)
+                .accessibilityHidden(isVoiceOverEnabled)
             
             iPadUploadedSection
                 .padding(.bottom, 12)
@@ -291,6 +293,7 @@ struct DashboardView: View {
         VStack(spacing: 4) {
             sidebarButton(item: .home)
             sidebarButton(item: .uploads)
+                .accessibilityHidden(isVoiceOverEnabled)
             sidebarButton(item: .teacherFiles)
             sidebarButton(item: .recent)
             
@@ -723,6 +726,7 @@ struct DashboardView: View {
             uploadSection()
                 .padding(.horizontal, horizontalPadding)
                 .padding(.bottom, 20)
+                .accessibilityHidden(isVoiceOverEnabled)
             
             uploadedSection()
                 .padding(.bottom, 12)
