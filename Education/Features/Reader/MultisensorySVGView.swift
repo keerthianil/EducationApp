@@ -7,7 +7,7 @@
 //  Touch feedback:
 //  - Lines/edges: continuous vibration while tracing
 //  - Vertices/corners: pulsing haptic + looping ding sound (loops while touching)
-//  - Labels: red square touch targets positioned OUTSIDE figure, pulsing haptic + speech
+//  - Length labels: announced when the user touches the line segment (no separate pulsing target)
 //  - Three-finger swipe to go back
 //
 
@@ -184,20 +184,18 @@ class MultisensoryCanvasView: UIView {
     // Active touch state
     private var activeLineIndex: Int? = nil
     private var activeVertexIndex: Int? = nil
-    private var activeLabelIndex: Int? = nil
     
     // Haptic timers
     private var continuousHapticTimer: Timer?
     private var vertexDingTimer: Timer?
     private var vertexPulseTimer: Timer?
-    private var labelPulseTimer: Timer?
     
     // Core Haptics
     private var hapticEngine: CHHapticEngine?
     private var continuousPlayer: CHHapticAdvancedPatternPlayer?
     
     // Announcement dedup
-    private var lastAnnouncedLabelIndex: Int? = nil
+    private var lastAnnouncedLineIndex: Int? = nil
     
     // Sizing
     private var vertexDotRadius: CGFloat { max(PhysicalDimensions.mmToPoints(6.0) / 2, 10) }
@@ -311,47 +309,29 @@ class MultisensoryCanvasView: UIView {
         if let vIdx = findVertexAt(point) {
             if activeVertexIndex != vIdx {
                 stopLineFeedback()
-                stopLabelFeedback()
                 activeVertexIndex = vIdx
                 startVertexFeedback()
             }
             activeLineIndex = nil
-            activeLabelIndex = nil
             return
         } else if activeVertexIndex != nil {
             stopVertexFeedback()
             activeVertexIndex = nil
         }
         
-        // Priority 2: Label square — pulsing + speech
-        if let lIdx = findLabelAt(point) {
-            if activeLabelIndex != lIdx {
-                stopLineFeedback()
-                stopVertexFeedback()
-                activeLabelIndex = lIdx
-                startLabelFeedback(index: lIdx)
-            }
-            activeLineIndex = nil
-            activeVertexIndex = nil
-            return
-        } else if activeLabelIndex != nil {
-            stopLabelFeedback()
-            activeLabelIndex = nil
-            lastAnnouncedLabelIndex = nil
-        }
-        
-        // Priority 3: Line (edge) — continuous vibration
+        // Priority 2: Line (edge) — continuous vibration + speak length when on segment
         if let lineIdx = findLineAt(point) {
             if activeLineIndex != lineIdx {
                 stopVertexFeedback()
-                stopLabelFeedback()
                 activeLineIndex = lineIdx
                 startLineContinuousHaptic()
             }
+            maybeAnnounceLineLabelIfNeeded(lineIndex: lineIdx, at: point)
         } else {
             if activeLineIndex != nil {
                 stopLineFeedback()
                 activeLineIndex = nil
+                lastAnnouncedLineIndex = nil
             }
         }
     }
@@ -374,11 +354,6 @@ class MultisensoryCanvasView: UIView {
             return (.svg, "Vertex \(vIdx + 1)")
         }
         
-        if let lIdx = findLabelAt(point), lIdx < labelTargets.count {
-            let text = labelTargets[lIdx].text
-            return (.svg, "Label: \(text)")
-        }
-        
         if let lineIdx = findLineAt(point), lineIdx < lines.count {
             let lineLabel = lines[lineIdx].label ?? "Line \(lineIdx + 1)"
             return (.svg, lineLabel)
@@ -393,17 +368,6 @@ class MultisensoryCanvasView: UIView {
         let touchRadius = max(vertexDotRadius * 1.3, 20)
         for (index, vertex) in vertices.enumerated() {
             if hypot(point.x - vertex.x, point.y - vertex.y) < touchRadius {
-                return index
-            }
-        }
-        return nil
-    }
-    
-    private func findLabelAt(_ point: CGPoint) -> Int? {
-        for (index, target) in labelTargets.enumerated() {
-            let dx = abs(point.x - target.center.x)
-            let dy = abs(point.y - target.center.y)
-            if dx < target.halfSize + 10 && dy < target.halfSize + 10 {
                 return index
             }
         }
@@ -432,6 +396,29 @@ class MultisensoryCanvasView: UIView {
         let px = start.x + t * (end.x - start.x)
         let py = start.y + t * (end.y - start.y)
         return hypot(point.x - px, point.y - py)
+    }
+    
+    private func maybeAnnounceLineLabelIfNeeded(lineIndex: Int, at point: CGPoint) {
+        guard lineIndex >= 0, lineIndex < lines.count else { return }
+        guard let rawLabel = lines[lineIndex].label?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !rawLabel.isEmpty else { return }
+        
+        // Avoid conflicts with vertex pulses: only announce when the touch is a bit away from line endpoints.
+        let start = lines[lineIndex].start
+        let end = lines[lineIndex].end
+        let lineLength = hypot(end.x - start.x, end.y - start.y)
+        guard lineLength > 0 else { return }
+        
+        let t = max(0, min(1, ((point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y)) / (lineLength * lineLength)))
+        
+        // Buffer in points near each endpoint (scaled by our vertex target size).
+        let endpointBufferPoints = max(vertexDotRadius * 1.6, 26)
+        let bufferT = min(0.25, max(0.08, endpointBufferPoints / lineLength))
+        guard t > bufferT && t < (1 - bufferT) else { return }
+        
+        guard lastAnnouncedLineIndex != lineIndex else { return }
+        lastAnnouncedLineIndex = lineIndex
+        UIAccessibility.post(notification: .announcement, argument: rawLabel)
     }
     
     // MARK: - LINE Feedback (continuous vibration)
@@ -532,67 +519,14 @@ class MultisensoryCanvasView: UIView {
         AudioServicesPlaySystemSound(1057)
     }
     
-    // MARK: - LABEL Feedback (pulsing haptic + speak)
-    
-    private func startLabelFeedback(index: Int) {
-        // Announce text
-        if lastAnnouncedLabelIndex != index {
-            lastAnnouncedLabelIndex = index
-            let text = labelTargets[index].text
-            UIAccessibility.post(notification: .announcement, argument: text)
-        }
-        // Pulsing haptic
-        startLabelPulsingHaptic()
-    }
-    
-    private func startLabelPulsingHaptic() {
-        ensureHapticEngineRunning()
-        guard let engine = hapticEngine else { startUIKitLabelPulseFallback(); return }
-        
-        do {
-            var events: [CHHapticEvent] = []
-            for i in 0..<200 {
-                let time = Double(i) * 0.2  // pulse every 200ms
-                let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.8)
-                let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
-                events.append(CHHapticEvent(eventType: .hapticTransient, parameters: [intensity, sharpness], relativeTime: time))
-            }
-            let pattern = try CHHapticPattern(events: events, parameters: [])
-            let player = try engine.makeAdvancedPlayer(with: pattern)
-            try player.start(atTime: CHHapticTimeImmediate)
-            continuousPlayer = player
-        } catch {
-            startUIKitLabelPulseFallback()
-        }
-    }
-    
-    private func startUIKitLabelPulseFallback() {
-        labelPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
-            guard self?.activeLabelIndex != nil else { return }
-            let gen = UIImpactFeedbackGenerator(style: .medium)
-            gen.prepare()
-            gen.impactOccurred(intensity: 0.8)
-        }
-        if let t = labelPulseTimer { RunLoop.current.add(t, forMode: .common) }
-    }
-    
-    private func stopLabelFeedback() {
-        if let p = continuousPlayer { do { try p.stop(atTime: CHHapticTimeImmediate) } catch { } }
-        continuousPlayer = nil
-        labelPulseTimer?.invalidate()
-        labelPulseTimer = nil
-    }
-    
     // MARK: - Cleanup
     
     private func stopAllFeedback() {
         stopLineFeedback()
         stopVertexFeedback()
-        stopLabelFeedback()
         activeLineIndex = nil
         activeVertexIndex = nil
-        activeLabelIndex = nil
-        lastAnnouncedLabelIndex = nil
+        lastAnnouncedLineIndex = nil
     }
     
     deinit {
@@ -625,12 +559,12 @@ class MultisensoryCanvasView: UIView {
             context.fillEllipse(in: CGRect(x: vertex.x - r, y: vertex.y - r, width: r * 2, height: r * 2))
         }
         
-        // 3. Draw label touch targets (RED squares on line) + text AWAY from line
+        // 3. Draw length markers (RED squares on line) + text AWAY from line
         for (index, target) in labelTargets.enumerated() {
             let s = labelSquareHalfSize
             let squareRect = CGRect(x: target.center.x - s, y: target.center.y - s, width: s * 2, height: s * 2)
             
-            // Solid red square ON the line
+            // Visual-only marker for line length (no touch target / no pulsing haptic).
             context.setFillColor(UIColor.systemRed.cgColor)
             context.fill(squareRect)
             

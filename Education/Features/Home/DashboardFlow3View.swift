@@ -16,6 +16,7 @@ struct DashboardFlow3View: View {
     @EnvironmentObject var haptics: HapticService
     @EnvironmentObject var speech: SpeechService
     @EnvironmentObject var mathSpeech: MathSpeechService
+    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverEnabled
     
     // CHANGED: Single tab enum replacing the old dual-tab system
     @State private var selectedTab: SimpleTab = .home
@@ -217,47 +218,50 @@ struct DashboardFlow3View: View {
     private var homeTabContent: some View {
         VStack(spacing: 16) {
             // Upload section (original Flow 3 style)
-            Text("Upload from Device")
-                .font(.custom("Arial", size: 18).weight(.bold))
-                .foregroundColor(Color(hex: "#0D141C"))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, horizontalPadding)
-                .padding(.top, 16)
-                .accessibilityAddTraits(.isHeader)
-            
-            VStack(spacing: 10) {
-                VStack(spacing: 8) {
-                    Text("Upload your files")
-                        .font(.custom("Arial", size: 18).weight(.bold))
-                        .foregroundColor(Color(hex: "#0D141C"))
-                    
-                    Text("Or")
-                        .font(.custom("Arial", size: 14))
-                        .foregroundColor(Color(hex: "#0D141C"))
-                    
-                    Button("Browse Files") {
-                        haptics.tapSelection()
-                        InteractionLogger.shared.logTap(objectType: .button, label: "Browse Files")
-                        showUpload = true
+            VStack(spacing: 16) {
+                Text("Upload from Device")
+                    .font(.custom("Arial", size: 18).weight(.bold))
+                    .foregroundColor(Color(hex: "#0D141C"))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.top, 16)
+                    .accessibilityAddTraits(.isHeader)
+                
+                VStack(spacing: 10) {
+                    VStack(spacing: 8) {
+                        Text("Upload your files")
+                            .font(.custom("Arial", size: 18).weight(.bold))
+                            .foregroundColor(Color(hex: "#0D141C"))
+                        
+                        Text("Or")
+                            .font(.custom("Arial", size: 14))
+                            .foregroundColor(Color(hex: "#0D141C"))
+                        
+                        Button("Browse Files") {
+                            haptics.tapSelection()
+                            InteractionLogger.shared.logTap(objectType: .button, label: "Browse Files")
+                            showUpload = true
+                        }
+                        .font(.custom("Arial", size: 14).weight(.bold))
+                        .foregroundColor(.white.opacity(0.5))
+                        .frame(width: 210, height: 48)
+                        .background(ColorTokens.primary.opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .disabled(true)
+                        .accessibilityLabel("Browse Files")
+                        .accessibilityHint("Currently disabled")
                     }
-                    .font(.custom("Arial", size: 14).weight(.bold))
-                    .foregroundColor(.white.opacity(0.5))
-                    .frame(width: 210, height: 48)
-                    .background(ColorTokens.primary.opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .disabled(true)
-                    .accessibilityLabel("Browse Files")
-                    .accessibilityHint("Currently disabled")
+                    .frame(maxWidth: 480)
+                    .padding(.vertical, 56)
+                    .padding(.horizontal, 24)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(hex: "#ACD7DF"), style: StrokeStyle(lineWidth: 2, dash: [5]))
+                    )
                 }
-                .frame(maxWidth: 480)
-                .padding(.vertical, 56)
-                .padding(.horizontal, 24)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(hex: "#ACD7DF"), style: StrokeStyle(lineWidth: 2, dash: [5]))
-                )
+                .padding(16)
             }
-            .padding(16)
+            .accessibilityHidden(isVoiceOverEnabled)
             
             // Processing files
             if !lessonStore.processing.isEmpty {
