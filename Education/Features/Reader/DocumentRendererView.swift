@@ -441,7 +441,7 @@ private struct DocumentSVGView: View {
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
                 .accessibilityLabel("\(accessibilityDescription).")
-                .accessibilityHint("Double tap to explore with touch and haptics")
+                .accessibilityHint("Double tap to access a multisensory representation.")
                 .accessibilityAddTraits(.isButton)
                 // Also support explicit VO activate action (belt + suspenders)
                 .accessibilityAction(named: Text("Open")) {

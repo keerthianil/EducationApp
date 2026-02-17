@@ -658,7 +658,7 @@ private struct SVGBlockView: View {
                 .buttonStyle(.plain)
                 .contentShape(Rectangle())
                 .accessibilityLabel("\(accessibilityDescription)")
-                .accessibilityHint("Double tap to explore with touch and haptics")
+                .accessibilityHint("Double tap to access a multisensory representation.")
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction(named: Text("Open")) {
                     openMultisensory()
