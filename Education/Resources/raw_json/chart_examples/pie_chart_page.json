@@ -1,0 +1,32 @@
+{
+    "type": "doc",
+    "content": [
+        {
+            "type": "heading",
+            "attrs": { "level": 1 },
+            "content": [{ "type": "text", "text": "Pie Charts" }]
+        },
+        {
+            "type": "paragraph",
+            "content": [
+                { "type": "text", "text": "A pie chart shows how a whole is divided into parts. Each slice represents a proportion of the total, expressed as a percentage." }
+            ]
+        },
+        {
+            "type": "pieChart",
+            "attrs": {
+                "title": "Project Cost Breakdown",
+                "summary": "Pie chart showing the distribution of project costs across 7 categories. Production is the largest segment at 24.48 percent.",
+                "slices": [
+                    { "label": "Production", "value": 24.48, "color": "#4A90D9" },
+                    { "label": "Facilities", "value": 20.98, "color": "#1C636F" },
+                    { "label": "Labor", "value": 17.48, "color": "#E8734A" },
+                    { "label": "Licenses", "value": 12.59, "color": "#208515" },
+                    { "label": "Taxes", "value": 10.49, "color": "#B31111" },
+                    { "label": "Legal", "value": 8.39, "color": "#FFB921" },
+                    { "label": "Insurance", "value": 5.59, "color": "#A5CDD3" }
+                ]
+            }
+        }
+    ]
+}

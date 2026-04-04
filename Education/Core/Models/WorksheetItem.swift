@@ -131,6 +131,23 @@ private extension WorksheetItem {
                 if let t = t { pieces.append(t) }
                 if let first = summaries?.first { pieces.append(first) }
 
+            case .barChart(let t, let summary, _, _, _, _):
+                if let t = t { pieces.append(t) }
+                if let s = summary { pieces.append(s) }
+
+            case .lineGraph(let t, let summary, _, _, _):
+                if let t = t { pieces.append(t) }
+                if let s = summary { pieces.append(s) }
+
+            case .pieChart(let t, let summary, _):
+                if let t = t { pieces.append(t) }
+                if let s = summary { pieces.append(s) }
+
+            case .tableNode(let t, let caption, let headers, _):
+                if let t = t { pieces.append(t) }
+                if let c = caption { pieces.append(c) }
+                pieces.append(headers.joined(separator: " "))
+
             case .unknown:
                 break
             }

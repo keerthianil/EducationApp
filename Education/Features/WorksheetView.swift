@@ -385,11 +385,32 @@ private struct NodeBlockView: View {
         case .mapNode(let json, let title, let summaries):
             DocumentMapView(json: json, title: title, summaries: summaries)
 
+        case .barChart(let title, let summary, let xAxis, let yAxis, let orient, let bars):
+            BarChartBlockView(title: title, summary: summary, xAxisLabel: xAxis,
+                              yAxisLabel: yAxis, orientation: orient, bars: bars)
+                .environmentObject(haptics)
+                .environmentObject(speech)
+
+        case .lineGraph(let title, let summary, let xAxis, let yAxis, let series):
+            LineGraphBlockView(title: title, summary: summary, xAxisLabel: xAxis,
+                               yAxisLabel: yAxis, series: series)
+                .environmentObject(haptics)
+                .environmentObject(speech)
+
+        case .pieChart(let title, let summary, let slices):
+            PieChartBlockView(title: title, summary: summary, slices: slices)
+                .environmentObject(haptics)
+                .environmentObject(speech)
+
+        case .tableNode(let title, let caption, let headers, let rows):
+            TableBlockView(title: title, caption: caption, headers: headers, rows: rows)
+                .environmentObject(haptics)
+
         case .unknown:
             EmptyView()
         }
     }
-    
+
     private func headingSize(for level: Int) -> CGFloat {
         let baseSize: CGFloat = horizontalSizeClass == .regular ? 26 : 22
         switch level {

@@ -58,10 +58,25 @@ final class LessonStore: ObservableObject {
 
     private let practiceScenarioLesson2 = LessonIndexItem(
         id: "practice_scenario_2",
-        title: "Math Practice Test 2",
+        title: "Exploring Geometric Shapes",
         teacher: "Ms. Rivera",
         localFiles: ["practice_page_2"],
         createdAt: Date().addingTimeInterval(-60)
+    )
+
+    // MARK: - Chart Examples seed lesson
+    private let chartExamplesLesson = LessonIndexItem(
+        id: "chart_examples",
+        title: "Charts and Data Tables",
+        teacher: "Ms. Rivera",
+        localFiles: [
+            "bar_chart_page",
+            "line_graph_page",
+            "pie_chart_page",
+            "tables_page",
+            "mixed_content_page"
+        ],
+        createdAt: Date().addingTimeInterval(-120)
     )
     
     // MARK: - Scenario 1 (Flow 2) seed lessons
@@ -151,7 +166,7 @@ final class LessonStore: ObservableObject {
         switch flow {
         case 1:
             // Practice Scenario
-            recent = [practiceScenarioLesson1, practiceScenarioLesson2]
+            recent = [practiceScenarioLesson1, practiceScenarioLesson2, chartExamplesLesson]
             banner = nil
             #if DEBUG
             print("[Practice Scenario] Loading JSON files: \(practiceScenarioLesson1.localFiles) and \(practiceScenarioLesson2.localFiles)")
