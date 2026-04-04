@@ -176,6 +176,10 @@ private struct DocumentNodeView: View {
         case .image(_, let alt, _): return alt ?? "Image"
         case .svgNode(_, let t, _, _, _): return t ?? "Figure"
         case .mapNode(_, let t, _): return t ?? "Map"
+        case .barChart(let t, _, _, _, _, _): return t ?? "Bar Chart"
+        case .lineGraph(let t, _, _, _, _): return t ?? "Line Graph"
+        case .pieChart(let t, _, _): return t ?? "Pie Chart"
+        case .tableNode(let t, _, _, _): return t ?? "Data Table"
         case .unknown: return "Content"
         }
     }
@@ -223,6 +227,27 @@ private struct DocumentNodeView: View {
 
         case .mapNode(let json, let t, let d):
             DocumentMapView(json: json, title: t, summaries: d)
+
+        case .barChart(let title, let summary, let xAxis, let yAxis, let orient, let bars):
+            BarChartBlockView(title: title, summary: summary, xAxisLabel: xAxis,
+                              yAxisLabel: yAxis, orientation: orient, bars: bars)
+                .environmentObject(haptics)
+                .environmentObject(speech)
+
+        case .lineGraph(let title, let summary, let xAxis, let yAxis, let series):
+            LineGraphBlockView(title: title, summary: summary, xAxisLabel: xAxis,
+                               yAxisLabel: yAxis, series: series)
+                .environmentObject(haptics)
+                .environmentObject(speech)
+
+        case .pieChart(let title, let summary, let slices):
+            PieChartBlockView(title: title, summary: summary, slices: slices)
+                .environmentObject(haptics)
+                .environmentObject(speech)
+
+        case .tableNode(let title, let caption, let headers, let rows):
+            TableBlockView(title: title, caption: caption, headers: headers, rows: rows)
+                .environmentObject(haptics)
 
         case .unknown:
             EmptyView()

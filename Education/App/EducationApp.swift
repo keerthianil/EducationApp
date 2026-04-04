@@ -19,7 +19,12 @@ struct EducationApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                ChooseFlowView()
+                if appState.hasCompletedOnboarding {
+                    DashboardView()
+                        .navigationBarBackButtonHidden(true)
+                } else {
+                    AboutView()
+                }
             }
             .environmentObject(appState)
             .environmentObject(lessonStore)

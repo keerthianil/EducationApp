@@ -15,6 +15,10 @@ enum Node: Codable, Identifiable {
     case image(src: String, alt: String?, shortDesc: String?)
     case svgNode(svg: String, title: String?, summaries: [String]?, shortDesc: [String]?, graphicData: [String: Any]?)
     case mapNode(json: String, title: String?, summaries: [String]?)
+    case barChart(title: String?, summary: String?, xAxisLabel: String?, yAxisLabel: String?, orientation: String?, bars: [[String: Any]])
+    case lineGraph(title: String?, summary: String?, xAxisLabel: String?, yAxisLabel: String?, series: [[String: Any]])
+    case pieChart(title: String?, summary: String?, slices: [[String: Any]])
+    case tableNode(title: String?, caption: String?, headers: [String], rows: [[String]])
     case unknown
 
     /// We don't rely on identity across frames, so a random UUID per node is fine.
@@ -43,6 +47,14 @@ enum Node: Codable, Identifiable {
         case .mapNode(let json, let title, let summaries):
             let summariesStr = summaries?.joined(separator: "|") ?? ""
             contentString = "map:\(json):\(title ?? ""):\(summariesStr)"
+        case .barChart(let title, _, _, _, _, let bars):
+            contentString = "barChart:\(title ?? ""):\(bars.count)"
+        case .lineGraph(let title, _, _, _, let series):
+            contentString = "lineGraph:\(title ?? ""):\(series.count)"
+        case .pieChart(let title, _, let slices):
+            contentString = "pieChart:\(title ?? ""):\(slices.count)"
+        case .tableNode(let title, _, let headers, let rows):
+            contentString = "table:\(title ?? ""):\(headers.joined()):\(rows.count)"
         case .unknown:
             contentString = "unknown"
         }
@@ -224,6 +236,48 @@ enum FlexibleLessonParser {
             let short = attrs?["short_desc"] as? [String]
             let summary = attrs?["summary"] as? [String]
             return .mapNode(json: jsonString, title: title, summaries: long ?? summary ?? short)
+        }
+
+        // Bar charts
+        if rawType == "barchart" || rawType == "bar_chart" {
+            let attrs = d["attrs"] as? [String: Any]
+            let title = attrs?["title"] as? String
+            let summary = attrs?["summary"] as? String
+            let xAxis = attrs?["xAxisLabel"] as? String
+            let yAxis = attrs?["yAxisLabel"] as? String
+            let orient = attrs?["orientation"] as? String
+            let bars = (attrs?["bars"] as? [[String: Any]]) ?? []
+            return .barChart(title: title, summary: summary, xAxisLabel: xAxis, yAxisLabel: yAxis, orientation: orient, bars: bars)
+        }
+
+        // Line graphs
+        if rawType == "linegraph" || rawType == "line_graph" {
+            let attrs = d["attrs"] as? [String: Any]
+            let title = attrs?["title"] as? String
+            let summary = attrs?["summary"] as? String
+            let xAxis = attrs?["xAxisLabel"] as? String
+            let yAxis = attrs?["yAxisLabel"] as? String
+            let series = (attrs?["series"] as? [[String: Any]]) ?? []
+            return .lineGraph(title: title, summary: summary, xAxisLabel: xAxis, yAxisLabel: yAxis, series: series)
+        }
+
+        // Pie charts
+        if rawType == "piechart" || rawType == "pie_chart" {
+            let attrs = d["attrs"] as? [String: Any]
+            let title = attrs?["title"] as? String
+            let summary = attrs?["summary"] as? String
+            let slices = (attrs?["slices"] as? [[String: Any]]) ?? []
+            return .pieChart(title: title, summary: summary, slices: slices)
+        }
+
+        // Tables
+        if rawType == "table" {
+            let attrs = d["attrs"] as? [String: Any]
+            let title = attrs?["title"] as? String
+            let caption = attrs?["caption"] as? String
+            let headers = (attrs?["headers"] as? [String]) ?? []
+            let rows = (attrs?["rows"] as? [[String]]) ?? []
+            return .tableNode(title: title, caption: caption, headers: headers, rows: rows)
         }
 
         // Unknown containers that still hold "content"

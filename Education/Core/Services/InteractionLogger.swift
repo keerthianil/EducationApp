@@ -39,6 +39,7 @@ enum ObjectType: String {
     case fileCard = "File Card"; case processingCard = "Processing Card"; case banner = "Banner"
     case pageControl = "Page Control"; case textField = "Text Field"; case menu = "Menu"
     case dialog = "Dialog"; case scrollView = "Scroll View"; case webView = "Web View"
+    case chart = "Chart"; case table = "Table"
     case document = "Document"; case session = "Session"; case unknown = "Unknown"
 }
 
@@ -46,7 +47,8 @@ enum RotorFunction: String {
     case none = "None"; case headings = "Headings"; case links = "Links"
     case formControls = "Form Controls"; case containers = "Containers"
     case characters = "Characters"; case words = "Words"; case lines = "Lines"
-    case mathNavigation = "Math Navigation"; case adjustValue = "Adjust Value"
+    case mathNavigation = "Math Navigation"; case chartNavigation = "Chart Navigation"
+    case adjustValue = "Adjust Value"
 }
 
 // MARK: - Log Entry

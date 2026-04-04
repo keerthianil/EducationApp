@@ -46,22 +46,63 @@ final class LessonStore: ObservableObject {
         createdAt: Date().addingTimeInterval(-3600)
     )
 
-    // MARK: - Practice Scenario (Flow 1) seed lessons
-    // New documents live in `Resources/raw_json/practice_json/`
-    private let practiceScenarioLesson1 = LessonIndexItem(
-        id: "practice_scenario_1",
-        title: "Math Practice Test 1",
+    // MARK: - Math & Geometry seed lessons
+    private let mathPracticeLesson = LessonIndexItem(
+        id: "math_practice_test",
+        title: "Math Practice Test",
         teacher: "Ms. Rivera",
-        localFiles: ["page_1"],
+        localFiles: ["math_practice_test"],
         createdAt: Date()
     )
 
-    private let practiceScenarioLesson2 = LessonIndexItem(
-        id: "practice_scenario_2",
-        title: "Math Practice Test 2",
+    private let geometricShapesLesson = LessonIndexItem(
+        id: "geometric_shapes",
+        title: "Geometric Shapes",
         teacher: "Ms. Rivera",
-        localFiles: ["practice_page_2"],
+        localFiles: ["geometric_shapes"],
         createdAt: Date().addingTimeInterval(-60)
+    )
+
+    // MARK: - Chart & Table seed lessons (each shown separately)
+
+    private let barChartLesson = LessonIndexItem(
+        id: "chart_bar",
+        title: "Bar Charts",
+        teacher: "Ms. Rivera",
+        localFiles: ["bar_chart_page"],
+        createdAt: Date().addingTimeInterval(-120)
+    )
+
+    private let lineGraphLesson = LessonIndexItem(
+        id: "chart_line",
+        title: "Line Graphs",
+        teacher: "Ms. Rivera",
+        localFiles: ["line_graph_page"],
+        createdAt: Date().addingTimeInterval(-180)
+    )
+
+    private let pieChartLesson = LessonIndexItem(
+        id: "chart_pie",
+        title: "Pie Charts",
+        teacher: "Ms. Rivera",
+        localFiles: ["pie_chart_page"],
+        createdAt: Date().addingTimeInterval(-240)
+    )
+
+    private let tablesLesson = LessonIndexItem(
+        id: "chart_tables",
+        title: "Data Tables",
+        teacher: "Ms. Rivera",
+        localFiles: ["tables_page"],
+        createdAt: Date().addingTimeInterval(-300)
+    )
+
+    private let mixedContentLesson = LessonIndexItem(
+        id: "chart_mixed",
+        title: "Mixed Charts and Tables",
+        teacher: "Ms. Rivera",
+        localFiles: ["mixed_content_page"],
+        createdAt: Date().addingTimeInterval(-360)
     )
     
     // MARK: - Scenario 1 (Flow 2) seed lessons
@@ -141,44 +182,21 @@ final class LessonStore: ObservableObject {
     @Published var processing: [ProcessingFile] = []
 
     init() {
-        // Default seed (used by Flow 2 / Flow 3 until migrated)
-        applySeedLessons(forFlow: 2)
+        applySeedLessons()
     }
 
-    /// Apply flow-specific seed lessons.
-    /// Phase 1: only Flow 1 ("Practice Scenario") uses the new practice_json docs.
-    func applySeedLessons(forFlow flow: Int) {
-        switch flow {
-        case 1:
-            // Practice Scenario
-            recent = [practiceScenarioLesson1, practiceScenarioLesson2]
-            banner = nil
-            #if DEBUG
-            print("[Practice Scenario] Loading JSON files: \(practiceScenarioLesson1.localFiles) and \(practiceScenarioLesson2.localFiles)")
-            #endif
-        case 2:
-            // Scenario 1
-            recent = [scenario1Lesson1, scenario1Lesson2]
-            banner = nil
-            #if DEBUG
-            print("[Scenario 1] Loading JSON files: \(scenario1Lesson1.localFiles) and \(scenario1Lesson2.localFiles)")
-            #endif
-        case 3:
-            // Scenario 2
-            recent = [scenario2Lesson1, scenario2Lesson2]
-            banner = nil
-            #if DEBUG
-            print("[Scenario 2] Loading JSON files: \(scenario2Lesson1.localFiles) and \(scenario2Lesson2.localFiles)")
-            #endif
-        default:
-            if let seed = teacherSeed {
-                recent = [seed, sample2Lesson]
-                banner = seed
-            } else {
-                recent = [sample2Lesson]
-                banner = nil
-            }
-        }
+    /// Load all seed lessons for the dashboard.
+    func applySeedLessons() {
+        recent = [
+            mathPracticeLesson,
+            geometricShapesLesson,
+            barChartLesson,
+            lineGraphLesson,
+            pieChartLesson,
+            tablesLesson,
+            mixedContentLesson
+        ]
+        banner = nil
     }
 
     // MARK: - Mutations
