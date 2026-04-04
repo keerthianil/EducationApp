@@ -1,6 +1,6 @@
 # StemAlly
 
-An iOS/iPadOS accessibility app that makes STEM educational content accessible to blind and low-vision (BLV) students in grades 8-12. Part of a research assistantship project investigating multisensory representations of math equations, geometric diagrams, charts, and data tables.
+An iOS/iPadOS accessibility app that makes STEM educational content accessible to blind and low-vision (BLV) students. Part of a research assistantship project investigating multisensory representations of math equations, geometric diagrams, charts, and data tables.
 
 ## Research Context
 
@@ -104,6 +104,3 @@ Each chart type provides VoiceOver navigation without needing to open fullscreen
 
 All touch events, VoiceOver interactions, and navigation are logged via `InteractionLogger`. Tap the gear icon on the dashboard to export logs as Excel or PDF for research analysis.
 
-## License
-
-Research project - not for redistribution.
