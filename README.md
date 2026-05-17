@@ -1,5 +1,7 @@
 # StemAlly
 
+A Northeastern University research project — I served as the iOS developer and UI/UX designer.
+
 An iOS/iPadOS accessibility app that makes STEM educational content accessible to blind and low-vision (BLV) students. Part of a research assistantship project investigating multisensory representations of math equations, geometric diagrams, charts, and data tables.
 
 ## Research Context
@@ -24,18 +26,21 @@ Education/
   Core/
     Models/      Node enum, FlexibleLessonParser, WorksheetItem
     Services/    HapticService, SpeechService, MathSpeechService,
-                 InteractionLogger, LessonStore, AudioCueService
+                 InteractionLogger, LessonStore, LessonStore+API,
+                 APIService, AudioCueService, UploadManager
   DesignSystem/  ColorTokens, Spacing, Typography, PhysicalDimensions
   Features/
-    Home/        DashboardView (single dashboard with upload + lessons)
-    Onboarding/  AboutView, AuthenticationView, IntroOnboardingView
+    Home/        DashboardView, NotificationBannerView
+    Onboarding/  AboutView, AuthenticationView, IntroOnboardingView,
+                 NameQuestionView, AgeQuestionView
     Reader/
       Math/      MathAccessibilityElement (rotor), MathMLView, MathParser
       Charts/    BarChartBlockView, LineGraphBlockView, PieChartBlockView,
                  TableBlockView, MultisensoryChartView
       ...        DocumentRendererView, MultisensorySVGView, SVGView
+    UploadSheetView, WorksheetView
   Resources/
-    raw_json/    Lesson JSON files organized by content type
+    raw_json/    chart_examples/, chart_tables/, math_graph/, samples/
 ```
 
 ### Content Pipeline
