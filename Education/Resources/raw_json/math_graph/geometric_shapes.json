@@ -4,7 +4,11 @@
     {
       "type": "heading",
       "attrs": { "level": 1 },
+<<<<<<<< HEAD:Education/Resources/raw_json/math_graph/practice_page_2.json
       "content": [{ "type": "text", "text": "Exploring Geometric Shapes" }]
+========
+      "content": [{ "type": "text", "text": "Geometric Shapes" }]
+>>>>>>>> feature/content-coverage:Education/Resources/raw_json/math_graph/geometric_shapes.json
     },
     {
       "type": "paragraph",

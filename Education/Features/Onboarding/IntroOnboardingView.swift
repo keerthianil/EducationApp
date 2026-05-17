@@ -17,7 +17,7 @@ struct IntroOnboardingView: View {
     ]
     
     @State private var currentIndex = 0
-    @State private var goToChooseFlow = false
+    @State private var goToDashboard = false
     @State private var didAnnounceOnboarding: Bool = false
     @AccessibilityFocusState private var slideFocused: Bool
     
@@ -25,10 +25,9 @@ struct IntroOnboardingView: View {
         ZStack {
             Color.white.ignoresSafeArea()
             
-            // Nav to ChooseFlowView instead of Dashboard
             NavigationLink(
-                destination: ChooseFlowView(),
-                isActive: $goToChooseFlow
+                destination: DashboardView().navigationBarBackButtonHidden(true),
+                isActive: $goToDashboard
             ) {
                 EmptyView()
             }
@@ -103,13 +102,13 @@ struct IntroOnboardingView: View {
                     }
                     .accessibilityLabel(
                         currentIndex == slides.count - 1
-                        ? "Finish onboarding and choose a flow"
+                        ? "Finish onboarding and go to dashboard"
                         : "Next slide"
                     )
                     .accessibilitySortPriority(1)
                     
                     Button {
-                        goToChooseFlow = true
+                        goToDashboard = true
                     } label: {
                         Text("Skip")
                             .font(.system(size: 16, weight: .semibold))
@@ -121,7 +120,7 @@ struct IntroOnboardingView: View {
                                     .stroke(ColorTokens.primary, lineWidth: 1)
                             )
                     }
-                    .accessibilityLabel("Skip onboarding and choose a flow")
+                    .accessibilityLabel("Skip onboarding and go to dashboard")
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
@@ -151,7 +150,7 @@ struct IntroOnboardingView: View {
         if currentIndex < slides.count - 1 {
             currentIndex += 1
         } else {
-            goToChooseFlow = true
+            goToDashboard = true
         }
     }
 }

@@ -192,22 +192,25 @@ struct BarChartBlockView: View {
             }
 
             HStack(alignment: .bottom, spacing: horizontalSizeClass == .regular ? 12 : 6) {
+                let barArea = chartHeight - 20 // reserve space for value labels
                 ForEach(Array(parsedBars.enumerated()), id: \.offset) { _, bar in
-                    VStack(spacing: 4) {
+                    VStack(spacing: 2) {
                         Text(formatValue(bar.value))
                             .font(.custom("Arial", size: 10))
                             .foregroundColor(Color(hex: "#91949B"))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
+                            .frame(height: 16)
 
                         RoundedRectangle(cornerRadius: 4)
                             .fill(bar.color)
-                            .frame(height: max(4, CGFloat(bar.value / maxValue) * chartHeight))
+                            .frame(height: max(4, CGFloat(bar.value / maxValue) * barArea))
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
             .frame(height: chartHeight)
+            .clipped()
             .padding(.horizontal, 4)
 
             HStack(spacing: horizontalSizeClass == .regular ? 12 : 6) {

@@ -140,7 +140,15 @@ class MultisensoryChartCanvas: UIView {
     private var vertexDingTimer: Timer?
     private var vertexPulseTimer: Timer?
 
-    private let pointRadius: CGFloat = 14
+    // Tactile thickness hierarchy (BANA + Tactile Vega-Lite research):
+    //   Line graph paths: 3mm — bold enough to trace, thin enough to see data shape
+    //   Bar outlines: 1.5pt fixed — bars are identified by fill, not outline
+    //   Pie separators: 2mm — boundary between slices
+    //   Data points: 6mm diameter (BANA minimum 1/4 inch)
+    private var dataLineWidth: CGFloat { PhysicalDimensions.mmToPoints(3.0) }
+    private let barOutlineWidth: CGFloat = 1.5
+    private var sliceSeparatorWidth: CGFloat { PhysicalDimensions.mmToPoints(2.0) }
+    private var dataPointRadius: CGFloat { max(PhysicalDimensions.mmToPoints(3.0), 10) }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -305,7 +313,7 @@ class MultisensoryChartCanvas: UIView {
     private func handleLineTouch(_ pt: CGPoint) {
         // Priority 1: data point
         for (i, dp) in dataPoints.enumerated() {
-            if hypot(pt.x - dp.center.x, pt.y - dp.center.y) < pointRadius * 1.5 {
+            if hypot(pt.x - dp.center.x, pt.y - dp.center.y) < dataPointRadius * 1.5 {
                 if activePointIndex != i || !isVertexActive() {
                     stopAll()
                     activePointIndex = i
@@ -455,8 +463,16 @@ class MultisensoryChartCanvas: UIView {
 
     override func draw(_ rect: CGRect) {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
-        let pad: CGFloat = 50
-        let drawRect = rect.insetBy(dx: pad, dy: pad)
+        // Leave room for Back button (top ~56pt + ~44pt button = ~100pt) + extra breathing room
+        let topPad: CGFloat = 120
+        let sidePad: CGFloat = 40
+        let bottomPad: CGFloat = 60
+        let drawRect = CGRect(
+            x: rect.minX + sidePad,
+            y: rect.minY + topPad,
+            width: rect.width - sidePad * 2,
+            height: rect.height - topPad - bottomPad
+        )
 
         switch chartKind {
         case .bar(let bars, let isVertical):
@@ -475,61 +491,82 @@ class MultisensoryChartCanvas: UIView {
         guard !bars.isEmpty else { return }
         let maxVal = bars.map(\.value).max() ?? 1
 
+        let labelAreaHeight: CGFloat = 24   // space for category labels at bottom
+        let valueAreaHeight: CGFloat = 20   // space for value labels on top
+        let chartArea = CGRect(
+            x: area.minX,
+            y: area.minY + valueAreaHeight,
+            width: area.width,
+            height: area.height - labelAreaHeight - valueAreaHeight
+        )
+
         if isVertical {
-            let barWidth = area.width / CGFloat(bars.count) - 8
+            let gap: CGFloat = max(8, area.width * 0.03)
+            let barWidth = (chartArea.width - gap * CGFloat(bars.count + 1)) / CGFloat(bars.count)
             for (i, bar) in bars.enumerated() {
-                let x = area.minX + CGFloat(i) * (barWidth + 8) + 4
-                let h = CGFloat(bar.value / maxVal) * (area.height - 30)
-                let y = area.maxY - h - 20
+                let x = chartArea.minX + gap + CGFloat(i) * (barWidth + gap)
+                let h = CGFloat(bar.value / maxVal) * chartArea.height
+                let y = chartArea.maxY - h
                 let r = CGRect(x: x, y: y, width: barWidth, height: h)
 
                 ctx.setFillColor(bar.color.cgColor)
                 ctx.fill(r)
                 ctx.setStrokeColor(UIColor.black.cgColor)
-                ctx.setLineWidth(2)
+                ctx.setLineWidth(barOutlineWidth)
                 ctx.stroke(r)
 
                 barRects.append((rect: r, label: bar.label, value: bar.value, color: bar.color))
 
                 // Label below
                 let attrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.boldSystemFont(ofSize: 12),
+                    .font: UIFont.boldSystemFont(ofSize: 13),
                     .foregroundColor: UIColor.black
                 ]
                 let size = (bar.label as NSString).size(withAttributes: attrs)
                 let lx = x + (barWidth - size.width) / 2
-                (bar.label as NSString).draw(at: CGPoint(x: max(area.minX, lx), y: area.maxY - 16), withAttributes: attrs)
+                (bar.label as NSString).draw(at: CGPoint(x: max(chartArea.minX, lx), y: chartArea.maxY + 4), withAttributes: attrs)
 
                 // Value on top
                 let valStr = fmtVal(bar.value)
                 let valAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 11),
+                    .font: UIFont.boldSystemFont(ofSize: 12),
                     .foregroundColor: UIColor.darkGray
                 ]
                 let vs = (valStr as NSString).size(withAttributes: valAttrs)
-                (valStr as NSString).draw(at: CGPoint(x: x + (barWidth - vs.width) / 2, y: y - 16), withAttributes: valAttrs)
+                (valStr as NSString).draw(at: CGPoint(x: x + (barWidth - vs.width) / 2, y: y - 18), withAttributes: valAttrs)
             }
         } else {
-            let barH: CGFloat = min(40, (area.height - 20) / CGFloat(bars.count) - 6)
+            let gap: CGFloat = 8
+            let labelWidth: CGFloat = 90
+            let barH = min(44, (chartArea.height - gap * CGFloat(bars.count + 1)) / CGFloat(bars.count))
             for (i, bar) in bars.enumerated() {
-                let y = area.minY + CGFloat(i) * (barH + 6)
-                let w = CGFloat(bar.value / maxVal) * (area.width - 100)
-                let r = CGRect(x: area.minX + 90, y: y, width: w, height: barH)
+                let y = chartArea.minY + gap + CGFloat(i) * (barH + gap)
+                let w = CGFloat(bar.value / maxVal) * (chartArea.width - labelWidth - 50)
+                let r = CGRect(x: chartArea.minX + labelWidth, y: y, width: w, height: barH)
 
                 ctx.setFillColor(bar.color.cgColor)
                 ctx.fill(r)
                 ctx.setStrokeColor(UIColor.black.cgColor)
-                ctx.setLineWidth(2)
+                ctx.setLineWidth(barOutlineWidth)
                 ctx.stroke(r)
 
                 barRects.append((rect: r, label: bar.label, value: bar.value, color: bar.color))
 
+                // Label left of bar
                 let attrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.boldSystemFont(ofSize: 12),
+                    .font: UIFont.boldSystemFont(ofSize: 13),
                     .foregroundColor: UIColor.black
                 ]
                 let size = (bar.label as NSString).size(withAttributes: attrs)
-                (bar.label as NSString).draw(at: CGPoint(x: area.minX + 85 - size.width, y: y + (barH - size.height) / 2), withAttributes: attrs)
+                (bar.label as NSString).draw(at: CGPoint(x: chartArea.minX + labelWidth - size.width - 6, y: y + (barH - size.height) / 2), withAttributes: attrs)
+
+                // Value right of bar
+                let valStr = fmtVal(bar.value)
+                let valAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.boldSystemFont(ofSize: 12),
+                    .foregroundColor: UIColor.darkGray
+                ]
+                (valStr as NSString).draw(at: CGPoint(x: r.maxX + 6, y: y + (barH - 14) / 2), withAttributes: valAttrs)
             }
         }
     }
@@ -562,7 +599,7 @@ class MultisensoryChartCanvas: UIView {
             ctx.addArc(center: CGPoint(x: cx, y: cy), radius: radius, startAngle: startRad, endAngle: endRad, clockwise: false)
             ctx.closePath()
             ctx.setStrokeColor(UIColor.white.cgColor)
-            ctx.setLineWidth(3)
+            ctx.setLineWidth(sliceSeparatorWidth)
             ctx.strokePath()
 
             let pct = (slice.value / total) * 100
@@ -630,9 +667,9 @@ class MultisensoryChartCanvas: UIView {
                 return CGPoint(x: x, y: y)
             }
 
-            // Lines
+            // Data lines — 4mm bold (primary data, same as SVG geometric edges)
             ctx.setStrokeColor(s.color.cgColor)
-            ctx.setLineWidth(3)
+            ctx.setLineWidth(dataLineWidth)
             ctx.setLineCap(.round)
             for i in 0..<(s.points.count - 1) {
                 let p1 = mapPt(i, s.points[i])
@@ -643,16 +680,16 @@ class MultisensoryChartCanvas: UIView {
                 lineSegments.append((start: p1, end: p2))
             }
 
-            // Points
-            ctx.setFillColor(s.color.cgColor)
+            // Data points — high-contrast red dots matching SVG vertex markers
+            let markerColor = UIColor(red: 211/255, green: 47/255, blue: 47/255, alpha: 1.0)
+            ctx.setFillColor(markerColor.cgColor)
             for (i, pt) in s.points.enumerated() {
                 let c = mapPt(i, pt)
-                let r: CGFloat = 8
+                let r = dataPointRadius
                 ctx.fillEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
                 ctx.setStrokeColor(UIColor.white.cgColor)
-                ctx.setLineWidth(2)
+                ctx.setLineWidth(2.0)
                 ctx.strokeEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
-                ctx.setStrokeColor(s.color.cgColor)
                 dataPoints.append((center: c, label: pt.x, value: pt.y))
             }
         }

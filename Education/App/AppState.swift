@@ -16,13 +16,11 @@ final class AppState: ObservableObject {
         case profileName
         case profileAge
         case tutorial
-        case chooseFlow
         case home
     }
-    
+
     @Published var route: Route = .about
     @Published var name: String = ""
-    @Published var selectedFlow: Int = 1
     
     // Persist onboarding completion
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false

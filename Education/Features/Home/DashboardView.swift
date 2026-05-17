@@ -39,7 +39,7 @@ struct DashboardView: View {
     @State private var selectedLesson: LessonIndexItem?
     @State private var selectedTab: HomeTab = .home
     @State private var selectedSidebarItem: SidebarItem = .home
-    @State private var navigateToFlowSelection = false
+    @State private var showExportSheet = false
     @StateObject private var notificationDelegate = NotificationDelegate.shared
     @StateObject private var uploadManager = UploadManager()
     
@@ -134,12 +134,13 @@ struct DashboardView: View {
                 uploadManager.lessonStore = lessonStore
                 previousProcessingCount = lessonStore.processing.count
                 previousCompletedCount = lessonStore.downloaded.count
-                InteractionLogger.shared.setCurrentScreen("DashboardView_Flow1")
-                
-                // --- CHANGED: Announce title for VoiceOver ---
+                InteractionLogger.shared.setCurrentScreen("DashboardView")
+                appState.completeOnboarding()
+
                 if UIAccessibility.isVoiceOverRunning {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard, Practice Scenario")                    }
+                        UIAccessibility.post(notification: .announcement, argument: "StemAlly Dashboard")
+                    }
                 }
             }
             .fullScreenCover(item: $selectedLesson) { lesson in
@@ -152,12 +153,9 @@ struct DashboardView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
-            .background(
-                NavigationLink(destination: ChooseFlowView().navigationBarBackButtonHidden(true), isActive: $navigateToFlowSelection) {
-                    EmptyView()
-                }
-                .hidden()
-            )
+            .sheet(isPresented: $showExportSheet) {
+                ExportDataSheet()
+            }
     }
     
     // The actual layout switch
@@ -254,29 +252,11 @@ struct DashboardView: View {
        
     private var iPadSidebarHeader: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button {
-                haptics.tapSelection()
-                InteractionLogger.shared.log(
-                    event: .tap,
-                    objectType: .button,
-                    label: "Back to Flow Selection",
-                    location: .zero
-                )
-                InteractionLogger.shared.endSession()
-                navigateToFlowSelection = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("Flows")
-                        .font(.custom("Arial", size: 14))
-                }
-                .foregroundColor(ColorTokens.primary)
+            Text("StemAlly")
+                .font(.custom("Arial", size: 18).weight(.bold))
+                .foregroundColor(Color(hex: "#47494F"))
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            }
-            .accessibilityLabel("Back to flow selection")
-            .padding(.top, 12)
+                .padding(.top, 16)
             
             Text("StemAlly")
                 .font(.custom("Arial", size: 22).weight(.bold))
@@ -324,6 +304,8 @@ struct DashboardView: View {
                 selectedTab = .home
             case .allFiles:
                 selectedTab = .allFiles
+            case .settings:
+                showExportSheet = true
             default:
                 break
             }
@@ -686,10 +668,7 @@ struct DashboardView: View {
         ZStack(alignment: .bottom) {
             iPhoneScrollContent
             
-            HomeTabBar(selectedTab: $selectedTab, onBackToFlows: {
-                InteractionLogger.shared.endSession()
-                navigateToFlowSelection = true
-            })
+            HomeTabBar(selectedTab: $selectedTab)
         }
         .ignoresSafeArea(edges: .bottom)
     }
@@ -743,28 +722,25 @@ struct DashboardView: View {
     // MARK: - Header Section
     private func headerSection() -> some View {
         HStack {
-            Button {
-                haptics.tapSelection()
-                InteractionLogger.shared.log(
-                    event: .tap,
-                    objectType: .button,
-                    label: "Back to Flows",
-                    location: .zero
-                )
-                InteractionLogger.shared.endSession()
-                navigateToFlowSelection = true
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(ColorTokens.primary)
-                    .frame(width: 40, height: 40)
-            }
-            .accessibilityLabel("Back to flow selection")
-            
-            Spacer()
-            
             Spacer()
                 .frame(width: 40)
+
+            Spacer()
+
+            Button {
+                haptics.tapSelection()
+                InteractionLogger.shared.logTap(
+                    objectType: .button,
+                    label: "Settings"
+                )
+                showExportSheet = true
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(Color(hex: "#61758A"))
+                    .frame(width: 40, height: 40)
+            }
+            .accessibilityHidden(true)
         }
         .overlay(
             Text("StemAlly")
@@ -1143,7 +1119,6 @@ private struct RecentRow: View {
 // MARK: - Bottom Tab Bar
 private struct HomeTabBar: View {
     @Binding var selectedTab: DashboardView.HomeTab
-    var onBackToFlows: () -> Void
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     private var tabBarHeight: CGFloat {
@@ -1405,4 +1380,125 @@ struct CompletedFileCard: View {
             return String(format: "%.1fMB", sizeInMB)
         }
     }
+}
+
+// MARK: - Export Data Sheet
+
+private struct ExportDataSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var exportedURLs: [URL] = []
+    @State private var isExporting = false
+    @State private var showShareSheet = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Image(systemName: "doc.text")
+                    .font(.system(size: 48))
+                    .foregroundColor(ColorTokens.primary)
+                    .padding(.top, 40)
+
+                Text("Export Interaction Logs")
+                    .font(.custom("Arial", size: 22).weight(.bold))
+                    .foregroundColor(Color(hex: "#121417"))
+
+                let count = InteractionLogger.shared.getEntryCount(for: 1)
+                HStack {
+                    Text("Logged interactions")
+                        .font(.custom("Arial", size: 17))
+                        .foregroundColor(Color(hex: "#121417"))
+                    Spacer()
+                    Text("\(count) entries")
+                        .font(.custom("Arial", size: 15))
+                        .foregroundColor(Color(hex: "#61758A"))
+                }
+                .padding(.horizontal, 20).padding(.vertical, 12)
+                .background(Color(hex: "#F6F7F8"))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .padding(.horizontal, 24)
+
+                Spacer()
+
+                VStack(spacing: 12) {
+                    Button {
+                        exportData(format: .excel)
+                    } label: {
+                        HStack {
+                            if isExporting { ProgressView().scaleEffect(0.8).tint(.white) }
+                            Text(isExporting ? "Exporting..." : "Export (Excel)")
+                                .font(.custom("Arial", size: 17).weight(.bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .background(ColorTokens.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(isExporting)
+
+                    Button {
+                        exportData(format: .pdf)
+                    } label: {
+                        Text("Export (PDF)")
+                            .font(.custom("Arial", size: 17).weight(.bold))
+                            .foregroundColor(ColorTokens.primary)
+                            .frame(maxWidth: .infinity).frame(height: 56)
+                            .background(Color.white)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(ColorTokens.primary, lineWidth: 1))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(isExporting)
+
+                    Button("Clear All Data") {
+                        InteractionLogger.shared.clearAllData()
+                        dismiss()
+                    }
+                    .font(.custom("Arial", size: 15))
+                    .foregroundColor(ColorTokens.error)
+                }
+                .padding(.horizontal, 24).padding(.bottom, 24)
+            }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if !exportedURLs.isEmpty {
+                    ShareSheet(activityItems: exportedURLs)
+                }
+            }
+        }
+    }
+
+    private enum ExportFormat { case excel, pdf }
+
+    private func exportData(format: ExportFormat) {
+        isExporting = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let urls: [URL]
+            switch format {
+            case .excel:
+                urls = InteractionLogger.shared.exportAllFlowsAsExcel()
+            case .pdf:
+                urls = InteractionLogger.shared.exportAllFlowsAsPDF()
+            }
+            DispatchQueue.main.async {
+                isExporting = false
+                if !urls.isEmpty {
+                    exportedURLs = urls
+                    showShareSheet = true
+                }
+            }
+        }
+    }
+}
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
 }
