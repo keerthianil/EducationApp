@@ -1,8 +1,8 @@
 # StemAlly
 
-A Northeastern University research project — I served as the iOS developer and UI/UX designer.
+A research project at Northeastern University's Roux Institute (UNAR Labs) — I served as the iOS developer and UI/UX designer.
 
-An iOS/iPadOS accessibility app that makes STEM educational content accessible to blind and low-vision (BLV) students. Part of a research assistantship project investigating multisensory representations of math equations, geometric diagrams, charts, and data tables.
+An iOS/iPadOS accessibility app that makes STEM educational content accessible to blind and low-vision (BLV) students. Part of a research assistantship project investigating multisensory representations of math equations, geometric diagrams, charts, and data tables. The app has been tested with blind and low-vision users at accessibility conferences.
 
 ## Research Context
 
