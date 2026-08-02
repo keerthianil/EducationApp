@@ -435,7 +435,12 @@ private struct ParagraphBlockView: View {
         case text(displayText: String, spokenText: String)
         /// A standalone equation rendered via MathCAT (math mode available)
         case blockMath(latex: String?, mathml: String?, display: String?)
-        var id: UUID { UUID() }
+        var id: String {
+            switch self {
+            case .text(let d, _): return "t:\(d)"
+            case .blockMath(let l, let m, _): return "m:\(l ?? ""):\(m ?? "")"
+            }
+        }
     }
 
     private var segments: [Segment] {

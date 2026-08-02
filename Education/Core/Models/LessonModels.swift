@@ -92,7 +92,14 @@ enum Inline: Codable, Identifiable {
     case math(latex: String?, mathml: String?, display: String?)
     case unknown
 
-    var id: UUID { UUID() }
+    var id: String {
+        switch self {
+        case .text(let t): return "text:\(t)"
+        case .math(let latex, let mathml, let display):
+            return "math:\(latex ?? ""):\(mathml ?? ""):\(display ?? "")"
+        case .unknown: return "unknown"
+        }
+    }
 
     init(from decoder: Decoder) throws { self = .unknown }
     func encode(to encoder: Encoder) throws {}

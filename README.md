@@ -40,7 +40,7 @@ Education/
       ...        DocumentRendererView, MultisensorySVGView, SVGView
     UploadSheetView, WorksheetView
   Resources/
-    raw_json/    chart_examples/, chart_tables/, math_graph/, samples/
+    raw_json/    chart_examples/, math_graph/, samples/
 ```
 
 ### Content Pipeline
@@ -83,9 +83,9 @@ Each chart type provides VoiceOver navigation without needing to open fullscreen
 
 ## Requirements
 
-- Xcode 15+
-- iOS 16+ / iPadOS 16+
-- Swift 5.9+
+- Xcode 16+
+- iOS 18+ / iPadOS 18+
+- Swift 5.0+
 - ZIPFoundation 0.9.20 (SPM dependency)
 
 ## Getting Started
